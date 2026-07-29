@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: {},
   images: {
     remotePatterns: [
       {
@@ -8,11 +9,20 @@ const nextConfig: NextConfig = {
         hostname: 'www.guides-digitaux.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'commondatastorage.googleapis.com',
+        pathname: '/**',
+      },
     ],
   },
   webpack: (config, { dev }) => {
     if (dev) {
-      // Disable Webpack filesystem caching in dev mode to stop ENOENT pack.gz corruption crashes
       config.cache = false;
     }
     return config;
