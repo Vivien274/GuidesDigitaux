@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
-import { getStoredPreorders, PreorderCampaign } from '@/lib/preordersStore';
+import { getStoredPreorders, PreorderCampaign, getPreorderStatusDetails } from '@/lib/preordersStore';
 import { 
   Rocket, 
   Target, 
@@ -59,17 +59,20 @@ export default function PreorderProductPage() {
     );
   }
 
+  const statusDetails = getPreorderStatusDetails(campaign);
   const percent = Math.min(100, Math.round((campaign.currentEnrollments / campaign.targetEnrollments) * 100));
   const remaining = Math.max(0, campaign.targetEnrollments - campaign.currentEnrollments);
 
   const handlePreorderCheckout = () => {
+    if (!statusDetails.canOrder) return;
+
     setIsProcessing(true);
     // Add preorder item to cart
     addToCart({
       id: campaign.id,
       title: `[PRÉCOMMANDE] ${campaign.courseTitle}`,
-      price: campaign.price,
-      image: 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp',
+      price: statusDetails.effectivePrice,
+      image: campaign.image || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp',
       categoryLabel: 'Précommande Formation'
     });
 
@@ -110,9 +113,9 @@ export default function PreorderProductPage() {
             <ArrowLeft className="w-4 h-4" />
             Retour à la Boutique
           </Link>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-900 uppercase">
-            <Rocket className="w-3.5 h-3.5 text-amber-600" />
-            Page de Présentation du Projet en Précommande
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase border ${statusDetails.badgeBg}`}>
+            <Rocket className="w-3.5 h-3.5" />
+            {statusDetails.label}
           </span>
         </div>
       </div>
@@ -134,7 +137,7 @@ export default function PreorderProductPage() {
 
                 <span className="px-4 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" />
-                  Sortie le {campaign.releaseDate}
+                  Sortie Officielle le {campaign.releaseDate}
                 </span>
               </div>
 
@@ -146,16 +149,23 @@ export default function PreorderProductPage() {
                 {campaign.description}
               </p>
 
-              {/* JAUGE DE PRÉCOMMANDE VISUELLE EN DIRECT */}
+              {/* STATUT BANNER & JAUGE EN DIRECT */}
               <div className="p-6 bg-white rounded-3xl border-2 border-amber-300 shadow-md space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-extrabold text-[#332420] gap-2">
+                
+                {/* Banner alert message */}
+                <div className={`p-4 rounded-2xl text-xs font-bold ${statusDetails.badgeBg} flex items-center gap-3`}>
+                  <Sparkles className="w-5 h-5 shrink-0" />
+                  <span>{statusDetails.bannerMsg}</span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-extrabold text-[#332420] gap-2 pt-2">
                   <span className="flex items-center gap-2 text-[#18757d]">
                     <Target className="w-5 h-5 text-amber-500 shrink-0" />
-                    Jauge d'Objectif : {campaign.currentEnrollments} / {campaign.targetEnrollments} précommandes ({percent}%)
+                    Jauge de précommandes requises : {campaign.currentEnrollments} / {campaign.targetEnrollments} ({percent}%)
                   </span>
 
                   <span className="text-amber-900 bg-amber-100 px-3.5 py-1 rounded-full border border-amber-300">
-                    {remaining === 0 ? "🎉 Objectif atteint !" : `Plus que ${remaining} place(s) au tarif préférentiel !`}
+                    {remaining === 0 ? "🎉 Objectif atteint !" : `Plus que ${remaining} précommande(s) au tarif réduit !`}
                   </span>
                 </div>
 
@@ -166,9 +176,14 @@ export default function PreorderProductPage() {
                   />
                 </div>
 
-                <p className="text-[11px] text-slate-500 italic">
-                  Fin de la campagne de précommande : <strong>{campaign.endDate}</strong>. Le cours sera accessible dans votre Espace Élève dès le {campaign.releaseDate}.
-                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] font-semibold text-slate-600 pt-1">
+                  <div>
+                    📅 Date limite de précommande : <strong className="text-[#332420]">{campaign.endDate}</strong>
+                  </div>
+                  <div>
+                    🚀 Date de sortie officielle : <strong className="text-[#18757d]">{campaign.releaseDate}</strong>
+                  </div>
+                </div>
               </div>
 
               {/* Preorder Bonus Box */}
@@ -195,16 +210,16 @@ export default function PreorderProductPage() {
                   className="object-cover"
                 />
                 <span className="absolute top-3 left-3 bg-amber-400 text-[#332420] text-xs font-extrabold px-3 py-1 rounded-full uppercase shadow-sm">
-                  -40% Tarif Précommande
+                  Tarif Réduit Précommande
                 </span>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-baseline justify-between">
                   <span className="text-3xl font-extrabold text-[#18757d]">
-                    {campaign.price.toFixed(2).replace('.', ',')} €
+                    {statusDetails.effectivePrice.toFixed(2).replace('.', ',')} €
                   </span>
-                  {campaign.originalPrice && (
+                  {campaign.originalPrice && statusDetails.code !== 'RELEASED_FULL_PRICE' && (
                     <span className="text-base text-slate-400 line-through font-bold">
                       {campaign.originalPrice.toFixed(2).replace('.', ',')} €
                     </span>
@@ -213,18 +228,26 @@ export default function PreorderProductPage() {
 
                 <p className="text-xs text-emerald-700 font-extrabold flex items-center gap-1">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  Économise {(campaign.originalPrice! - campaign.price).toFixed(2)} € en réservant ta place aujourd'hui !
+                  {statusDetails.code === 'RELEASED_FULL_PRICE'
+                    ? 'Formation immédiatement disponible en ligne'
+                    : `Économise ${(campaign.originalPrice! - campaign.price).toFixed(2)} € avant le ${campaign.releaseDate} !`}
                 </p>
               </div>
 
               <div className="space-y-3 pt-2">
                 <button
                   onClick={handlePreorderCheckout}
-                  disabled={isProcessing}
-                  className="w-full py-4 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                  disabled={isProcessing || !statusDetails.canOrder}
+                  className={`w-full py-4 text-xs font-extrabold rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${
+                    statusDetails.canOrder
+                      ? 'bg-amber-400 hover:bg-amber-300 text-[#332420]'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  }`}
                 >
-                  <Rocket className="w-5 h-5 text-[#332420]" />
-                  PRÉCOMMANDER CE COURS ({campaign.price.toFixed(2)} €)
+                  <Rocket className="w-5 h-5" />
+                  {statusDetails.canOrder
+                    ? `PRÉCOMMANDER CE COURS (${statusDetails.effectivePrice.toFixed(2)} €)`
+                    : `CAMPAGNE NON VALIDÉE & REMBOURSÉE`}
                 </button>
 
                 <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-slate-500">

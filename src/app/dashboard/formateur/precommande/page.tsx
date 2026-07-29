@@ -38,10 +38,10 @@ export default function FormateurPreorderPage() {
   const [courseTitle, setCourseTitle] = useState<string>('');
   const [price, setPrice] = useState<string>('79');
   const [originalPrice, setOriginalPrice] = useState<string>('149');
-  const [targetEnrollments, setTargetEnrollments] = useState<string>('25');
-  const [currentEnrollments, setCurrentEnrollments] = useState<string>('0');
-  const [endDate, setEndDate] = useState<string>('2026-11-30');
-  const [releaseDate, setReleaseDate] = useState<string>('2026-12-15');
+  const [targetEnrollments, setTargetEnrollments] = useState<string>('15');
+  const [currentEnrollments, setCurrentEnrollments] = useState<string>('18');
+  const [endDate, setEndDate] = useState<string>('2026-08-20');
+  const [releaseDate, setReleaseDate] = useState<string>('2026-09-15');
   const [imageUrl, setImageUrl] = useState<string>('https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp');
   const [description, setDescription] = useState<string>('Formation pratique en précommande avec tarif privilégié de lancement.');
   const [bonus, setBonus] = useState<string>('Accès VIP au groupe privé + Fiche bonus exclusive');
@@ -73,10 +73,10 @@ export default function FormateurPreorderPage() {
     setCourseTitle('');
     setPrice('79');
     setOriginalPrice('149');
-    setTargetEnrollments('25');
+    setTargetEnrollments('15');
     setCurrentEnrollments('0');
-    setEndDate('2026-11-30');
-    setReleaseDate('2026-12-15');
+    setEndDate('2026-08-20');
+    setReleaseDate('2026-09-15');
     setImageUrl('https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp');
     setDescription('Formation pratique en précommande avec tarif privilégié de lancement.');
     setBonus('Accès VIP au groupe privé + Fiche bonus exclusive');
