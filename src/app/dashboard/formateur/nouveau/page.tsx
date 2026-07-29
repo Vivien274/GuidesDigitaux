@@ -87,7 +87,7 @@ export default function NewCourseWizardPage() {
   const [certificateEnabled, setCertificateEnabled] = useState(true);
   const [bonusDocTitle, setBonusDocTitle] = useState('Checklist ultime de contrôle post-formation');
   const [bonusDocUrl, setBonusDocUrl] = useState('https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp');
-  const [communityLink, setCommunityLink] = useState('https://discord.gg/guides-digitaux');
+  const [communityLink, setCommunityLink] = useState('');
 
   // Module & Lesson Handlers
   const handleAddModule = () => {

@@ -530,14 +530,16 @@ export default function CoursePlayerPage() {
                         Télécharger le certificat de formation
                       </a>
 
-                      <a
-                        href="https://discord.gg/guides-digitaux"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="w-full sm:w-auto px-6 py-3.5 text-xs font-extrabold text-white bg-white/20 hover:bg-white/30 rounded-xl border border-white/30 text-center uppercase tracking-wider transition-colors"
-                      >
-                        REJOINDRE LA COMMUNAUTÉ
-                      </a>
+                      {courseData?.communityLink && courseData.communityLink.trim() !== '' && (
+                        <a
+                          href={courseData.communityLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full sm:w-auto px-6 py-3.5 text-xs font-extrabold text-white bg-white/20 hover:bg-white/30 rounded-xl border border-white/30 text-center uppercase tracking-wider transition-colors"
+                        >
+                          REJOINDRE LA COMMUNAUTÉ
+                        </a>
+                      )}
                     </div>
                   </div>
                 )}
