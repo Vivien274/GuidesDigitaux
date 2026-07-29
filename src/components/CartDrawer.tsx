@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Lock, Sparkles } from 'lucide-react';
 
 export default function CartDrawer() {
@@ -12,29 +13,36 @@ export default function CartDrawer() {
 
   if (!isCartOpen) return null;
 
+  const { user } = useAuth();
+
   const handleCheckout = async () => {
+    if (cart.length === 0) return;
     setIsProcessing(true);
     try {
       if (typeof window !== 'undefined') {
-        const existing = JSON.parse(localStorage.getItem('gd_enrolled_courses') || '[]');
-        const newEnrollments = cart.map(item => ({
-          id: item.id,
-          title: item.title,
-          slug: item.id === 'c1' || item.title.includes('WordPress') ? 'creer-sa-vitrine-wordpress' : 'formation-woocommerce',
-          image: item.image,
-          date: new Date().toLocaleDateString('fr-FR'),
-          progress: 0
-        }));
-
-        const merged = [...existing, ...newEnrollments];
-        localStorage.setItem('gd_enrolled_courses', JSON.stringify(merged));
+        localStorage.setItem('gd_pending_cart_checkout', JSON.stringify(cart));
       }
 
-      clearCart();
-      setIsCartOpen(false);
-      window.location.href = '/dashboard/eleve?purchased=true';
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart,
+          customerEmail: user?.email || ''
+        })
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        clearCart();
+        setIsCartOpen(false);
+        window.location.href = data.url;
+      } else {
+        alert('Erreur lors de l\'initialisation de la commande Stripe.');
+      }
     } catch (err) {
-      alert(`Paiement initié pour ${totalPrice.toFixed(2)} €`);
+      console.error('Erreur checkout panier:', err);
+      alert('Une erreur s\'est produite lors de la commande.');
     } finally {
       setIsProcessing(false);
     }

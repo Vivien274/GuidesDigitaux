@@ -110,13 +110,14 @@ export default function BoutiquePage() {
   const handleBuyNow = async (product: Product) => {
     setIsProcessingCheckout(true);
     try {
-      const response = await fetch('/api/checkout', {
+      const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productId: product.id,
-          title: product.title,
+          courseId: product.id,
+          courseTitle: product.title,
           price: product.price,
+          isPreorder: false
         }),
       });
 
@@ -124,11 +125,11 @@ export default function BoutiquePage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(`Redirection vers le paiement sécurisé Stripe pour "${product.title}" (${product.price.toFixed(2)} €)`);
+        alert(`Paiement initié pour "${product.title}" (${product.price.toFixed(2)} €)`);
       }
     } catch (err) {
       console.error(err);
-      alert(`Paiement initié pour "${product.title}". (Mode démo Stripe connecté)`);
+      alert(`Paiement initié pour "${product.title}".`);
     } finally {
       setIsProcessingCheckout(false);
     }

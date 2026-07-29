@@ -5,10 +5,11 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { 
+      items,
       courseId = 'precommande-fiche-google',
       courseTitle = 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
       price = 29,
-      isPreorder = true,
+      isPreorder = false,
       releaseDate = '15 septembre 2026',
       customerEmail
     } = body;
@@ -18,33 +19,58 @@ export async function POST(request: Request) {
       : 'sk_test_51TAqk4D882WcsUbmbsySyL6DrZMMa6PPMsFdk2DJ9xa7iakf5XKBp9baIF69AsOxZE1ZWpfok6cZQxPbQQOYW6y500qA4E6NRT';
 
     const hasRealStripeKey = secretKey.startsWith('sk_test_') && secretKey.length > 20;
-
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const priceCents = Math.round(Number(price) * 100);
+
+    let lineItems: any[] = [];
+    let totalPriceSum = 0;
+
+    if (Array.isArray(items) && items.length > 0) {
+      lineItems = items.map((it: any) => {
+        const itemPrice = Number(it.price || it.originalPrice || 29);
+        totalPriceSum += itemPrice * (it.quantity || 1);
+        return {
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: it.title || 'Produit Guides Digitaux',
+              description: it.type ? `Produit Digital (${it.type})` : 'Formation Vidéo / E-book Guides Digitaux',
+            },
+            unit_amount: Math.round(itemPrice * 100),
+          },
+          quantity: it.quantity || 1,
+        };
+      });
+    } else {
+      const priceCents = Math.round(Number(price) * 100);
+      totalPriceSum = Number(price);
+      lineItems = [
+        {
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: courseTitle,
+              description: isPreorder ? `🚀 Précommande exclusive - Sortie le ${releaseDate}` : 'Formation Vidéo Guides Digitaux',
+            },
+            unit_amount: priceCents,
+          },
+          quantity: 1,
+        },
+      ];
+    }
 
     // 1. If real Stripe test key is configured in env, create real Stripe Checkout Session
     if (hasRealStripeKey) {
       const stripe = new Stripe(secretKey);
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
-        line_items: [
-          {
-            price_data: {
-              currency: 'eur',
-              product_data: {
-                name: courseTitle,
-                description: isPreorder ? `🚀 Précommande exclusive - Sortie le ${releaseDate}` : 'Formation Vidéo Guides Digitaux',
-              },
-              unit_amount: priceCents,
-            },
-            quantity: 1,
-          },
-        ],
+        line_items: lineItems,
         mode: 'payment',
-        success_url: `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id={CHECKOUT_SESSION_ID}&price=${price}`,
-        cancel_url: `${siteUrl}/tunnel/${courseId}?canceled=true`,
+        success_url: Array.isArray(items) && items.length > 0
+          ? `${siteUrl}/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&cart_checkout=true&price=${totalPriceSum}`
+          : `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id={CHECKOUT_SESSION_ID}&price=${price}`,
+        cancel_url: `${siteUrl}/boutique?canceled=true`,
         metadata: {
-          courseId,
+          courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : courseId,
           isPreorder: isPreorder ? 'true' : 'false',
           releaseDate
         },
@@ -55,7 +81,9 @@ export async function POST(request: Request) {
 
     // 2. Fallback for test environment without key: simulated instant Stripe checkout test flow
     const testSessionId = `test_cs_${Date.now()}`;
-    const simulatedUrl = `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id=${testSessionId}&price=${price}&test_mode=true`;
+    const simulatedUrl = Array.isArray(items) && items.length > 0
+      ? `${siteUrl}/tunnel/confirmation?session_id=${testSessionId}&cart_checkout=true&price=${totalPriceSum}&test_mode=true`
+      : `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id=${testSessionId}&price=${price}&test_mode=true`;
 
     return NextResponse.json({ 
       url: simulatedUrl, 

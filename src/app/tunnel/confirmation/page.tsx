@@ -38,7 +38,41 @@ function ConfirmationContent() {
   const activeEmail = customerEmail || searchParams.get('email') || user?.email || 'eleve.precommande@exemple.fr';
 
   useEffect(() => {
-    // 1. Fetch real customer email entered on Stripe Checkout
+    // 1. Check if this is a cart checkout purchase
+    const isCartCheckout = searchParams.get('cart_checkout') === 'true' || searchParams.get('id') === 'cart_items';
+
+    if (typeof window !== 'undefined' && isCartCheckout) {
+      const pendingCartRaw = localStorage.getItem('gd_pending_cart_checkout');
+      if (pendingCartRaw) {
+        try {
+          const pendingItems = JSON.parse(pendingCartRaw);
+          if (Array.isArray(pendingItems)) {
+            pendingItems.forEach((it: any) => {
+              addPurchaseToUser(activeEmail, {
+                id: it.id,
+                title: it.title,
+                slug: it.slug || (it.title?.toLowerCase().includes('woocommerce') ? 'formation-woocommerce' : 'creer-sa-vitrine-wordpress'),
+                type: it.type || 'formation',
+                typeLabel: it.typeLabel || 'Formation Vidéo HD',
+                thumbnail: it.image || it.thumbnail,
+                progress: 0,
+                completedLessons: 0,
+                totalLessons: 4,
+                duration: it.duration || '2h15',
+                instructor: 'Stéphanie ROCQ',
+                price: Number(it.price) || 29,
+                purchaseDate: new Date().toLocaleDateString('fr-FR')
+              });
+            });
+            localStorage.removeItem('gd_pending_cart_checkout');
+          }
+        } catch (e) {
+          console.error('Error unlocking cart items', e);
+        }
+      }
+    }
+
+    // 2. Fetch real customer email entered on Stripe Checkout if available
     async function fetchStripeCustomerEmail() {
       if (sessionId && !sessionId.startsWith('test_cs_')) {
         try {
@@ -46,22 +80,24 @@ function ConfirmationContent() {
           const data = await res.json();
           if (data?.customerEmail) {
             setCustomerEmail(data.customerEmail);
-            addPurchaseToUser(data.customerEmail, {
-              id: courseId || 'precommande-fiche-google',
-              title: 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
-              slug: 'precommande-fiche-google',
-              type: 'formation',
-              typeLabel: '🚀 PRÉCOMMANDE (Sortie 15 sept)',
-              progress: 0,
-              completedLessons: 0,
-              totalLessons: 4,
-              duration: '2h00',
-              instructor: 'Stéphanie ROCQ',
-              isPreorder: true,
-              releaseDate: '2026-09-15',
-              price: Number(price) || 29,
-              purchaseDate: new Date().toLocaleDateString('fr-FR')
-            });
+            if (!isCartCheckout) {
+              addPurchaseToUser(data.customerEmail, {
+                id: courseId || 'precommande-fiche-google',
+                title: 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
+                slug: 'precommande-fiche-google',
+                type: 'formation',
+                typeLabel: '🚀 PRÉCOMMANDE (Sortie 15 sept)',
+                progress: 0,
+                completedLessons: 0,
+                totalLessons: 4,
+                duration: '2h00',
+                instructor: 'Stéphanie ROCQ',
+                isPreorder: true,
+                releaseDate: '2026-09-15',
+                price: Number(price) || 29,
+                purchaseDate: new Date().toLocaleDateString('fr-FR')
+              });
+            }
           }
         } catch (e) {
           console.error('Could not fetch Stripe session', e);
@@ -70,8 +106,8 @@ function ConfirmationContent() {
     }
     fetchStripeCustomerEmail();
 
-    // 2. Add purchase to user account
-    if (activeEmail) {
+    // 3. Add single item purchase to user account if not cart checkout
+    if (activeEmail && !isCartCheckout) {
       addPurchaseToUser(activeEmail, {
         id: courseId || 'precommande-fiche-google',
         title: 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
@@ -90,8 +126,8 @@ function ConfirmationContent() {
       });
     }
 
-    // 3. Safely increment preorder counter once per checkout session
-    if (typeof window !== 'undefined') {
+    // 4. Safely increment preorder counter once per checkout session
+    if (typeof window !== 'undefined' && (courseId === 'precommande-fiche-google' || !isCartCheckout)) {
       try {
         const processed = JSON.parse(localStorage.getItem('gd_processed_sessions') || '[]');
         const currentKey = sessionId || `sess_${courseId}_${Date.now()}`;
