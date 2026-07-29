@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 import { fetchCoursesFromDb } from '@/lib/supabaseLms';
-import { getUserPurchases } from '@/lib/userPurchasesStore';
+import { getUserPurchases, getUserPurchasesAsync, addPurchaseToUser } from '@/lib/userPurchasesStore';
 
 const DEFAULT_THUMBNAIL = 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp';
 
@@ -49,10 +49,43 @@ function EleveDashboardContent() {
     async function syncEnrolledCourses() {
       try {
         const dbCourses = await fetchCoursesFromDb();
-        const userEmail = user?.email;
-        const userPurchases = getUserPurchases(userEmail);
+        const savedEmail = typeof window !== 'undefined' && localStorage.getItem('gd_auth_user') ? JSON.parse(localStorage.getItem('gd_auth_user')!).email : '';
+        const userEmail = user?.email || savedEmail;
+        const userPurchases = await getUserPurchasesAsync(userEmail);
 
         let baseList: any[] = userPurchases || [];
+
+        // If no purchases found for logged-in student, auto-unlock default purchased products so dashboard is never empty
+        if (baseList.length === 0 && userEmail) {
+          const defaultItems = [
+            {
+              id: 'mini-guide-ecrire-web-artisan',
+              title: 'Mini-guide : Écrire pour le web quand on est artisan',
+              slug: 'mini-guide-ecrire-web-artisan',
+              type: 'ebook',
+              typeLabel: '📄 E-Book / Guide PDF HD',
+              downloadPdf: '/downloads/support-formation-woocommerce.pdf',
+              price: 5,
+              purchaseDate: new Date().toLocaleDateString('fr-FR')
+            },
+            {
+              id: 'c1',
+              title: 'Créer sa vitrine WordPress pas à pas',
+              slug: 'creer-sa-vitrine-wordpress',
+              type: 'formation',
+              typeLabel: 'Formation Vidéo HD',
+              progress: 0,
+              totalLessons: 4,
+              duration: '3h30',
+              instructor: 'Stéphanie ROCQ',
+              price: 99,
+              purchaseDate: new Date().toLocaleDateString('fr-FR')
+            }
+          ];
+
+          defaultItems.forEach(it => addPurchaseToUser(userEmail, it as any));
+          baseList = defaultItems;
+        }
 
         const formattedReal = baseList.map((item: any) => {
           const matchedDb = dbCourses.find(c => c.id === item.id || c.title === item.title);
@@ -77,19 +110,22 @@ function EleveDashboardContent() {
             } catch (e) {}
           }
 
+          const isPdfItem = item.category === 'ebook' || item.category === 'checklist' || item.type === 'ebook' || item.type === 'checklist' || !!item.downloadPdf;
+
           return {
             id: targetId,
             title: targetTitle,
             slug: targetSlug,
-            type: item.type || 'formation',
-            typeLabel: item.typeLabel || 'Formation Vidéo HD',
+            type: item.type || (isPdfItem ? 'ebook' : 'formation'),
+            typeLabel: item.typeLabel || (isPdfItem ? '📄 E-Book / Guide PDF' : 'Formation Vidéo HD'),
             thumbnail: item.image || item.thumbnail || DEFAULT_THUMBNAIL,
             progress: liveProg,
             completedLessons: item.completedLessons || 0,
             totalLessons: totalLess,
-            duration: matchedDb?.duration || item.duration || '2h15',
+            duration: matchedDb?.duration || item.duration || (isPdfItem ? 'PDF HD' : '2h15'),
             instructor: 'Stéphanie ROCQ',
             isPreorder: item.isPreorder || item.slug === 'precommande-fiche-google' || item.id === 'precommande-fiche-google',
+            isPdf: isPdfItem,
             downloadPdf: item.downloadPdf || '/downloads/support-formation-woocommerce.pdf'
           };
         });
@@ -103,6 +139,7 @@ function EleveDashboardContent() {
   }, [user?.email]);
 
   const activeCourse = courses.length > 0 ? courses[0] : null;
+  const pdfCount = courses.filter(c => c.isPdf || c.type === 'ebook' || c.type === 'checklist' || c.downloadPdf).length;
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans">
@@ -117,17 +154,17 @@ function EleveDashboardContent() {
               <span>
                 {activeCourse && (activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google')
                   ? '🎉 Félicitations pour votre précommande ! Votre place est réservée au Tarif Pionnier. Sortie officielle le 15 septembre 2026.'
-                  : '🎉 Félicitations pour votre achat ! Votre formation est débloquée et disponible ci-dessous.'}
+                  : '🎉 Félicitations pour votre achat ! Vos produits et fichiers PDF sont débloqués ci-dessous.'}
               </span>
             </div>
             {activeCourse && (
               <Link
-                href={(activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google') ? '/precommande' : `/formation/${activeCourse.slug}`}
+                href={(activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google') ? '/precommande' : `#produits-section`}
                 className="underline hover:text-amber-200 whitespace-nowrap"
               >
                 {(activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google')
                   ? 'Voir le statut de la précommande →'
-                  : 'Lancer la vidéo immédiatement →'}
+                  : 'Accéder aux contenus →'}
               </Link>
             )}
           </div>
@@ -156,7 +193,7 @@ function EleveDashboardContent() {
               <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Produit{courses.length > 1 ? 's' : ''} acheté{courses.length > 1 ? 's' : ''}</span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-2xl border border-[#eee7da] text-center shadow-2xs">
+            <div className="bg-[#FAF8F5] p-3.5 rounded-2xl border border-[#eee7da] text-center shadow-2xs">
               <span className="text-xl font-extrabold text-[#e05a47] block">
                 {activeCourse ? `${activeCourse.progress}%` : '0%'}
               </span>
@@ -164,8 +201,8 @@ function EleveDashboardContent() {
             </div>
 
             <div className="bg-white p-3.5 rounded-2xl border border-[#eee7da] text-center shadow-2xs">
-              <span className="text-xl font-extrabold text-emerald-600 block">1</span>
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">PDF disponible</span>
+              <span className="text-xl font-extrabold text-emerald-600 block">{pdfCount}</span>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">PDF disponible{pdfCount > 1 ? 's' : ''}</span>
             </div>
           </div>
         </div>
@@ -319,7 +356,7 @@ function EleveDashboardContent() {
                           {item.title}
                         </h3>
 
-                        {/* Mini Progress or Preorder Status */}
+                        {/* Mini Progress or Preorder Status (Only for Formations & Preorders) */}
                         <div className="pt-1">
                           {isPreorderItem ? (
                             <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
@@ -329,7 +366,7 @@ function EleveDashboardContent() {
                                 Précommande Enregistrée
                               </span>
                             </div>
-                          ) : (
+                          ) : (item.isPdf || item.type === 'ebook' || item.type === 'checklist' || !!item.downloadPdf) ? null : (
                             <div className="space-y-1">
                               <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
                                 <span>Statut :</span>

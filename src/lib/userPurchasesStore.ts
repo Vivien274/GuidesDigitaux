@@ -25,31 +25,92 @@ export function getUserPurchasesKey(email?: string | null): string {
   return `gd_user_purchases_${normalized}`;
 }
 
+import { saveUserPurchaseToDb, fetchUserPurchasesFromDb, saveOrderToDb } from './supabaseLms';
+
 export function getUserPurchases(email?: string | null): EnrolledCourseItem[] {
   if (typeof window === 'undefined') return [];
-  const key = getUserPurchasesKey(email);
+  const normalized = (email || '').toLowerCase().trim();
+  const key = getUserPurchasesKey(normalized);
+  let result: EnrolledCourseItem[] = [];
+
   try {
     const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) result = parsed;
     }
-  } catch (e) {
-    console.error('Failed to parse user purchases for key:', key, e);
+  } catch (e) {}
+
+  // Auto-recover unclaimed purchases if user purchases list is empty
+  if (result.length === 0 && normalized) {
+    try {
+      const unclaimed = localStorage.getItem('gd_recent_unclaimed_purchases') || localStorage.getItem('gd_user_purchases_anonymous');
+      if (unclaimed) {
+        const parsed = JSON.parse(unclaimed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          result = parsed;
+          localStorage.setItem(key, JSON.stringify(result));
+          localStorage.removeItem('gd_recent_unclaimed_purchases');
+        }
+      }
+    } catch (e) {}
   }
-  return [];
+
+  return result;
+}
+
+export async function getUserPurchasesAsync(email?: string | null): Promise<EnrolledCourseItem[]> {
+  const localList = getUserPurchases(email);
+  if (!email) return localList;
+
+  const dbList = await fetchUserPurchasesFromDb(email);
+
+  // Merge unique items from local and DB
+  const mergedMap = new Map<string, EnrolledCourseItem>();
+  localList.forEach(item => {
+    const uniqueKey = item.id || item.title;
+    mergedMap.set(uniqueKey, item);
+  });
+
+  dbList.forEach((item: any) => {
+    const uniqueKey = item.id || item.title;
+    if (!mergedMap.has(uniqueKey)) {
+      mergedMap.set(uniqueKey, item);
+    }
+  });
+
+  const finalMerged = Array.from(mergedMap.values());
+
+  if (typeof window !== 'undefined' && email) {
+    try {
+      localStorage.setItem(getUserPurchasesKey(email), JSON.stringify(finalMerged));
+    } catch (e) {}
+  }
+
+  return finalMerged;
 }
 
 export function addPurchaseToUser(email: string | null | undefined, item: EnrolledCourseItem): EnrolledCourseItem[] {
-  const current = getUserPurchases(email);
-  if (!current.some(c => c.id === item.id || c.title === item.title)) {
-    const updated = [item, ...current];
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(getUserPurchasesKey(email), JSON.stringify(updated));
+  const normalized = (email || '').toLowerCase().trim();
+  const current = getUserPurchases(normalized);
+  const updated = current.some(c => c.id === item.id || c.title === item.title)
+    ? current
+    : [item, ...current];
+
+  if (typeof window !== 'undefined') {
+    if (normalized) {
+      localStorage.setItem(getUserPurchasesKey(normalized), JSON.stringify(updated));
+    } else {
+      localStorage.setItem('gd_recent_unclaimed_purchases', JSON.stringify(updated));
     }
-    return updated;
   }
-  return current;
+
+  if (normalized) {
+    saveUserPurchaseToDb(normalized, item);
+    saveOrderToDb(normalized, item.id || item.slug || 'product', 'paid');
+  }
+
+  return updated;
 }
 
 export function purgeAllUserPurchases(): void {

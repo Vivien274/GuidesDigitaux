@@ -215,7 +215,6 @@ export async function upsertUserProfileToDb(email: string, role: string = 'eleve
     }, { onConflict: 'email' });
 
     if (error) {
-      // If onConflict email fails due to schema primary key on id, try upserting with email
       await supabase.from('profiles').upsert({
         id: `usr_${Date.now()}`,
         email: normalizedEmail,
@@ -227,4 +226,99 @@ export async function upsertUserProfileToDb(email: string, role: string = 'eleve
   } catch (e) {
     console.warn('Supabase profile upsert fallback executed', e);
   }
+}
+
+/**
+ * 6. Save User Purchase to Supabase DB enrollments table
+ */
+export async function saveUserPurchaseToDb(email: string, item: any) {
+  if (!email || !item) return;
+  const normalizedEmail = email.toLowerCase().trim();
+  try {
+    await upsertUserProfileToDb(normalizedEmail, 'eleve');
+
+    const payload = {
+      user_email: normalizedEmail,
+      email: normalizedEmail,
+      course_id: item.id || `item-${Date.now()}`,
+      item_id: item.id || `item-${Date.now()}`,
+      item_title: item.title || 'Produit Guides Digitaux',
+      item_data: item,
+      purchased_at: new Date().toISOString()
+    };
+
+    await supabase.from('enrollments').upsert(payload);
+  } catch (e) {
+    console.warn('Supabase DB purchase save fallback', e);
+  }
+}
+
+/**
+ * 7. Fetch User Purchases directly from Supabase DB enrollments table
+ */
+export async function fetchUserPurchasesFromDb(email: string): Promise<any[]> {
+  if (!email) return [];
+  const normalizedEmail = email.toLowerCase().trim();
+  try {
+    const { data, error } = await supabase
+      .from('enrollments')
+      .select('*')
+      .or(`user_email.eq.${normalizedEmail},email.eq.${normalizedEmail}`);
+
+    if (!error && data && data.length > 0) {
+      return data.map((row: any) => {
+        if (row.item_data && typeof row.item_data === 'object' && Object.keys(row.item_data).length > 0) {
+          return row.item_data;
+        }
+        return {
+          id: row.course_id || row.item_id || row.id,
+          title: row.item_title || 'Formation / Produit débloqué',
+          slug: row.item_slug || row.course_id,
+          type: row.type || 'formation',
+          price: row.price || 29,
+          purchaseDate: row.purchased_at ? new Date(row.purchased_at).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')
+        };
+      });
+    }
+  } catch (e) {
+    console.warn('Supabase fetchUserPurchasesFromDb fallback', e);
+  }
+  return [];
+}
+
+/**
+ * 8. Save Customer Order to Supabase DB orders table
+ */
+export async function saveOrderToDb(customerEmail: string, productId: string, status: string = 'paid') {
+  if (!customerEmail) return;
+  const normalizedEmail = customerEmail.toLowerCase().trim();
+  try {
+    await supabase.from('orders').insert({
+      customer_email: normalizedEmail,
+      product_id: productId,
+      status: status,
+      created_at: new Date().toISOString()
+    });
+  } catch (e) {
+    console.warn('Supabase DB order insert fallback', e);
+  }
+}
+
+/**
+ * 9. Fetch Customer Orders from Supabase DB orders table
+ */
+export async function fetchUserOrdersFromDb(customerEmail: string): Promise<any[]> {
+  if (!customerEmail) return [];
+  const normalizedEmail = customerEmail.toLowerCase().trim();
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('customer_email', normalizedEmail);
+
+    if (!error && data) return data;
+  } catch (e) {
+    console.warn('Supabase DB fetchUserOrdersFromDb fallback', e);
+  }
+  return [];
 }

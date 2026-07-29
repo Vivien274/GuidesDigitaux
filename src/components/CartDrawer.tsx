@@ -9,11 +9,10 @@ import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Lock, Sparkles } from 
 
 export default function CartDrawer() {
   const { cart, removeFromCart, updateQuantity, totalPrice, isCartOpen, setIsCartOpen, totalItems, clearCart } = useCart();
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
   if (!isCartOpen) return null;
-
-  const { user } = useAuth();
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;

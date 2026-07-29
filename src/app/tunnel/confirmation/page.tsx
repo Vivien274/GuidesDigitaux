@@ -16,16 +16,24 @@ import {
   Mail,
   Key,
   Lock,
-  Gift 
+  Gift,
+  Download,
+  FileText
 } from 'lucide-react';
 
 import { incrementPreorderEnrollment } from '@/lib/preordersStore';
-import { addPurchaseToUser } from '@/lib/userPurchasesStore';
+import { addPurchaseToUser, getUserPurchases } from '@/lib/userPurchasesStore';
 
 function ConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { login, user } = useAuth();
+
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const courseId = searchParams.get('id') || 'precommande-fiche-google';
   const price = searchParams.get('price') || '29';
@@ -214,8 +222,48 @@ function ConfirmationContent() {
 
           <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl text-xs text-emerald-950 flex items-center justify-center gap-2 max-w-lg mx-auto">
             <Mail className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Un e-mail de confirmation avec votre reçu Stripe et vos identifiants d'accès a été envoyé à <strong>{activeEmail}</strong></span>
+            <span>Un e-mail contenant votre reçu, vos accès et vos liens de téléchargement PDF a été envoyé à <strong>{activeEmail}</strong></span>
           </div>
+
+          {/* DIRECT PDF DOWNLOAD BOX FOR PDF PURCHASES */}
+          {isMounted && (() => {
+            const purchases = getUserPurchases(activeEmail);
+            const pdfPurchases = purchases.filter((p: any) => p.type === 'ebook' || p.type === 'checklist' || p.downloadPdf || p.title?.toLowerCase().includes('guide') || p.title?.toLowerCase().includes('checklist'));
+            if (pdfPurchases.length === 0) return null;
+
+            return (
+              <div className="p-6 bg-emerald-50/90 rounded-2xl border-2 border-emerald-300 text-left space-y-4 shadow-sm">
+                <div className="flex items-center gap-2 text-emerald-950 font-extrabold text-sm">
+                  <Download className="w-5 h-5 text-emerald-700 shrink-0" />
+                  <h3>Vos Fichiers PDF réservés (Téléchargement direct) :</h3>
+                </div>
+                <div className="space-y-3">
+                  {pdfPurchases.map((pdfItem: any) => (
+                    <div key={pdfItem.id} className="p-4 bg-white rounded-xl border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shrink-0">
+                          <Download className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-extrabold text-[#332420]">{pdfItem.title}</h4>
+                          <span className="text-[10px] text-slate-500 font-medium">Format PDF HD • Téléchargement immédiat</span>
+                        </div>
+                      </div>
+                      <a
+                        href={pdfItem.downloadPdf || '/downloads/support-formation-woocommerce.pdf'}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full sm:w-auto px-5 py-2.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                      >
+                        <Download className="w-4 h-4" />
+                        Télécharger le PDF HD
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* PASSWORD CREATION BOX FOR NEW STUDENT ACCOUNT */}
           {!isAccountActivated ? (
