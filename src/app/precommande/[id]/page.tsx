@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
-import { getStoredPreorders, PreorderCampaign, getPreorderStatusDetails } from '@/lib/preordersStore';
+import { getStoredPreorders, PreorderCampaign, getPreorderStatusDetails, formatFrenchDate } from '@/lib/preordersStore';
 import { 
   Rocket, 
   Target, 
@@ -137,7 +137,7 @@ export default function PreorderProductPage() {
 
                 <span className="px-4 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" />
-                  Sortie Officielle le {campaign.releaseDate}
+                  Sortie Officielle le {formatFrenchDate(campaign.releaseDate)}
                 </span>
               </div>
 
@@ -178,10 +178,10 @@ export default function PreorderProductPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] font-semibold text-slate-600 pt-1">
                   <div>
-                    📅 Date limite de précommande : <strong className="text-[#332420]">{campaign.endDate}</strong>
+                    📅 Date limite de précommande : <strong className="text-[#332420]">{formatFrenchDate(campaign.endDate)}</strong>
                   </div>
                   <div>
-                    🚀 Date de sortie officielle : <strong className="text-[#18757d]">{campaign.releaseDate}</strong>
+                    🚀 Date de sortie officielle : <strong className="text-[#18757d]">{formatFrenchDate(campaign.releaseDate)}</strong>
                   </div>
                 </div>
               </div>
@@ -230,7 +230,7 @@ export default function PreorderProductPage() {
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   {statusDetails.code === 'RELEASED_FULL_PRICE'
                     ? 'Formation immédiatement disponible en ligne'
-                    : `Économise ${(campaign.originalPrice! - campaign.price).toFixed(2)} € avant le ${campaign.releaseDate} !`}
+                    : `Économise ${(campaign.originalPrice! - campaign.price).toFixed(2)} € avant le ${formatFrenchDate(campaign.releaseDate)} !`}
                 </p>
               </div>
 

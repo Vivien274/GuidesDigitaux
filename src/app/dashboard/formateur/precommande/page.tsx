@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { getStoredCourses, Course } from '@/lib/coursesStore';
-import { getStoredPreorders, savePreorder, PreorderCampaign } from '@/lib/preordersStore';
+import { getStoredPreorders, savePreorder, PreorderCampaign, formatFrenchDate, getPreorderStatusDetails } from '@/lib/preordersStore';
 import { 
   ArrowLeft, 
   Plus, 
@@ -433,7 +433,7 @@ export default function FormateurPreorderPage() {
                             </span>
                             <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
                               <Calendar className="w-3.5 h-3.5" />
-                              Sortie le {po.releaseDate} • Fin : {po.endDate}
+                              Sortie le {formatFrenchDate(po.releaseDate)} • Date limite : {formatFrenchDate(po.endDate)}
                             </span>
                           </div>
 

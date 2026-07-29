@@ -16,6 +16,25 @@ export interface PreorderCampaign {
   status: 'En cours' | 'Objectif atteint' | 'Terminée' | 'Annulé & Remboursé';
 }
 
+export function formatFrenchDate(dateStr: string): string {
+  if (!dateStr) return '';
+  if (dateStr.includes('-')) {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      const months = [
+        'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+      ];
+      const mIdx = parseInt(month, 10) - 1;
+      if (mIdx >= 0 && mIdx < 12) {
+        return `${parseInt(day, 10)} ${months[mIdx]} ${year}`;
+      }
+    }
+  }
+  return dateStr;
+}
+
 export function getPreorderStatusDetails(campaign: PreorderCampaign) {
   const now = new Date();
   
@@ -25,6 +44,9 @@ export function getPreorderStatusDetails(campaign: PreorderCampaign) {
   
   const endDateObj = new Date(endYear, (endMonth || 8) - 1, endDay || 20, 23, 59, 59);
   const releaseDateObj = new Date(relYear, (relMonth || 9) - 1, relDay || 15, 23, 59, 59);
+
+  const formattedEndDate = formatFrenchDate(campaign.endDate || '2026-08-20');
+  const formattedReleaseDate = formatFrenchDate(campaign.releaseDate || '2026-09-15');
 
   const isGoalReached = campaign.currentEnrollments >= campaign.targetEnrollments;
   const isPastEndDate = now > endDateObj;
@@ -37,7 +59,7 @@ export function getPreorderStatusDetails(campaign: PreorderCampaign) {
       badgeBg: 'bg-red-100 text-red-800 border-red-300',
       canOrder: false,
       effectivePrice: campaign.price,
-      bannerMsg: `❌ Objectif de ${campaign.targetEnrollments} précommandes non atteint à la date limite du ${campaign.endDate}. La campagne est annulée et l'intégralité des inscrits a été 100% remboursée.`,
+      bannerMsg: `❌ Objectif de ${campaign.targetEnrollments} précommandes non atteint à la date limite du ${formattedEndDate}. La campagne est annulée et l'intégralité des inscrits a été 100% remboursée.`,
       priceLabel: `Annulé`
     };
   }
@@ -49,7 +71,7 @@ export function getPreorderStatusDetails(campaign: PreorderCampaign) {
       badgeBg: 'bg-[#18757d] text-white border-[#18757d]',
       canOrder: true,
       effectivePrice: campaign.originalPrice || campaign.price,
-      bannerMsg: `🚀 La formation est officiellement disponible depuis le ${campaign.releaseDate} ! Le tarif classique est désormais en vigueur.`,
+      bannerMsg: `🚀 La formation est officiellement disponible depuis le ${formattedReleaseDate} ! Le tarif classique est désormais en vigueur.`,
       priceLabel: `${(campaign.originalPrice || campaign.price).toFixed(2).replace('.', ',')} € (Tarif Classique)`
     };
   }
@@ -57,11 +79,11 @@ export function getPreorderStatusDetails(campaign: PreorderCampaign) {
   if (isGoalReached) {
     return {
       code: 'GOAL_REACHED_CONFIRMED' as const,
-      label: `Lancement Confirmé au ${campaign.releaseDate} !`,
+      label: `Lancement Confirmé au ${formattedReleaseDate} !`,
       badgeBg: 'bg-emerald-100 text-emerald-800 border-emerald-300',
       canOrder: true,
       effectivePrice: campaign.price,
-      bannerMsg: `🎉 Objectif de ${campaign.targetEnrollments} précommandes atteint ! Le lancement est officiellement validé pour le ${campaign.releaseDate}. Le tarif réduit (${campaign.price.toFixed(2).replace('.', ',')} €) reste valable jusqu'au ${campaign.releaseDate} !`,
+      bannerMsg: `🎉 Objectif de ${campaign.targetEnrollments} précommandes atteint ! Le lancement est officiellement validé pour le ${formattedReleaseDate}. Le tarif réduit (${campaign.price.toFixed(2).replace('.', ',')} €) reste valable jusqu'au ${formattedReleaseDate} !`,
       priceLabel: `${campaign.price.toFixed(2).replace('.', ',')} € (Tarif Réduit Précommande)`
     };
   }
@@ -72,7 +94,7 @@ export function getPreorderStatusDetails(campaign: PreorderCampaign) {
     badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
     canOrder: true,
     effectivePrice: campaign.price,
-    bannerMsg: `Campagne en cours jusqu'au ${campaign.endDate}. Lancement validé le ${campaign.releaseDate} si l'objectif de ${campaign.targetEnrollments} précommandes est atteint au ${campaign.endDate} !`,
+    bannerMsg: `Campagne en cours jusqu'au ${formattedEndDate}. Lancement validé le ${formattedReleaseDate} si l'objectif de ${campaign.targetEnrollments} précommandes est atteint au ${formattedEndDate} !`,
     priceLabel: `${campaign.price.toFixed(2).replace('.', ',')} € (Tarif Réduit Précommande)`
   };
 }
