@@ -243,7 +243,7 @@ export default function NewCourseWizardPage() {
             Retour au Studio Formateur
           </Link>
           <span className="text-xs font-extrabold text-[#332420]">
-            Studio de Création de Formation • Pleine Page (Sync Supabase DB)
+            Studio de Création de Formation
           </span>
         </div>
       </div>
@@ -936,7 +936,7 @@ export default function NewCourseWizardPage() {
                     className="px-8 py-4 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center gap-2"
                   >
                     <Save className="w-5 h-5" />
-                    {isSaving ? 'SYNCHRONISATION EN BASE SUPABASE...' : 'ENREGISTRER & PUBLIER (SUPABASE DB)'}
+                    {isSaving ? 'ENREGISTREMENT EN COURS...' : 'ENREGISTRER & PUBLIER'}
                   </button>
                 </div>
               </div>

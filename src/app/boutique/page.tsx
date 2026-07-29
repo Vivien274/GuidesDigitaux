@@ -293,7 +293,7 @@ export default function BoutiquePage() {
                         )}
                       </div>
 
-                      <Link href={`/precommande/${po.id}`} className="block">
+                      <Link href={`/tunnel/${po.id}`} className="block">
                         <h3 className="text-base font-extrabold text-[#332420] line-clamp-2 leading-snug hover:text-[#18757d] transition-colors">
                           {po.courseTitle}
                         </h3>
@@ -315,11 +315,11 @@ export default function BoutiquePage() {
                     </div>
 
                     <Link
-                      href={`/precommande/${po.id}`}
+                      href={`/tunnel/${po.id}`}
                       className="w-full py-3.5 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
                     >
                       <Rocket className="w-4 h-4 text-[#332420]" />
-                      VOIR LA PRÉCOMMANDE (-40%)
+                      PRÉCOMMANDER À {po.price} €
                     </Link>
                   </div>
                 </div>

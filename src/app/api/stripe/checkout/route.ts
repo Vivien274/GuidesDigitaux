@@ -1,0 +1,71 @@
+import { NextResponse } from 'next/server';
+import Stripe from 'stripe';
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { 
+      courseId = 'precommande-fiche-google',
+      courseTitle = 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
+      price = 29,
+      isPreorder = true,
+      releaseDate = '15 septembre 2026',
+      customerEmail
+    } = body;
+
+    const secretKey = (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('...'))
+      ? process.env.STRIPE_SECRET_KEY 
+      : 'sk_test_51TAqk4D882WcsUbmbsySyL6DrZMMa6PPMsFdk2DJ9xa7iakf5XKBp9baIF69AsOxZE1ZWpfok6cZQxPbQQOYW6y500qA4E6NRT';
+
+    const hasRealStripeKey = secretKey.startsWith('sk_test_') && secretKey.length > 20;
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const priceCents = Math.round(Number(price) * 100);
+
+    // 1. If real Stripe test key is configured in env, create real Stripe Checkout Session
+    if (hasRealStripeKey) {
+      const stripe = new Stripe(secretKey);
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'eur',
+              product_data: {
+                name: courseTitle,
+                description: isPreorder ? `🚀 Précommande exclusive - Sortie le ${releaseDate}` : 'Formation Vidéo Guides Digitaux',
+              },
+              unit_amount: priceCents,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id={CHECKOUT_SESSION_ID}&price=${price}`,
+        cancel_url: `${siteUrl}/tunnel/${courseId}?canceled=true`,
+        metadata: {
+          courseId,
+          isPreorder: isPreorder ? 'true' : 'false',
+          releaseDate
+        },
+      });
+
+      return NextResponse.json({ url: session.url, sessionId: session.id, mode: 'live_stripe' });
+    }
+
+    // 2. Fallback for test environment without key: simulated instant Stripe checkout test flow
+    const testSessionId = `test_cs_${Date.now()}`;
+    const simulatedUrl = `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id=${testSessionId}&price=${price}&test_mode=true`;
+
+    return NextResponse.json({ 
+      url: simulatedUrl, 
+      sessionId: testSessionId, 
+      mode: 'simulated_test',
+      message: 'Mode Test Stripe : Redirection automatique vers la confirmation' 
+    });
+
+  } catch (err: any) {
+    console.error('Erreur API Stripe Checkout:', err);
+    return NextResponse.json({ error: err.message || 'Erreur lors de la création de la session Stripe' }, { status: 500 });
+  }
+}

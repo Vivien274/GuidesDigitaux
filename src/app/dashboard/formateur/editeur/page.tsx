@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import WysiwygEditor from '@/components/WysiwygEditor';
+import { useAuth } from '@/context/AuthContext';
 import { fetchCoursesFromDb, saveCourseToDb } from '@/lib/supabaseLms';
 import { Course, Module, Lesson, LessonResourceFile, LessonExternalLink, QuizQuestion, ModuleQuiz } from '@/lib/coursesStore';
 import { 
@@ -44,8 +45,24 @@ import {
 
 function CourseEditorContent() {
   const router = useRouter();
+  const { user, role } = useAuth();
   const searchParams = useSearchParams();
   const courseId = searchParams.get('id');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('gd_auth_user');
+      const parsedRole = savedUser ? JSON.parse(savedUser).role : role;
+      if (!savedUser && !user) {
+        router.push('/mon-compte');
+        return;
+      }
+      if (parsedRole !== 'formateur' && parsedRole !== 'superadmin' && role !== 'formateur' && role !== 'superadmin') {
+        router.push('/dashboard/eleve');
+        return;
+      }
+    }
+  }, [user, role, router]);
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [course, setCourse] = useState<Course | null>(null);
@@ -62,8 +79,8 @@ function CourseEditorContent() {
   const [duration, setDuration] = useState('3h30');
   const [level, setLevel] = useState('Débutant');
   const [prerequisites, setPrerequisites] = useState('');
-  const [price, setPrice] = useState('99');
-  const [originalPrice, setOriginalPrice] = useState('149');
+  const [normalPrice, setNormalPrice] = useState('149');
+  const [discountedPrice, setDiscountedPrice] = useState('');
   const [category, setCategory] = useState('Formation Vidéo');
   const [description, setDescription] = useState('');
 
@@ -73,7 +90,38 @@ function CourseEditorContent() {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          setImageUrl(reader.result);
+          const rawResult = reader.result;
+          const imageElement = document.createElement('img');
+          imageElement.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              const maxDim = 800;
+              let w = imageElement.width;
+              let h = imageElement.height;
+              if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                  h = Math.round((h * maxDim) / w);
+                  w = maxDim;
+                } else {
+                  w = Math.round((w * maxDim) / h);
+                  h = maxDim;
+                }
+              }
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(imageElement, 0, 0, w, h);
+                const compressed = canvas.toDataURL('image/jpeg', 0.82);
+                setImageUrl(compressed);
+              } else {
+                setImageUrl(rawResult);
+              }
+            } catch (err) {
+              setImageUrl(rawResult);
+            }
+          };
+          imageElement.src = rawResult;
         }
       };
       reader.readAsDataURL(file);
@@ -112,8 +160,18 @@ function CourseEditorContent() {
         setDuration(target.duration || '3h30');
         setLevel(target.level || 'Débutant');
         setPrerequisites(target.prerequisites || 'Aucun prérequis technique nécessaire.');
-        setPrice(target.price ? target.price.toString() : '99');
-        setOriginalPrice(target.originalPrice ? target.originalPrice.toString() : '149');
+        const eff = target.price || 99;
+        const orig = target.originalPrice || target.normalPrice || 0;
+        if (orig > 0 && orig > eff) {
+          setNormalPrice(orig.toString());
+          setDiscountedPrice(eff.toString());
+        } else if (target.discountedPrice && target.discountedPrice > 0) {
+          setNormalPrice(eff.toString());
+          setDiscountedPrice(target.discountedPrice.toString());
+        } else {
+          setNormalPrice(eff.toString());
+          setDiscountedPrice('');
+        }
         if (target.image) setImageUrl(target.image);
         if (target.status) setStatus(target.status);
         if (target.scheduledPublishDate) setScheduledPublishDate(target.scheduledPublishDate);
@@ -377,6 +435,18 @@ function CourseEditorContent() {
   // PERSIST EDITED FORMATION TO SUPABASE DB & LOCALSTORAGE & REDIRECT
   const handleSaveCourse = async () => {
     setIsSaving(true);
+
+    const parsedNormal = parseFloat(normalPrice) || 0;
+    const parsedDiscounted = parseFloat(discountedPrice) || 0;
+
+    let finalPrice = parsedNormal;
+    let finalOriginalPrice: number | undefined = undefined;
+
+    if (parsedDiscounted > 0) {
+      finalPrice = parsedDiscounted; // L'élève paie le prix remisé
+      finalOriginalPrice = parsedNormal; // Le prix normal est barré
+    }
+
     const updatedCourseObj: Course = {
       id: courseId || course?.id || `course-${Date.now()}`,
       title: title || 'Formation sans titre',
@@ -384,8 +454,10 @@ function CourseEditorContent() {
       duration,
       level,
       prerequisites,
-      price: parseFloat(price) || 99,
-      originalPrice: parseFloat(originalPrice) || 0,
+      price: finalPrice,
+      originalPrice: finalOriginalPrice,
+      normalPrice: parsedNormal,
+      discountedPrice: parsedDiscounted > 0 ? parsedDiscounted : undefined,
       image: imageUrl,
       category,
       status,
@@ -419,7 +491,7 @@ function CourseEditorContent() {
             Retour au Studio Formateur
           </Link>
           <span className="text-xs font-extrabold text-[#332420]">
-            Studio de Formation • Édition Pleine Page avec Collapsible & Déplacement (Sync Supabase DB)
+            Studio de Formation • Édition de la formation
           </span>
         </div>
       </div>
@@ -669,26 +741,31 @@ function CourseEditorContent() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-extrabold text-[#332420]">Tarif de vente final (€ TTC) :</label>
+                        <label className="text-xs font-extrabold text-[#332420]">Prix normal (€ TTC) :</label>
                         <input
                           type="number"
-                          value={price}
-                          onChange={(e) => setPrice(e.target.value)}
-                          className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3.5 text-sm font-bold text-[#18757d]"
+                          placeholder="Ex: 149"
+                          value={normalPrice}
+                          onChange={(e) => setNormalPrice(e.target.value)}
+                          className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3.5 text-sm font-bold text-[#332420] focus:outline-none focus:border-[#18757d]"
                         />
-                        <span className="text-[11px] text-slate-500">Prix réel payé par l'élève lors de la commande.</span>
+                        <span className="text-[11px] text-slate-500">Prix de base / standard de la formation.</span>
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-extrabold text-[#332420]">Tarif d'origine remisé / barré (€ TTC) :</label>
+                        <label className="text-xs font-extrabold text-[#332420]">Prix remisé (€ TTC - Optionnel) :</label>
                         <input
                           type="number"
-                          placeholder="Ex: 149 (Affiche 149€ barré ➔ 99€)"
-                          value={originalPrice}
-                          onChange={(e) => setOriginalPrice(e.target.value)}
-                          className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3.5 text-sm font-bold text-slate-400 line-through"
+                          placeholder="Ex: 100"
+                          value={discountedPrice}
+                          onChange={(e) => setDiscountedPrice(e.target.value)}
+                          className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3.5 text-sm font-bold text-[#18757d] focus:outline-none focus:border-[#18757d]"
                         />
-                        <span className="text-[11px] text-slate-500">Affiché sous forme de prix de base barré pour valoriser l'offre.</span>
+                        <span className="text-[11px] text-slate-500">
+                          {discountedPrice && parseFloat(discountedPrice) > 0
+                            ? `🎉 L'élève paiera ${discountedPrice} € et le prix normal de ${normalPrice || 0} € sera affiché barré.`
+                            : 'Laissez ce champ vide si vous ne souhaitez appliquer aucune promotion.'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1581,7 +1658,7 @@ function CourseEditorContent() {
                     className="px-8 py-4 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center gap-2"
                   >
                     <Save className="w-5 h-5" />
-                    {isSaving ? 'SYNCHRONISATION EN BASE SUPABASE...' : 'ENREGISTRER LES MODIFICATIONS (SUPABASE DB)'}
+                    {isSaving ? 'ENREGISTREMENT EN COURS...' : 'ENREGISTRER LES MODIFICATIONS'}
                   </button>
                 </div>
               </div>

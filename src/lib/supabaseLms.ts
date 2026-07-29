@@ -61,13 +61,13 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
         category: 'Formation Vidéo',
         status: c.status || 'Publié',
         scheduledPublishDate: c.scheduled_publish_date || localMatch?.scheduledPublishDate,
-        congratulationsMsg: c.congratulations_msg,
-        bonusDocTitle: c.bonus_doc_title,
-        bonusDocUrl: c.bonus_doc_url,
-        communityLink: c.community_link !== undefined && c.community_link !== null ? c.community_link : (localMatch?.communityLink ?? ''),
-        liveStreamUrl: c.live_stream_url !== undefined && c.live_stream_url !== null ? c.live_stream_url : (localMatch?.liveStreamUrl ?? ''),
-        liveStreamDate: c.live_stream_date !== undefined && c.live_stream_date !== null ? c.live_stream_date : (localMatch?.liveStreamDate ?? ''),
-        liveStreamTitle: c.live_stream_title !== undefined && c.live_stream_title !== null ? c.live_stream_title : (localMatch?.liveStreamTitle ?? ''),
+        congratulationsMsg: c.congratulations_msg || localMatch?.congratulationsMsg,
+        bonusDocTitle: c.bonus_doc_title || localMatch?.bonusDocTitle,
+        bonusDocUrl: c.bonus_doc_url || localMatch?.bonusDocUrl,
+        communityLink: (localMatch && localMatch.communityLink !== undefined) ? localMatch.communityLink : (c.community_link ?? ''),
+        liveStreamUrl: (localMatch && localMatch.liveStreamUrl !== undefined) ? localMatch.liveStreamUrl : (c.live_stream_url ?? ''),
+        liveStreamDate: (localMatch && localMatch.liveStreamDate !== undefined) ? localMatch.liveStreamDate : (c.live_stream_date ?? ''),
+        liveStreamTitle: (localMatch && localMatch.liveStreamTitle !== undefined) ? localMatch.liveStreamTitle : (c.live_stream_title ?? ''),
         modules: (c.modules || []).map((m: any) => ({
           id: m.id,
           title: m.title,
@@ -116,6 +116,21 @@ export async function saveCourseToDb(course: Course): Promise<Course[]> {
       live_stream_date: course.liveStreamDate,
       live_stream_title: course.liveStreamTitle
     });
+
+    if (courseErr) {
+      console.warn('Supabase course upsert failed (schema column missing), basic fallback save:', courseErr);
+      await supabase.from('courses').upsert({
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        price: course.price,
+        image: course.image,
+        status: course.status,
+        duration: course.duration,
+        level: course.level,
+        prerequisites: course.prerequisites
+      });
+    }
 
     if (!courseErr && course.modules) {
       for (let mIdx = 0; mIdx < course.modules.length; mIdx++) {
@@ -180,5 +195,36 @@ export async function addStudentEnrollment(userId: string, courseId: string) {
     });
   } catch (e) {
     console.warn('Enrollment insert fallback executed', e);
+  }
+}
+
+/**
+ * 5. Upsert User Profile to Supabase DB profiles table
+ */
+export async function upsertUserProfileToDb(email: string, role: string = 'eleve', fullName?: string) {
+  if (!email) return;
+  try {
+    const normalizedEmail = email.toLowerCase().trim();
+    const name = fullName || normalizedEmail.split('@')[0];
+
+    const { error } = await supabase.from('profiles').upsert({
+      email: normalizedEmail,
+      full_name: name,
+      role: role,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'email' });
+
+    if (error) {
+      // If onConflict email fails due to schema primary key on id, try upserting with email
+      await supabase.from('profiles').upsert({
+        id: `usr_${Date.now()}`,
+        email: normalizedEmail,
+        full_name: name,
+        role: role,
+        updated_at: new Date().toISOString()
+      });
+    }
+  } catch (e) {
+    console.warn('Supabase profile upsert fallback executed', e);
   }
 }

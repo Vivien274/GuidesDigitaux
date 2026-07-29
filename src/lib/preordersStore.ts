@@ -99,23 +99,7 @@ export function getPreorderStatusDetails(campaign: PreorderCampaign) {
   };
 }
 
-const DEFAULT_PREORDERS: PreorderCampaign[] = [
-  {
-    id: 'po-1',
-    courseId: 'c3',
-    courseTitle: 'Masterclass Vidéo : Intelligence Artificielle pour les Artisans & TPE',
-    price: 79,
-    originalPrice: 149,
-    targetEnrollments: 15,
-    currentEnrollments: 18,
-    endDate: '2026-08-20',
-    releaseDate: '2026-09-15',
-    description: 'Automatise ta gestion client, tes devis et ta création de contenu grâce aux IA génératives.',
-    bonus: 'Accès exclusif à la communauté privée + 50 Prompts prêts à l’emploi',
-    image: 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp',
-    status: 'Objectif atteint'
-  }
-];
+const DEFAULT_PREORDERS: PreorderCampaign[] = [];
 
 export function getStoredPreorders(): PreorderCampaign[] {
   if (typeof window === 'undefined') return DEFAULT_PREORDERS;
@@ -130,6 +114,13 @@ export function getStoredPreorders(): PreorderCampaign[] {
   return DEFAULT_PREORDERS;
 }
 
+export function purgeAllPreorders(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('gd_custom_preorders');
+    localStorage.removeItem('gd_processed_sessions');
+  }
+}
+
 export function savePreorder(campaign: PreorderCampaign): PreorderCampaign[] {
   const current = getStoredPreorders();
   const index = current.findIndex(p => p.id === campaign.id);
@@ -139,6 +130,42 @@ export function savePreorder(campaign: PreorderCampaign): PreorderCampaign[] {
   } else {
     updated = [campaign, ...current];
   }
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('gd_custom_preorders', JSON.stringify(updated));
+    } catch (quotaError) {
+      console.warn('localStorage quota exceeded for gd_custom_preorders', quotaError);
+      const sanitized = updated.map(p => ({
+        ...p,
+        image: p.image && p.image.length > 50000 ? '' : p.image
+      }));
+      try {
+        localStorage.setItem('gd_custom_preorders', JSON.stringify(sanitized));
+      } catch (e) {
+        console.error('Could not save sanitized preorders', e);
+      }
+    }
+  }
+  return updated;
+}
+
+export function incrementPreorderEnrollment(campaignId: string): PreorderCampaign[] {
+  const current = getStoredPreorders();
+  const targetId = campaignId || 'precommande-fiche-google';
+  
+  const updated = current.map(p => {
+    if (p.id === targetId || p.courseId === targetId || (targetId.includes('google') && p.id.includes('google'))) {
+      const nextCount = p.currentEnrollments + 1;
+      const isGoalReached = nextCount >= p.targetEnrollments;
+      return {
+        ...p,
+        currentEnrollments: nextCount,
+        status: isGoalReached ? ('Objectif atteint' as const) : ('En cours' as const)
+      };
+    }
+    return p;
+  });
+
   if (typeof window !== 'undefined') {
     localStorage.setItem('gd_custom_preorders', JSON.stringify(updated));
   }

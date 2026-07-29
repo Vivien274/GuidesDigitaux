@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import VideoPlayer from '@/components/VideoPlayer';
@@ -225,9 +225,18 @@ const WORDPRESS_COURSE_DATA = {
   ]
 };
 
-export default function CoursePlayerPage() {
+export default function FormationViewerPage() {
   const params = useParams();
-  const slug = (params?.slug as string) || '';
+  const router = useRouter();
+  const rawSlug = (params?.slug as string) || '';
+  const slug = decodeURIComponent(rawSlug);
+
+  useEffect(() => {
+    if (slug.includes('precommande') || slug === 'precommande-fiche-google') {
+      router.replace('/precommande');
+      return;
+    }
+  }, [slug, router]);
 
   const [courseData, setCourseData] = useState<any>(WORDPRESS_COURSE_DATA);
   const [activeLesson, setActiveLesson] = useState<any>(WORDPRESS_COURSE_DATA.modules[0].lessons[0]);

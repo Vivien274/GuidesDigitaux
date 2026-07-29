@@ -55,6 +55,8 @@ export interface Course {
   prerequisites: string;
   price: number;
   originalPrice?: number;
+  normalPrice?: number;
+  discountedPrice?: number;
   image?: string;
   isPreorder?: boolean;
   preorderReleaseDate?: string;
@@ -73,92 +75,19 @@ export interface Course {
   studentsCount?: number;
 }
 
-const DEFAULT_COURSES: Course[] = [
-  {
-    id: 'c1',
-    title: 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
-    description: 'Construis toi-même un site moderne, rapide et responsive.',
-    duration: '3h30',
-    level: '100% Adapté Débutant',
-    prerequisites: 'Aucun prérequis technique nécessaire. Avoir un ordinateur connecté à internet.',
-    price: 199,
-    originalPrice: 249,
-    isPreorder: false,
-    category: 'Formation Vidéo',
-    status: 'Publié',
-    studentsCount: 84,
-    modules: [
-      {
-        id: 'm1',
-        title: 'Module 1 : Choix de l’hébergement & domaine',
-        lessons: [
-          { id: 'l1', title: 'Cours 1.1 : Bienvenue & Introduction', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', notes: 'Notes de présentation du projet.', duration: '08:15', pdfUrl: 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp' },
-          { id: 'l2', title: 'Cours 1.2 : Réserver son nom de domaine', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', notes: 'Conseils pour réserver son domaine sans frais cachés.', duration: '14:30' }
-        ],
-        quiz: {
-          id: 'q1',
-          title: 'Quizz de validation du Module 1 : Hébergement & Domaine',
-          passingScorePercent: 100,
-          questions: [
-            {
-              id: 'q1-1',
-              question: 'Quel est l\'élément indispensable pour installer WordPress et héberger son site web ?',
-              options: [
-                'Un serveur d\'hébergement web et un nom de domaine',
-                'Un compte Instagram Pro',
-                'Une imprimante 3D'
-              ],
-              correctOptionIndex: 0,
-              explanation: 'Un nom de domaine et un serveur d\'hébergement sont requis pour rendre votre site accessible en ligne.'
-            },
-            {
-              id: 'q1-2',
-              question: 'Quelle est la bonne pratique pour choisir son nom de domaine ?',
-              options: [
-                'Prendre un nom le plus long possible avec plein d\'accents',
-                'Choisir un nom court, mémorisable et en rapport avec sa marque',
-                'Utiliser des caractères spéciaux étranges'
-              ],
-              correctOptionIndex: 1,
-              explanation: 'Un nom court et mémorisable facilite le bouche-à-oreille et les recherches de vos clients.'
-            }
-          ]
-        }
-      },
-      {
-        id: 'm2',
-        title: 'Module 2 : Installation & Paramétrage WordPress',
-        lessons: [
-          { id: 'l3', title: 'Cours 2.1 : Installer WordPress en 1 clic', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', notes: 'Installation rapide chez l’hébergeur.', duration: '12:40' }
-        ]
+const DEFAULT_COURSES: Course[] = [];
+
+export function purgeAllCoursesData(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('gd_custom_courses');
+    localStorage.removeItem('gd_enrolled_courses');
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('gd_user_purchases_') || key.startsWith('gd_completed_lessons_')) {
+        localStorage.removeItem(key);
       }
-    ]
-  },
-  {
-    id: 'c2',
-    title: 'Formation Vidéo : Ajouter une boutique en ligne avec WooCommerce',
-    description: 'Vends tes créations en ligne avec la solution e-commerce numéro 1.',
-    duration: '2h15',
-    level: 'Débutant',
-    prerequisites: 'Avoir un site WordPress fonctionnel.',
-    price: 99,
-    originalPrice: 149,
-    isPreorder: false,
-    category: 'Formation Vidéo',
-    status: 'Publié',
-    studentsCount: 58,
-    modules: [
-      {
-        id: 'm2-1',
-        title: 'Module 1 : Configuration initiale WooCommerce',
-        lessons: [
-          { id: 'l2-1', title: 'Cours 1.1 : Installer l’extension WooCommerce', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', notes: 'Réglages de la devise et du pays.', duration: '15:00' },
-          { id: 'l2-2', title: 'Cours 2 : Nouvelle vidéo & ressources', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', notes: 'Consignes et guides pratiques.', duration: '12:00' }
-        ]
-      }
-    ]
+    });
   }
-];
+}
 
 export function getStoredCourses(): Course[] {
   if (typeof window === 'undefined') return DEFAULT_COURSES;
@@ -183,7 +112,28 @@ export function saveCourse(newCourse: Course): Course[] {
     updated = [newCourse, ...current];
   }
   if (typeof window !== 'undefined') {
-    localStorage.setItem('gd_custom_courses', JSON.stringify(updated));
+    try {
+      localStorage.setItem('gd_custom_courses', JSON.stringify(updated));
+    } catch (quotaError) {
+      console.warn('localStorage quota exceeded when saving gd_custom_courses. Preserving images while trimming heavy pdfs/videos...', quotaError);
+      const sanitized = updated.map(c => ({
+        ...c,
+        image: c.image && c.image.length > 2000000 ? c.image.slice(0, 500000) : c.image,
+        modules: (c.modules || []).map(m => ({
+          ...m,
+          lessons: (m.lessons || []).map(l => ({
+            ...l,
+            pdfUrl: l.pdfUrl && l.pdfUrl.length > 200000 ? '' : l.pdfUrl,
+            videoUrl: l.videoUrl && l.videoUrl.length > 500000 ? '' : l.videoUrl
+          }))
+        }))
+      }));
+      try {
+        localStorage.setItem('gd_custom_courses', JSON.stringify(sanitized));
+      } catch (e) {
+        console.error('Could not save sanitized courses to localStorage', e);
+      }
+    }
   }
   return updated;
 }

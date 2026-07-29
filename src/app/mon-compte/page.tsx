@@ -4,24 +4,25 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { useAuth, UserRole } from '@/context/AuthContext';
+import { useAuth, UserRole, getRoleForEmail } from '@/context/AuthContext';
 import { Lock, Mail, User, Key, ArrowRight, ShieldCheck, Download, Sparkles, GraduationCap, Shield } from 'lucide-react';
 
 export default function MonComptePage() {
   const router = useRouter();
-  const { user, role, login, setRole, isLoggedIn } = useAuth();
+  const { login } = useAuth();
   
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('stephanie@guides-digitaux.com');
-  const [password, setPassword] = useState('••••••••');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('eleve');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, selectedRole);
-    if (selectedRole === 'superadmin') {
+    if (!email) return;
+    const computedRole = getRoleForEmail(email);
+    login(email, computedRole);
+    if (computedRole === 'superadmin') {
       router.push('/dashboard/admin');
-    } else if (selectedRole === 'formateur') {
+    } else if (computedRole === 'formateur') {
       router.push('/dashboard/formateur');
     } else {
       router.push('/dashboard/eleve');
@@ -92,7 +93,12 @@ export default function MonComptePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-extrabold text-[#332420]">Mot de passe :</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-extrabold text-[#332420]">Mot de passe :</label>
+                  <a href="#" onClick={(e) => { e.preventDefault(); alert("Un lien de réinitialisation de mot de passe sera envoyé à votre adresse email."); }} className="text-[11px] font-bold text-[#18757d] hover:underline">
+                    Mot de passe oublié ?
+                  </a>
+                </div>
                 <div className="relative">
                   <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -106,63 +112,18 @@ export default function MonComptePage() {
                 </div>
               </div>
 
-              {/* Demo Role Selection */}
-              <div className="space-y-1.5 pt-2">
-                <label className="text-xs font-extrabold text-[#332420]">Se connecter en tant que (Rôle) :</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole('eleve')}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1 ${
-                      selectedRole === 'eleve'
-                        ? 'bg-[#e6f4f3] border-[#18757d] text-[#18757d]'
-                        : 'border-[#eee7da] bg-[#faf8f5] text-slate-600'
-                    }`}
-                  >
-                    <User className="w-4 h-4" />
-                    <span>Élève</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole('formateur')}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1 ${
-                      selectedRole === 'formateur'
-                        ? 'bg-[#e6f4f3] border-[#18757d] text-[#18757d]'
-                        : 'border-[#eee7da] bg-[#faf8f5] text-slate-600'
-                    }`}
-                  >
-                    <GraduationCap className="w-4 h-4" />
-                    <span>Formateur</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole('superadmin')}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1 ${
-                      selectedRole === 'superadmin'
-                        ? 'bg-rose-50 border-[#e05a47] text-[#e05a47]'
-                        : 'border-[#eee7da] bg-[#faf8f5] text-slate-600'
-                    }`}
-                  >
-                    <Shield className="w-4 h-4" />
-                    <span>Admin</span>
-                  </button>
-                </div>
-              </div>
-
               <button
                 type="submit"
-                className="w-full py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                className="w-full py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer mt-2"
               >
                 <Lock className="w-4 h-4" />
-                ACCÉDER À MON ESPACE ({selectedRole.toUpperCase()})
+                {isLogin ? 'SE CONNECTER À MON ESPACE' : 'S\'INSCRIRE & ACCÉDER À MON ESPACE'}
               </button>
             </form>
 
             <div className="p-4 bg-[#f4ede0] rounded-2xl text-[11px] text-[#332420] font-semibold flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#18757d] shrink-0" />
-              <span>Authentification 100% sécurisée via Supabase Auth SSL.</span>
+              <span>Authentification 100% sécurisée SSL. Vos données personnelles restent strictement protégées.</span>
             </div>
 
           </div>

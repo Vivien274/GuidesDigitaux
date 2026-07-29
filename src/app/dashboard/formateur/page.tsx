@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, getRoleForEmail } from '@/context/AuthContext';
 import { fetchCoursesFromDb } from '@/lib/supabaseLms';
 import { getRealCourseStats, Course } from '@/lib/coursesStore';
 import { 
@@ -24,14 +24,35 @@ import {
   Award,
   TrendingUp,
   UserCheck,
-  Rocket
+  Rocket,
+  LogOut
 } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
 export default function FormateurDashboardPage() {
-  const { user } = useAuth();
+  const { user, role, logout } = useAuth();
+  const router = useRouter();
   const [coursesList, setCoursesList] = useState<Course[]>([]);
   const [statsMap, setStatsMap] = useState<Record<string, { enrolledCount: number; completedCount: number; completionPercentage: number }>>({});
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('gd_auth_user');
+      const userEmail = user?.email || (savedUser ? JSON.parse(savedUser).email : '');
+      const activeRole = getRoleForEmail(userEmail);
+
+      if (!userEmail) {
+        router.push('/mon-compte');
+        return;
+      }
+      if (activeRole !== 'formateur' && activeRole !== 'superadmin') {
+        router.push('/dashboard/eleve');
+        return;
+      }
+    }
+  }, [user, role, router]);
 
   useEffect(() => {
     async function loadData() {
@@ -69,7 +90,7 @@ export default function FormateurDashboardPage() {
             </div>
             <div>
               <span className="inline-block px-3 py-0.5 rounded-full text-[11px] font-extrabold bg-[#e6f4f3] text-[#18757d] uppercase tracking-wider mb-1">
-                Studio Formateur / Connecté à Supabase DB
+                Studio Formateur / Tableau de bord
               </span>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#332420]">
                 Gestionnaire de <span className="text-[#18757d]">Formations</span>
@@ -86,7 +107,7 @@ export default function FormateurDashboardPage() {
               className="px-6 py-4 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
             >
               <Rocket className="w-4 h-4 text-[#332420]" />
-              CRÉER UNE PRÉCOMMANDE (DÉDIÉ)
+              CRÉER UNE PRÉCOMMANDE
             </Link>
 
             <Link
@@ -96,6 +117,17 @@ export default function FormateurDashboardPage() {
               <Plus className="w-4 h-4" />
               CRÉER UNE FORMATION
             </Link>
+
+            <button
+              onClick={() => {
+                logout();
+                window.location.href = '/mon-compte';
+              }}
+              className="px-4 py-4 text-xs font-extrabold text-slate-600 bg-white hover:bg-rose-50 hover:text-[#e05a47] rounded-2xl border border-[#eee7da] shadow-2xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              SE DÉCONNECTER
+            </button>
           </div>
         </div>
       </section>
@@ -154,7 +186,7 @@ export default function FormateurDashboardPage() {
             <div className="flex items-center justify-between border-b border-[#eee7da] pb-4">
               <div>
                 <h2 className="text-xl font-extrabold text-[#332420]">
-                  Suivi Réel des Inscriptions Élèves (Base Supabase DB)
+                  Suivi des Inscriptions Élèves
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">Statistiques réelles basées sur les accès élèves attribués lors des commandes.</p>
               </div>
