@@ -92,7 +92,7 @@ function CourseEditorContent() {
   const [certificateEnabled, setCertificateEnabled] = useState(true);
   const [bonusDocTitle, setBonusDocTitle] = useState('Checklist ultime de contrôle post-formation');
   const [bonusDocUrl, setBonusDocUrl] = useState('https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp');
-  const [communityLink, setCommunityLink] = useState('https://discord.gg/guides-digitaux');
+  const [communityLink, setCommunityLink] = useState('');
 
   // Load existing course data on mount from Supabase / localStorage
   useEffect(() => {
@@ -117,8 +117,8 @@ function CourseEditorContent() {
         if (target.image) setImageUrl(target.image);
         if (target.status) setStatus(target.status);
         if (target.scheduledPublishDate) setScheduledPublishDate(target.scheduledPublishDate);
-        if (target.liveStreamUrl) setLiveStreamUrl(target.liveStreamUrl);
-        if (target.liveStreamDate) setLiveStreamDate(target.liveStreamDate);
+        setLiveStreamUrl(target.liveStreamUrl ?? '');
+        setLiveStreamDate(target.liveStreamDate ?? '');
         if (target.liveStreamTitle) setLiveStreamTitle(target.liveStreamTitle);
         setCategory(target.category || 'Formation Vidéo');
         setDescription(target.description || '');
@@ -128,7 +128,7 @@ function CourseEditorContent() {
         if (target.certificateEnabled !== undefined) setCertificateEnabled(target.certificateEnabled);
         if (target.bonusDocTitle) setBonusDocTitle(target.bonusDocTitle);
         if (target.bonusDocUrl) setBonusDocUrl(target.bonusDocUrl);
-        if (target.communityLink) setCommunityLink(target.communityLink);
+        setCommunityLink(target.communityLink ?? '');
       }
     }
     loadData();
