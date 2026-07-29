@@ -67,6 +67,9 @@ export interface Course {
   bonusDocTitle?: string;
   bonusDocUrl?: string;
   communityLink?: string;
+  liveStreamUrl?: string;
+  liveStreamDate?: string;
+  liveStreamTitle?: string;
   studentsCount?: number;
 }
 

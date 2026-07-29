@@ -26,8 +26,21 @@ import {
   HelpCircle,
   CheckSquare,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  Video,
+  Users
 } from 'lucide-react';
+
+const getShuffledOptions = (options: string[], qId: string) => {
+  const list = options.map((text, originalIndex) => ({ text, originalIndex }));
+  let hash = 0;
+  for (let i = 0; i < qId.length; i++) hash = (hash << 5) - hash + qId.charCodeAt(i);
+  return list.sort((a, b) => {
+    const valA = (Math.sin(hash + a.originalIndex) * 10000) % 1;
+    const valB = (Math.sin(hash + b.originalIndex) * 10000) % 1;
+    return valA - valB;
+  });
+};
 
 const WOOCOMMERCE_COURSE_DATA = {
   id: 'c2',
@@ -244,6 +257,10 @@ export default function CoursePlayerPage() {
         congratulationsMsg: match.congratulationsMsg || 'Félicitations pour l’accomplissement de cette formation !',
         bonusDocTitle: match.bonusDocTitle || 'Fiche bonus de conclusion',
         bonusDocUrl: match.bonusDocUrl || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp',
+        communityLink: match.communityLink,
+        liveStreamUrl: match.liveStreamUrl,
+        liveStreamDate: match.liveStreamDate,
+        liveStreamTitle: match.liveStreamTitle,
         modules: match.modules
       };
       setCourseData(formatted);
@@ -336,7 +353,7 @@ export default function CoursePlayerPage() {
     });
 
     const score = Math.round((correctCount / quiz.questions.length) * 100);
-    const required = quiz.passingScorePercent || 100;
+    const required = quiz.passingScorePercent !== undefined ? quiz.passingScorePercent : 100;
     const passed = score >= required;
 
     setQuizScore(score);
@@ -359,15 +376,30 @@ export default function CoursePlayerPage() {
 
         {/* BREADCRUMB HEADER */}
         <div className="bg-[#f5f1e8] py-3.5 border-b border-[#e8ded0]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-3">
             <Link href="/dashboard/eleve" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#18757d] hover:underline">
               <ArrowLeft className="w-4 h-4" />
               Retour à mon Espace Élève
             </Link>
 
-            <span className="text-xs font-extrabold text-[#332420] truncate max-w-md">
-              {courseData.title}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-extrabold text-[#332420] truncate max-w-md hidden sm:inline">
+                {courseData.title}
+              </span>
+
+              {/* REJOINDRE LA COMMUNAUTÉ BUTTON (Conditionnel si renseigné en Admin) */}
+              {courseData?.communityLink && courseData.communityLink.trim() !== '' && (
+                <a
+                  href={courseData.communityLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-1.5 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl transition-colors flex items-center gap-1.5 uppercase tracking-wider shadow-xs"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  Rejoindre la communauté
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
@@ -380,6 +412,36 @@ export default function CoursePlayerPage() {
               {/* LEFT: Main Player Area (8 Cols) */}
               <div className="lg:col-span-8 space-y-6">
                 
+                {/* LIVE STREAM BANNER (Si renseigné en Admin) */}
+                {courseData?.liveStreamUrl && courseData.liveStreamUrl.trim() !== '' && (
+                  <div className="p-5 bg-gradient-to-r from-blue-600 to-[#18757d] rounded-3xl text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center font-extrabold shrink-0">
+                        <Video className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-200">Diffusion Live / Visioconférence</span>
+                        <h4 className="text-sm font-extrabold">{courseData.liveStreamTitle || 'Session Direct & Questions/Réponses'}</h4>
+                        {courseData.liveStreamDate && (
+                          <p className="text-[11px] text-blue-100 font-medium mt-0.5">
+                            📅 Programmé le {new Date(courseData.liveStreamDate).toLocaleDateString('fr-FR')} à {new Date(courseData.liveStreamDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <a
+                      href={courseData.liveStreamUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-5 py-3 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-xl transition-colors uppercase tracking-wider shrink-0 flex items-center gap-2"
+                    >
+                      <Video className="w-4 h-4 text-[#332420]" />
+                      Rejoindre le Direct →
+                    </a>
+                  </div>
+                )}
+
                 {/* VIDEO CONTAINER */}
                 <div className="bg-black rounded-3xl overflow-hidden shadow-xl border border-[#eee7da]">
                   <VideoPlayer
@@ -584,7 +646,7 @@ export default function CoursePlayerPage() {
                       </div>
 
                       <span className="px-3.5 py-1 rounded-full text-xs font-extrabold bg-purple-200 text-purple-900 border border-purple-300">
-                        Score requis : {activeModule.quiz.passingScorePercent || 100}%
+                        Score requis : {activeModule.quiz.passingScorePercent !== undefined ? activeModule.quiz.passingScorePercent : 100}%
                       </span>
                     </div>
 
@@ -608,12 +670,13 @@ export default function CoursePlayerPage() {
                               Question {qIdx + 1} : {q.question}
                             </h4>
 
+                            {/* Shuffle answer options per question */}
                             <div className="space-y-2">
-                              {q.options?.map((opt: string, optIdx: number) => (
+                              {getShuffledOptions(q.options || [], q.id).map((optObj) => (
                                 <label
-                                  key={optIdx}
+                                  key={optObj.originalIndex}
                                   className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all text-xs font-semibold ${
-                                    selectedQuizAnswers[q.id] === optIdx
+                                    selectedQuizAnswers[q.id] === optObj.originalIndex
                                       ? 'border-purple-600 bg-purple-50 text-purple-950 font-extrabold'
                                       : 'border-[#eee7da] hover:bg-[#faf8f5] text-[#332420]'
                                   }`}
@@ -621,11 +684,11 @@ export default function CoursePlayerPage() {
                                   <input
                                     type="radio"
                                     name={`quiz-${q.id}`}
-                                    checked={selectedQuizAnswers[q.id] === optIdx}
-                                    onChange={() => setSelectedQuizAnswers({ ...selectedQuizAnswers, [q.id]: optIdx })}
+                                    checked={selectedQuizAnswers[q.id] === optObj.originalIndex}
+                                    onChange={() => setSelectedQuizAnswers({ ...selectedQuizAnswers, [q.id]: optObj.originalIndex })}
                                     className="w-4 h-4 accent-purple-700"
                                   />
-                                  <span>{opt}</span>
+                                  <span>{optObj.text}</span>
                                 </label>
                               ))}
                             </div>

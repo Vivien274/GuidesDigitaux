@@ -65,6 +65,9 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
         bonusDocTitle: c.bonus_doc_title,
         bonusDocUrl: c.bonus_doc_url,
         communityLink: c.community_link,
+        liveStreamUrl: c.live_stream_url || localMatch?.liveStreamUrl,
+        liveStreamDate: c.live_stream_date || localMatch?.liveStreamDate,
+        liveStreamTitle: c.live_stream_title || localMatch?.liveStreamTitle,
         modules: (c.modules || []).map((m: any) => ({
           id: m.id,
           title: m.title,
@@ -108,7 +111,10 @@ export async function saveCourseToDb(course: Course): Promise<Course[]> {
       congratulations_msg: course.congratulationsMsg,
       bonus_doc_title: course.bonusDocTitle,
       bonus_doc_url: course.bonusDocUrl,
-      community_link: course.communityLink
+      community_link: course.communityLink,
+      live_stream_url: course.liveStreamUrl,
+      live_stream_date: course.liveStreamDate,
+      live_stream_title: course.liveStreamTitle
     });
 
     if (!courseErr && course.modules) {

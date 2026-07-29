@@ -56,6 +56,9 @@ function CourseEditorContent() {
   const [imageUrl, setImageUrl] = useState('https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp');
   const [status, setStatus] = useState<'Publié' | 'Brouillon' | 'Planifié'>('Publié');
   const [scheduledPublishDate, setScheduledPublishDate] = useState('');
+  const [liveStreamUrl, setLiveStreamUrl] = useState('');
+  const [liveStreamDate, setLiveStreamDate] = useState('');
+  const [liveStreamTitle, setLiveStreamTitle] = useState('Masterclass Live & Questions/Réponses');
   const [duration, setDuration] = useState('3h30');
   const [level, setLevel] = useState('Débutant');
   const [prerequisites, setPrerequisites] = useState('');
@@ -114,6 +117,9 @@ function CourseEditorContent() {
         if (target.image) setImageUrl(target.image);
         if (target.status) setStatus(target.status);
         if (target.scheduledPublishDate) setScheduledPublishDate(target.scheduledPublishDate);
+        if (target.liveStreamUrl) setLiveStreamUrl(target.liveStreamUrl);
+        if (target.liveStreamDate) setLiveStreamDate(target.liveStreamDate);
+        if (target.liveStreamTitle) setLiveStreamTitle(target.liveStreamTitle);
         setCategory(target.category || 'Formation Vidéo');
         setDescription(target.description || '');
 
@@ -390,7 +396,10 @@ function CourseEditorContent() {
       certificateEnabled,
       bonusDocTitle,
       bonusDocUrl,
-      communityLink
+      communityLink,
+      liveStreamUrl,
+      liveStreamDate,
+      liveStreamTitle
     };
 
     await saveCourseToDb(updatedCourseObj);
@@ -680,6 +689,55 @@ function CourseEditorContent() {
                           className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3.5 text-sm font-bold text-slate-400 line-through"
                         />
                         <span className="text-[11px] text-slate-500">Affiché sous forme de prix de base barré pour valoriser l'offre.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Live Stream Section (Meet, Zoom, etc.) */}
+                  <div className="p-6 bg-gradient-to-r from-blue-50 to-[#faf8f5] rounded-3xl border border-blue-200 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Video className="w-5 h-5 text-blue-600 shrink-0" />
+                        <h3 className="text-sm font-extrabold text-[#332420] uppercase tracking-wider">Session en Direct (Google Meet, Zoom, Teams...)</h3>
+                      </div>
+                      <span className="text-[10px] font-extrabold px-3 py-1 rounded-full bg-blue-100 text-blue-900 border border-blue-200">
+                        Optionnel
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <label className="text-xs font-extrabold text-[#332420]">Intitulé du Direct :</label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Session Live & Questions/Réponses avec Stéphanie"
+                          value={liveStreamTitle}
+                          onChange={(e) => setLiveStreamTitle(e.target.value)}
+                          className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-xs font-bold text-[#332420]"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-extrabold text-[#332420]">Lien URL du Direct (Meet, Zoom...) :</label>
+                        <input
+                          type="url"
+                          placeholder="https://meet.google.com/abc-defg-hij ou https://zoom.us/j/..."
+                          value={liveStreamUrl}
+                          onChange={(e) => setLiveStreamUrl(e.target.value)}
+                          className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-xs font-bold text-[#332420]"
+                        />
+                        <span className="text-[11px] text-slate-500">Collez le lien de votre réunion en direct.</span>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-extrabold text-[#332420]">Date & Heure de la diffusion :</label>
+                        <input
+                          type="datetime-local"
+                          value={liveStreamDate}
+                          onChange={(e) => setLiveStreamDate(e.target.value)}
+                          className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-xs font-bold text-[#332420]"
+                        />
+                        <span className="text-[11px] text-slate-500">Un macaron "Direct Programmé" sera affiché pour les élèves.</span>
                       </div>
                     </div>
                   </div>
@@ -1245,7 +1303,8 @@ function CourseEditorContent() {
                                     <select
                                       value={mod.quiz.passingScorePercent}
                                       onChange={(e) => {
-                                        const val = parseInt(e.target.value) || 100;
+                                        const parsed = parseInt(e.target.value);
+                                        const val = isNaN(parsed) ? 100 : parsed;
                                         setModules(modules.map(m => m.id === mod.id && m.quiz ? { ...m, quiz: { ...m.quiz, passingScorePercent: val } } : m));
                                       }}
                                       className="w-full bg-white border border-purple-200 rounded-xl px-4 py-2.5 text-xs font-bold text-purple-950"
@@ -1253,6 +1312,7 @@ function CourseEditorContent() {
                                       <option value={100}>100% (Sans faute exigé)</option>
                                       <option value={75}>75% (3/4 de bonnes réponses)</option>
                                       <option value={50}>50% (Moyenne)</option>
+                                      <option value={0}>0% (Évaluation indicative - Validation auto)</option>
                                     </select>
                                   </div>
                                 </div>
