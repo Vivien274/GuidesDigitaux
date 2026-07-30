@@ -511,20 +511,38 @@ export interface PreorderBuyer {
 }
 
 /**
- * 14. Fetch Preorder Buyers from real Supabase DB enrollments & orders
+ * 14. Fetch Preorder Buyers from real Supabase DB (preorder_buyers, orders & enrollments)
  */
 export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
   try {
-    const { data: enrollmentsData } = await supabase
-      .from('enrollments')
-      .select('*')
-      .order('purchased_at', { ascending: false });
+    const buyersMap = new Map<string, PreorderBuyer>();
 
-    const { data: ordersData } = await supabase
-      .from('orders')
+    // 1. Fetch from dedicated preorder_buyers table
+    const { data: preorderBuyersData } = await supabase
+      .from('preorder_buyers')
       .select('*')
       .order('created_at', { ascending: false });
 
+    if (preorderBuyersData && preorderBuyersData.length > 0) {
+      preorderBuyersData.forEach((row: any) => {
+        const email = row.customer_email || row.email || '';
+        if (email) {
+          const normalizedEmail = email.toLowerCase().trim();
+          const uniqueKey = `${normalizedEmail}_${row.campaign_id}`;
+          buyersMap.set(uniqueKey, {
+            id: row.id || `pb-${Date.now()}`,
+            customerEmail: normalizedEmail,
+            customerName: row.customer_name || normalizedEmail.split('@')[0],
+            courseId: row.campaign_id || 'precommande',
+            courseTitle: 'Précommande',
+            price: parseFloat(row.price || 29),
+            purchasedAt: row.created_at || new Date().toISOString()
+          });
+        }
+      });
+    }
+
+    // 2. Fetch profiles for name matching
     const { data: profilesData } = await supabase
       .from('profiles')
       .select('email, full_name');
@@ -538,7 +556,40 @@ export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
       });
     }
 
-    const buyersMap = new Map<string, PreorderBuyer>();
+    // 3. Fetch from orders table
+    const { data: ordersData } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (ordersData && ordersData.length > 0) {
+      ordersData.forEach((row: any) => {
+        const email = row.customer_email || row.email || '';
+        const cId = row.product_id || row.course_id || 'precommande-fiche-google';
+        if (email) {
+          const normalizedEmail = email.toLowerCase().trim();
+          const fullName = profileMap.get(normalizedEmail) || normalizedEmail.split('@')[0];
+          const uniqueKey = `${normalizedEmail}_${cId}`;
+          if (!buyersMap.has(uniqueKey)) {
+            buyersMap.set(uniqueKey, {
+              id: row.id || `o-${Date.now()}`,
+              customerEmail: normalizedEmail,
+              customerName: fullName,
+              courseId: cId,
+              courseTitle: 'Précommande',
+              price: row.total_amount_cents ? (row.total_amount_cents / 100) : 29,
+              purchasedAt: row.created_at || new Date().toISOString()
+            });
+          }
+        }
+      });
+    }
+
+    // 4. Fetch from enrollments table
+    const { data: enrollmentsData } = await supabase
+      .from('enrollments')
+      .select('*')
+      .order('purchased_at', { ascending: false });
 
     if (enrollmentsData && enrollmentsData.length > 0) {
       enrollmentsData.forEach((row: any) => {
@@ -553,7 +604,7 @@ export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
           const uniqueKey = `${normalizedEmail}_${cId || title}`;
           if (!buyersMap.has(uniqueKey)) {
             buyersMap.set(uniqueKey, {
-              id: row.id || `b-${Date.now()}-${Math.random()}`,
+              id: row.id || `b-${Date.now()}`,
               customerEmail: normalizedEmail,
               customerName: fullName,
               courseId: cId || 'precommande',
@@ -566,32 +617,50 @@ export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
       });
     }
 
-    if (ordersData && ordersData.length > 0) {
-      ordersData.forEach((row: any) => {
-        const email = row.customer_email || row.email || '';
-        const cId = row.product_id || row.course_id || '';
-        if (email) {
-          const normalizedEmail = email.toLowerCase().trim();
-          const fullName = profileMap.get(normalizedEmail) || normalizedEmail.split('@')[0];
-          const uniqueKey = `${normalizedEmail}_${cId || 'order'}`;
-          if (!buyersMap.has(uniqueKey)) {
-            buyersMap.set(uniqueKey, {
-              id: row.id || `o-${Date.now()}-${Math.random()}`,
-              customerEmail: normalizedEmail,
-              customerName: fullName,
-              courseId: cId || 'precommande',
-              courseTitle: 'Précommande',
-              price: row.total_amount_cents ? (row.total_amount_cents / 100) : 29,
-              purchasedAt: row.created_at || new Date().toISOString()
-            });
-          }
-        }
-      });
-    }
-
     return Array.from(buyersMap.values());
   } catch (err) {
     console.warn('fetchPreorderBuyersFromDb error fallback', err);
     return [];
+  }
+}
+
+/**
+ * 15. Record a Preorder Buyer Purchase directly in Supabase DB
+ */
+export async function recordPreorderPurchaseInDb(
+  campaignId: string,
+  customerEmail: string,
+  customerName?: string,
+  price: number = 29
+): Promise<void> {
+  if (!customerEmail) return;
+  const normalizedEmail = customerEmail.toLowerCase().trim();
+
+  // 1. Increment preorder enrollments counter in Supabase BDD
+  await incrementPreorderEnrollmentInDb(campaignId);
+
+  try {
+    // 2. Insert into preorder_buyers table
+    await supabase.from('preorder_buyers').insert({
+      campaign_id: campaignId || 'precommande-fiche-google',
+      customer_email: normalizedEmail,
+      customer_name: customerName || normalizedEmail.split('@')[0],
+      price: price,
+      created_at: new Date().toISOString()
+    });
+  } catch (e) {
+    console.warn('preorder_buyers insert notice:', e);
+  }
+
+  try {
+    // 3. Insert into orders table
+    await supabase.from('orders').insert({
+      customer_email: normalizedEmail,
+      product_id: campaignId || 'precommande-fiche-google',
+      status: 'paid',
+      created_at: new Date().toISOString()
+    });
+  } catch (e) {
+    console.warn('orders insert notice:', e);
   }
 }

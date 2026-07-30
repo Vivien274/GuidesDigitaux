@@ -171,3 +171,21 @@ CREATE POLICY "Preorders viewable by everyone"
 CREATE POLICY "Preorders manageable by all" 
   ON public.preorders FOR ALL USING (true);
 
+-- 8. Create PREORDER_BUYERS Table
+CREATE TABLE IF NOT EXISTS public.preorder_buyers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  customer_name TEXT,
+  price NUMERIC(10, 2) NOT NULL DEFAULT 29.00,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.preorder_buyers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Preorder buyers viewable by everyone" 
+  ON public.preorder_buyers FOR SELECT USING (true);
+
+CREATE POLICY "Preorder buyers manageable by everyone" 
+  ON public.preorder_buyers FOR ALL USING (true);
+

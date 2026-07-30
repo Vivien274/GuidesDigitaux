@@ -23,6 +23,7 @@ import {
 
 import { incrementPreorderEnrollment } from '@/lib/preordersStore';
 import { addPurchaseToUser, getUserPurchases } from '@/lib/userPurchasesStore';
+import { recordPreorderPurchaseInDb } from '@/lib/supabaseLms';
 
 function ConfirmationContent() {
   const searchParams = useSearchParams();
@@ -105,6 +106,7 @@ function ConfirmationContent() {
                 price: Number(price) || 29,
                 purchaseDate: new Date().toLocaleDateString('fr-FR')
               });
+              recordPreorderPurchaseInDb(courseId || 'precommande-fiche-google', data.customerEmail, data.customerName, Number(price) || 29);
             }
           }
         } catch (e) {
@@ -132,6 +134,7 @@ function ConfirmationContent() {
         price: Number(price) || 29,
         purchaseDate: new Date().toLocaleDateString('fr-FR')
       });
+      recordPreorderPurchaseInDb(courseId || 'precommande-fiche-google', activeEmail, activeEmail.split('@')[0], Number(price) || 29);
     }
 
     // 4. Safely increment preorder counter once per checkout session
