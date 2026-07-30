@@ -59,23 +59,10 @@ export default function FormateurPreorderPage() {
   const [selectedExistingPage, setSelectedExistingPage] = useState<string>('tunnel');
   const [customDestinationUrl, setCustomDestinationUrl] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   const [buyers, setBuyers] = useState<PreorderBuyer[]>([]);
   const [expandedBuyersId, setExpandedBuyersId] = useState<string | null>(null);
-
-  const handleManualSync = async () => {
-    setIsSyncing(true);
-    setSyncStatus('Synchronisation avec Supabase BDD...');
-    const updatedList = await fetchPreordersFromDb();
-    setPreorders(updatedList);
-    const updatedBuyers = await fetchPreorderBuyersFromDb();
-    setBuyers(updatedBuyers);
-    setIsSyncing(false);
-    setSyncStatus('✓ Précommandes & Inscrits synchronisés avec succès en BDD !');
-    setTimeout(() => setSyncStatus(null), 4000);
-  };
 
   const handleDeletePreorder = async (po: PreorderCampaign) => {
     if (confirm(`Êtes-vous sûr de vouloir supprimer définitivement la précommande "${po.courseTitle}" de Supabase BDD ?`)) {
@@ -247,26 +234,13 @@ export default function FormateurPreorderPage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <button
-              type="button"
-              onClick={handleManualSync}
-              disabled={isSyncing}
-              className="px-5 py-4 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-2xl border border-[#bce3e0] uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-              title="Transférer et synchroniser les précommandes dans Supabase BDD"
-            >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Synchronisation...' : 'Synchroniser avec Supabase'}
-            </button>
-
-            <button
-              onClick={handleOpenCreateForm}
-              className="px-6 py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              LANCER UNE NOUVELLE PRÉCOMMANDE
-            </button>
-          </div>
+          <button
+            onClick={handleOpenCreateForm}
+            className="px-6 py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            LANCER UNE NOUVELLE PRÉCOMMANDE
+          </button>
         </div>
 
         {syncStatus && (
@@ -614,94 +588,104 @@ export default function FormateurPreorderPage() {
                   (po.courseTitle && b.courseTitle && b.courseTitle.toLowerCase().includes(po.courseTitle.toLowerCase().slice(0, 12)))
                 );
 
+                const cleanDesc = (po.description || '').replace(/<br\s*\/?>/gi, ' ');
+
                 return (
-                  <div key={po.id} className="p-8 bg-[#faf8f5] rounded-3xl border border-[#eee7da] space-y-6">
+                  <div key={po.id} className="p-6 sm:p-8 bg-[#faf8f5] rounded-3xl border border-[#eee7da] shadow-xs space-y-6">
                     
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                      
+                    {/* TOP HEADER BAR: IMAGE, TITLE, BADGES, PRICE */}
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 pb-6 border-b border-[#eee7da]">
                       <div className="flex items-start gap-4 flex-1">
                         {po.image && (
-                          <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-[#eee7da] shrink-0 bg-white">
+                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-[#eee7da] shrink-0 bg-white shadow-xs">
                             <Image src={po.image} alt={po.courseTitle} fill className="object-cover" />
                           </div>
                         )}
 
                         <div className="space-y-2">
-                          <div className="flex items-center gap-3">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-900 uppercase tracking-wider">
                               PRÉCOMMANDE EN COURS
                             </span>
-                            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5" />
-                              Sortie le {formatFrenchDate(po.releaseDate)} • Date limite : {formatFrenchDate(po.endDate)}
+                            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1 bg-white px-3 py-1 rounded-full border border-[#eee7da]">
+                              <Calendar className="w-3.5 h-3.5 text-[#18757d]" />
+                              Sortie : {formatFrenchDate(po.releaseDate)} • Limite : {formatFrenchDate(po.endDate)}
                             </span>
                           </div>
 
-                          <h3 className="text-xl font-extrabold text-[#332420]">{po.courseTitle}</h3>
-                          <p className="text-xs text-[#5e4d46] leading-relaxed">{po.description}</p>
-                          
-                          <div className="pt-1 flex items-center gap-2 text-xs font-bold text-[#18757d]">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#e6f4f3] border border-[#bce3e0]">
-                              <Link2 className="w-3.5 h-3.5" />
-                              Page de destination : <strong className="font-extrabold">{getPreorderDestinationUrl(po)}</strong>
-                            </span>
-                          </div>
+                          <h3 className="text-xl sm:text-2xl font-extrabold text-[#332420]">{po.courseTitle}</h3>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 shrink-0">
-                        <div className="text-right mr-2">
-                          <span className="text-2xl font-extrabold text-[#18757d] block">{po.price.toFixed(2)} €</span>
-                          {po.originalPrice && (
-                            <span className="text-xs text-slate-400 line-through font-bold">{po.originalPrice.toFixed(2)} €</span>
-                          )}
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <button
-                            type="button"
-                            onClick={() => setExpandedBuyersId(expandedBuyersId === po.id ? null : po.id)}
-                            className="px-4 py-3 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl border border-[#bce3e0] transition-colors flex items-center gap-1.5 uppercase tracking-wider cursor-pointer"
-                            title="Voir la liste des clients ayant précommandé"
-                          >
-                            <Users className="w-4 h-4 text-[#18757d]" />
-                            <span>INSCRITS ({campaignBuyers.length})</span>
-                            {expandedBuyersId === po.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </button>
-
-                          <button
-                            onClick={() => handleOpenEditForm(po)}
-                            className="px-5 py-3 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-xs transition-colors flex items-center gap-2 uppercase tracking-wider cursor-pointer"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                            ÉDITER
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDeletePreorder(po)}
-                            className="px-4 py-3 text-xs font-extrabold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-colors flex items-center gap-1.5 uppercase tracking-wider cursor-pointer"
-                            title="Supprimer la précommande de Supabase BDD"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                            SUPPRIMER
-                          </button>
-
-                          <Link
-                            href={getPreorderDestinationUrl(po)}
-                            target="_blank"
-                            className="p-3 text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center gap-1.5 text-xs font-extrabold"
-                            title={`Ouvrir la page de destination (${getPreorderDestinationUrl(po)})`}
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </Link>
-                        </div>
+                      {/* PRICE BADGE */}
+                      <div className="bg-white p-4 rounded-2xl border border-[#eee7da] shadow-xs text-center shrink-0 self-start">
+                        <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Tarif Précommande</span>
+                        <span className="text-2xl sm:text-3xl font-extrabold text-[#18757d] block">{po.price.toFixed(2)} €</span>
+                        {po.originalPrice && (
+                          <span className="text-xs text-slate-400 line-through font-bold block">Prix public : {po.originalPrice.toFixed(2)} €</span>
+                        )}
                       </div>
                     </div>
 
+                    {/* DESCRIPTION & DESTINATION */}
+                    <div className="space-y-4">
+                      <p className="text-sm text-[#4a3b36] leading-relaxed font-medium">{cleanDesc}</p>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex flex-wrap items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#bce3e0] text-xs font-extrabold text-[#18757d]">
+                          <Link2 className="w-4 h-4 text-[#18757d]" />
+                          <span>Page de destination :</span>
+                          <span className="font-mono text-slate-800 bg-[#e6f4f3] px-2.5 py-1 rounded-md border border-[#bce3e0]">{getPreorderDestinationUrl(po)}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* ACTION TOOLBAR BAR */}
+                    <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#eee7da]">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedBuyersId(expandedBuyersId === po.id ? null : po.id)}
+                          className="px-4 py-3 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl border border-[#bce3e0] transition-colors flex items-center gap-2 uppercase tracking-wider cursor-pointer"
+                          title="Voir la liste des clients ayant précommandé"
+                        >
+                          <Users className="w-4 h-4 text-[#18757d]" />
+                          <span>INSCRITS ({campaignBuyers.length})</span>
+                          {expandedBuyersId === po.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+
+                        <button
+                          onClick={() => handleOpenEditForm(po)}
+                          className="px-5 py-3 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-xs transition-colors flex items-center gap-2 uppercase tracking-wider cursor-pointer"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                          ÉDITER
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePreorder(po)}
+                          className="px-4 py-3 text-xs font-extrabold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-colors flex items-center gap-1.5 uppercase tracking-wider cursor-pointer"
+                          title="Supprimer la précommande de Supabase BDD"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                          SUPPRIMER
+                        </button>
+                      </div>
+
+                      <Link
+                        href={getPreorderDestinationUrl(po)}
+                        target="_blank"
+                        className="px-4 py-3 text-[#18757d] bg-white hover:bg-[#e6f4f3] rounded-xl border border-[#bce3e0] transition-colors flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider"
+                        title={`Ouvrir la page de destination (${getPreorderDestinationUrl(po)})`}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span>VOIR LA PAGE</span>
+                      </Link>
+                    </div>
+
                     {/* JAUGE DE PROGRESSION DU SEUIL */}
-                    <div className="p-6 bg-white rounded-2xl border border-[#eee7da] space-y-3">
+                    <div className="p-6 bg-white rounded-2xl border border-[#eee7da] space-y-3 shadow-xs">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-extrabold text-[#332420] gap-2">
                         <span className="flex items-center gap-2 text-[#18757d]">
                           <Target className="w-4 h-4 text-amber-500" />
@@ -723,7 +707,7 @@ export default function FormateurPreorderPage() {
 
                       {/* Bonus */}
                       {po.bonus && (
-                        <div className="pt-2 text-xs text-slate-600 font-medium flex items-center gap-2">
+                        <div className="pt-2 text-xs text-[#5e4d46] font-medium flex items-center gap-2">
                           <Gift className="w-4 h-4 text-amber-500 shrink-0" />
                           <span><strong>Bonus précommande offert :</strong> {po.bonus}</span>
                         </div>
@@ -759,30 +743,30 @@ export default function FormateurPreorderPage() {
                             <table className="w-full text-left text-xs font-medium border-collapse">
                               <thead>
                                 <tr className="bg-[#f5f1e8] text-[#332420] font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200">
-                                  <th className="p-3">#</th>
-                                  <th className="p-3">Nom & Prénom</th>
-                                  <th className="p-3">Adresse E-mail</th>
-                                  <th className="p-3">Date d'inscription</th>
-                                  <th className="p-3 text-right">Montant payé</th>
+                                  <th className="p-3.5">#</th>
+                                  <th className="p-3.5">Nom & Prénom</th>
+                                  <th className="p-3.5">Adresse E-mail</th>
+                                  <th className="p-3.5">Date d'inscription</th>
+                                  <th className="p-3.5 text-right">Montant payé</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
                                 {campaignBuyers.map((buyer, idx) => (
                                   <tr key={buyer.id || idx} className="hover:bg-[#faf8f5] transition-colors">
-                                    <td className="p-3 text-slate-400 font-extrabold">{idx + 1}</td>
-                                    <td className="p-3 font-extrabold text-[#332420] capitalize">
+                                    <td className="p-3.5 text-slate-400 font-extrabold">{idx + 1}</td>
+                                    <td className="p-3.5 font-extrabold text-[#332420] capitalize">
                                       {buyer.customerName || buyer.customerEmail.split('@')[0]}
                                     </td>
-                                    <td className="p-3">
+                                    <td className="p-3.5">
                                       <a
                                         href={`mailto:${buyer.customerEmail}`}
                                         className="text-[#18757d] font-bold hover:underline flex items-center gap-1"
                                       >
-                                        <Mail className="w-3 h-3 text-[#18757d]/70" />
+                                        <Mail className="w-3.5 h-3.5 text-[#18757d]/70" />
                                         {buyer.customerEmail}
                                       </a>
                                     </td>
-                                    <td className="p-3 text-slate-600 font-semibold">
+                                    <td className="p-3.5 text-slate-600 font-semibold">
                                       {(() => {
                                         if (!buyer.purchasedAt) return formatFrenchDate(new Date().toISOString().split('T')[0]);
                                         if (typeof buyer.purchasedAt === 'string' && buyer.purchasedAt.includes('/')) return buyer.purchasedAt;
@@ -794,7 +778,7 @@ export default function FormateurPreorderPage() {
                                         });
                                       })()}
                                     </td>
-                                    <td className="p-3 text-right font-extrabold text-emerald-700">
+                                    <td className="p-3.5 text-right font-extrabold text-emerald-700">
                                       {buyer.price ? `${buyer.price.toFixed(2)} €` : `${po.price.toFixed(2)} €`}
                                     </td>
                                   </tr>
