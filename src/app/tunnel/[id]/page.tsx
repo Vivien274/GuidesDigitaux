@@ -118,7 +118,7 @@ export default function SalesFunnelPage() {
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans">
       
       {/* 1. HEADER (Official logo, no main navigation links) */}
-      <header className="bg-white border-b border-[#eee7da] py-3.5">
+      <header className="bg-white border-b border-[#F5DFBB] py-3.5">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           <Link href="/" className="relative h-12 w-48 sm:w-52 block">
             <Image
@@ -130,57 +130,75 @@ export default function SalesFunnelPage() {
             />
           </Link>
 
-          <span className="px-3.5 py-1 rounded-full text-xs font-extrabold bg-[#e6f4f3] text-[#18757d] uppercase tracking-wider border border-[#18757d]/30 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#18757d] animate-pulse"></span>
-            Prévente exclusive
+          <span className="px-3.5 py-1 rounded-full text-xs font-extrabold bg-[#F5DFBB] text-[#562C2C] uppercase tracking-wider border border-[#F2542D]/30 flex items-center gap-1.5 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-[#F2542D] animate-pulse"></span>
+            Prévente exclusive Pionnier
           </span>
         </div>
       </header>
 
-      {/* 2. HERO BANNER SECTION (Teal background) */}
-      <section className="bg-[#18757d] text-white py-14 md:py-20 text-center px-4">
-        <div className="max-w-4xl mx-auto space-y-4">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
-            Fais décoller ton activité locale grâce à une Fiche Google parfaite
+      {/* 2. HERO BANNER SECTION (Teal background #127475 with text & Orange CTA #F2542D) */}
+      <section className="bg-[#127475] text-white py-14 md:py-20 text-center px-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <span className="inline-block px-4 py-1.5 rounded-full text-xs font-extrabold bg-[#F5DFBB] text-[#562C2C] uppercase tracking-wider shadow-xs">
+            Réservé aux artisans, créateurs et indépendants locaux
+          </span>
+
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight max-w-3xl mx-auto text-white">
+            Fais de ta Fiche Google un aimant à clients <span className="text-[#F5DFBB]">(sans y passer tes nuits, ni dépenser 1€ en pub)</span>.
           </h1>
-          <p className="text-base sm:text-lg text-teal-100 font-medium">
-            (sans y passer tes nuits ni dépenser 1 € en pub)
+
+          <p className="text-base sm:text-lg text-teal-100 font-medium max-w-2xl mx-auto leading-relaxed">
+            La méthode pas-à-pas pour créer, optimiser et faire vivre ton profil Google, même si l'informatique te donne envie d'envoyer valser ton ordinateur.
           </p>
+
+          <div className="pt-4">
+            <button
+              onClick={handleDirectStripeCheckout}
+              disabled={isProcessing}
+              className="inline-flex items-center justify-center gap-2 px-8 py-5 text-sm sm:text-base font-extrabold text-white bg-[#F2542D] hover:bg-[#d8441f] rounded-full shadow-xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 cursor-pointer"
+            >
+              <Rocket className="w-5 h-5 text-white" />
+              {isProcessing ? 'Connexion Stripe sécurisée...' : '👉 Je réserve ma place à 29€ (au lieu de 69€)'}
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* 3. SECTION 1: LE CONSTAT CASH */}
+      {/* 3. SECTION 1: LE CONSTAT */}
       <section className="py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4">
           
-          <div className="bg-white rounded-3xl p-8 sm:p-10 border border-[#eee7da] shadow-md grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+          <div className="bg-white rounded-3xl p-8 sm:p-10 border border-[#F5DFBB] shadow-md grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
             
             {/* Left Column: Problem & Callout */}
             <div className="md:col-span-7 space-y-5">
-              <h2 className="text-2xl font-extrabold text-[#332420]">Le constat cash</h2>
+              <h2 className="text-2xl font-extrabold text-[#562C2C] leading-snug">
+                Nom d'une pipe, pourquoi ce sont toujours tes concurrents qu'on voit en premier ?
+              </h2>
 
-              <p className="text-sm font-extrabold text-[#332420] leading-relaxed">
-                Tu es artisan ou créateur, tu as un savoir-faire en or, mais sur Google, on ne voit que tes concurrents ?
+              <p className="text-sm font-semibold text-[#562C2C] leading-relaxed">
+                Tu as un savoir-faire en or. Tu bosses dur. Mais quand on cherche ton métier sur Google dans ta ville... c'est le désert. On ne voit que tes concurrents (qui font parfois un boulot bien moins qualitatif que le tien, misère de misère...).
               </p>
 
-              <p className="text-xs text-[#5e4d46] leading-relaxed">
-                Pire, tu as créé ta fiche à la va-vite et tu te demandes si elle ne fait pas fuir tes clients ?
+              <p className="text-xs text-[#562C2C]/80 leading-relaxed">
+                Peut-être que tu as bricolé une fiche à la va-vite il y a des mois, et depuis... plus rien. Zéro appel, zéro visite. Une vitrine de magasin dans une rue abandonnée, ça ne vaut pas tripette, on est d'accord ?
               </p>
 
-              {/* Green Callout Box */}
-              <div className="p-5 bg-emerald-50/80 border-l-4 border-emerald-600 rounded-r-2xl space-y-2 text-xs">
-                <p className="font-extrabold text-emerald-950 text-sm">
-                  Saperlipopette... Pour un artisan, la fiche Google, c'est le moyen gratuit le plus puissant pour remplir son carnet de commande.
+              {/* Problem Highlight Box (#F5DFBB / #F2542D) */}
+              <div className="p-5 bg-[#F5DFBB]/30 border-l-4 border-[#F2542D] rounded-r-2xl space-y-2 text-xs">
+                <p className="font-extrabold text-[#562C2C] text-sm">
+                  Le problème ?
                 </p>
-                <p className="text-emerald-900 leading-relaxed italic">
-                  Le problème ? L'interface change tout le temps, c'est la croix et la bannière pour s'y retrouver, et le jargon technique donne juste envie d'envoyer valser l'ordinateur par la fenêtre.
+                <p className="text-[#562C2C] leading-relaxed font-medium">
+                  L'interface de Google change tout le temps, c'est la croix et la bannière pour s'y retrouver, et le jargon technique des "experts" te donne des sueurs froides.
                 </p>
               </div>
             </div>
 
             {/* Right Column: Founder Card with Official Photo */}
-            <div className="md:col-span-5 bg-[#faf8f5] p-6 rounded-2xl border border-[#eee7da] text-center space-y-4 shadow-xs">
-              <div className="relative w-24 h-24 mx-auto rounded-full overflow-hidden border-2 border-[#18757d] shadow-sm">
+            <div className="md:col-span-5 bg-[#FAF8F5] p-6 rounded-2xl border border-[#F5DFBB] text-center space-y-4 shadow-xs">
+              <div className="relative w-24 h-24 mx-auto rounded-full overflow-hidden border-2 border-[#0E9594] shadow-sm">
                 <Image
                   src="/images/stephanie_v2.png"
                   alt="Stéphanie - Créatrice de Guides Digitaux"
@@ -190,11 +208,11 @@ export default function SalesFunnelPage() {
               </div>
 
               <div>
-                <h3 className="text-sm font-extrabold text-[#332420]">Stéphanie</h3>
-                <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">Créatrice de Guides Digitaux</span>
+                <h3 className="text-sm font-extrabold text-[#562C2C]">Stéphanie</h3>
+                <span className="text-[11px] text-[#562C2C]/70 font-semibold block mt-0.5">Créatrice de Guides Digitaux</span>
               </div>
 
-              <div className="p-4 bg-white rounded-xl border border-[#eee7da] text-xs font-semibold text-[#5e4d46] italic shadow-xs">
+              <div className="p-4 bg-white rounded-xl border border-[#F5DFBB] text-xs font-semibold text-[#562C2C] italic shadow-xs">
                 "Je connais la galère. Et si on reprenait le contrôle de ta visibilité locale ?"
               </div>
             </div>
@@ -204,59 +222,80 @@ export default function SalesFunnelPage() {
         </div>
       </section>
 
-      {/* 4. SECTION 2: LA SOLUTION */}
-      <section className="py-12 bg-gradient-to-b from-[#faf8f5] to-[#f5f1e8] border-y border-[#eee7da]">
+      {/* 4. SECTION 2: LA SOLUTION & PROGRAMME */}
+      <section className="py-12 bg-gradient-to-b from-[#faf8f5] to-[#F5DFBB]/30 border-y border-[#F5DFBB]">
         <div className="max-w-4xl mx-auto px-4 space-y-8">
           
           <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="px-4 py-1 rounded-full text-[11px] font-extrabold bg-[#f5e6d3] text-[#332420] uppercase tracking-wider shadow-xs inline-block">
+            <span className="px-4 py-1 rounded-full text-[11px] font-extrabold bg-[#F5DFBB] text-[#562C2C] uppercase tracking-wider shadow-xs inline-block">
               LA SOLUTION
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#332420] leading-tight">
-              J'ai décidé de créer une mini-formation pas à pas, 100 % pensée pour les novices.
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#562C2C] leading-tight">
+              Saperlipopette, respire ! J'ai la solution de derrière les fagots.
             </h2>
           </div>
 
-          <div className="bg-white p-8 rounded-3xl border border-[#eee7da] shadow-md grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-            
-            {/* Left: Course Cover Image */}
-            <div className="md:col-span-5 relative h-64 w-full rounded-2xl overflow-hidden border border-[#eee7da] bg-[#faf8f5] shadow-sm">
-              <Image
-                src="https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp"
-                alt="Formation Fiche Google Business Profile"
-                fill
-                className="object-cover"
-              />
+          <div className="bg-white p-8 rounded-3xl border border-[#F5DFBB] shadow-md space-y-6">
+            <p className="text-sm text-[#562C2C] font-semibold leading-relaxed">
+              Oublie les tutos incompréhensibles de 3 heures. J'ai créé une mini-formation vidéo, <strong>100% pensée pour les novices</strong>. On va s'installer tous les deux (virtuellement), et je vais te montrer sur mon écran, clic par clic, comment faire de ta fiche Google ton meilleur commercial.
+            </p>
+
+            <p className="text-xs text-[#562C2C]/80 leading-relaxed">
+              Et attention, on ne va pas juste la "créer". Une fiche fantôme, ça ne sert à rien. On va l'optimiser aux petits oignons et <strong>apprendre à la faire vivre</strong> pour que Google te propulse tout en haut !
+            </p>
+
+            {/* Grid Programme 4 Étapes avec bordure Teal #0E9594 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div className="p-5 bg-white rounded-2xl border-l-4 border-[#0E9594] border-y border-r border-[#F5DFBB] shadow-xs space-y-1.5">
+                <strong className="text-xs font-extrabold text-[#562C2C] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#0E9594]" />
+                  Étape 1 : Les fondations
+                </strong>
+                <p className="text-xs text-[#562C2C]/80 leading-relaxed">
+                  On crée ou on revendique ta fiche proprement, sans faire d'erreurs qui bloquent le profil.
+                </p>
+              </div>
+
+              <div className="p-5 bg-white rounded-2xl border-l-4 border-[#0E9594] border-y border-r border-[#F5DFBB] shadow-xs space-y-1.5">
+                <strong className="text-xs font-extrabold text-[#562C2C] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#0E9594]" />
+                  Étape 2 : L'optimisation cachée
+                </strong>
+                <p className="text-xs text-[#562C2C]/80 leading-relaxed">
+                  Les petits réglages secrets que tes concurrents ne connaissent pas pour remonter.
+                </p>
+              </div>
+
+              <div className="p-5 bg-white rounded-2xl border-l-4 border-[#0E9594] border-y border-r border-[#F5DFBB] shadow-xs space-y-1.5">
+                <strong className="text-xs font-extrabold text-[#562C2C] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#0E9594]" />
+                  Étape 3 : La machine à étoiles
+                </strong>
+                <p className="text-xs text-[#562C2C]/80 leading-relaxed">
+                  Ma méthode douce pour récolter des avis 5 étoiles réguliers sans harceler tes clients.
+                </p>
+              </div>
+
+              <div className="p-5 bg-white rounded-2xl border-l-4 border-[#0E9594] border-y border-r border-[#F5DFBB] shadow-xs space-y-1.5">
+                <strong className="text-xs font-extrabold text-[#562C2C] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#0E9594]" />
+                  Étape 4 : La routine 5 min
+                </strong>
+                <p className="text-xs text-[#562C2C]/80 leading-relaxed">
+                  Comment poster des actus et faire vivre ta fiche en 5 minutes chrono par semaine.
+                </p>
+              </div>
             </div>
 
-            {/* Right: Detailed Bullets */}
-            <div className="md:col-span-7 space-y-4">
-              <h3 className="text-sm font-extrabold text-[#332420] leading-relaxed">
-                En moins de 2 heures de vidéos courtes (hébergées directement ici, sur ton espace sécurisé), on va faire ça ensemble, pas à pas :
-              </h3>
-
-              <div className="space-y-3 pt-1">
-                <div className="flex items-start gap-3 text-xs text-[#332420]">
-                  <CheckCircle2 className="w-5 h-5 text-[#18757d] shrink-0 mt-0.5" />
-                  <span>
-                    <strong>L'optimisation cachée de ton profil</strong> pour passer devant les autres (parce que les profils à moitié vides, ça ne vaut pas tripeux).
-                  </span>
-                </div>
-
-                <div className="flex items-start gap-3 text-xs text-[#332420]">
-                  <CheckCircle2 className="w-5 h-5 text-[#18757d] shrink-0 mt-0.5" />
-                  <span>
-                    <strong>La méthode simple pour récolter des avis 5 étoiles</strong> (sans harceler tes clients ni pleurer pour qu'ils te laissent un mot).
-                  </span>
-                </div>
-
-                <div className="flex items-start gap-3 text-xs text-[#332420]">
-                  <CheckCircle2 className="w-5 h-5 text-[#18757d] shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Comment poster des actus en 5 minutes par semaine</strong> pour plaire à l'algorithme Google.
-                  </span>
-                </div>
-              </div>
+            <div className="pt-4 text-center">
+              <button
+                onClick={handleDirectStripeCheckout}
+                disabled={isProcessing}
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 text-xs sm:text-sm font-extrabold text-white bg-[#0E9594] hover:bg-[#0c7c7c] rounded-full shadow-md uppercase tracking-wider transition-all cursor-pointer"
+              >
+                <Rocket className="w-4 h-4 text-[#F5DFBB]" />
+                👉 Je profite du programme complet
+              </button>
             </div>
 
           </div>
@@ -264,75 +303,76 @@ export default function SalesFunnelPage() {
         </div>
       </section>
 
-      {/* 5. SECTION 3: CONVERSION BOX (PREORDER OFFER) */}
+      {/* 5. SECTION 3: OFFRE EXCLUSIVE DE LANCEMENT (#F5DFBB & Orange #F2542D) */}
       <section className="py-14 md:py-20">
         <div className="max-w-3xl mx-auto px-4">
           
-          <div className="bg-[#fffcf7] p-8 sm:p-10 rounded-3xl border-2 border-amber-200 shadow-xl space-y-6">
+          <div className="bg-[#FAF8F5] p-8 sm:p-10 rounded-3xl border-2 border-[#F2542D]/40 shadow-xl space-y-6 text-center">
             
-            {/* Warning Alert Banner */}
-            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 flex items-start gap-3 text-xs text-amber-950 font-semibold">
-              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <strong className="font-extrabold block mb-0.5">Attention, offre exclusive en précommande</strong>
-                La formation est actuellement en cours de finalisation sur la plateforme. Elle sortira officiellement le <strong>15 septembre</strong> au tarif de <strong>69 €</strong>.
-              </div>
-            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#F2542D]">
+              ⚠️ Attention : Offre exclusive de Lancement !
+            </h2>
 
-            {/* Pricing Box */}
-            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#eee7da] text-center space-y-4 shadow-sm">
-              <span className="text-[11px] font-extrabold text-[#18757d] uppercase tracking-wider block">
-                TARIF PIONNIER
+            <p className="text-xs sm:text-sm text-[#562C2C]/80 leading-relaxed">
+              La formation est en cours d'enregistrement et sortira officiellement le 15 septembre au tarif de <span className="line-through text-slate-400 font-bold">69 €</span>.
+            </p>
+
+            <p className="text-xs sm:text-sm text-[#562C2C] font-bold leading-relaxed">
+              Mais parce que tu me fais confiance avant tout le monde, j'ai décidé de lancer une <strong>Prévente "Pionnier"</strong>.
+            </p>
+
+            <p className="text-xs text-[#562C2C]/70">
+              Si tu réserves ton accès aujourd'hui, la formation est à :
+            </p>
+
+            {/* Big Price Tag en Orange #F2542D */}
+            <div className="py-2">
+              <span className="text-4xl sm:text-5xl font-black text-[#F2542D] block">
+                29 € seulement
               </span>
-
-              <div className="flex items-baseline justify-center gap-3">
-                <span className="text-2xl text-slate-400 line-through font-extrabold">69€</span>
-                <span className="text-5xl font-black text-[#18757d]">29€</span>
-              </div>
-
-              <p className="text-xs font-extrabold text-emerald-700">
-                Soit + de 50% de réduction immédiate avant le lancement officiel
+              <p className="text-xs text-[#562C2C]/70 italic mt-1">
+                (Soit même pas le prix d'un bon resto, pour une compétence qui va te ramener des clients pendant des années).
               </p>
+            </div>
 
-              {/* CTA BUTTON FOR DIRECT STRIPE CHECKOUT */}
-              <div className="space-y-3 pt-2">
-                <button
-                  onClick={handleDirectStripeCheckout}
-                  disabled={isProcessing}
-                  className="w-full py-5 text-sm sm:text-base font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Rocket className="w-5 h-5 text-[#332420]" />
-                  {isProcessing ? 'Connexion Stripe sécurisée...' : '👉 Je profite du tarif précommande à 29 €'}
-                </button>
+            {/* CTA BUTTON (#F2542D) */}
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={handleDirectStripeCheckout}
+                disabled={isProcessing}
+                className="w-full sm:w-auto px-8 py-5 text-sm sm:text-base font-extrabold text-white bg-[#F2542D] hover:bg-[#d8441f] rounded-full shadow-xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Rocket className="w-5 h-5 text-white" />
+                {isProcessing ? 'Connexion Stripe sécurisée...' : '👉 Je profite du tarif Pionnier à 29€ !'}
+              </button>
 
-                <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-bold text-slate-500 pt-1">
-                  <span className="flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-[#18757d]" />
-                    Paiement 100% sécurisé via Stripe
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5 text-[#18757d]" />
-                    Remboursement garanti
-                  </span>
-                </div>
+              <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-bold text-[#562C2C]/70 pt-1">
+                <span className="flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-[#0E9594]" />
+                  Paiement 100% sécurisé via Stripe
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1.5">
+                  <RefreshCw className="w-3.5 h-3.5 text-[#0E9594]" />
+                  Garantie satisfait ou remboursé
+                </span>
               </div>
             </div>
 
-            {/* Mon engagement transparence */}
-            <div className="p-6 bg-[#f0f8f8] rounded-2xl border border-[#18757d]/20 space-y-3 text-xs">
-              <div className="flex items-center gap-2 text-[#18757d] font-extrabold">
-                <Zap className="w-4 h-4 text-[#18757d] shrink-0" />
-                <span className="uppercase tracking-wider">Mon engagement transparence</span>
+            {/* Mon engagement 100% Transparence (Teal #0E9594 / Warm Cream #F5DFBB) */}
+            <div className="p-6 bg-[#0E9594]/10 rounded-2xl border border-[#0E9594]/30 text-left flex flex-col sm:flex-row items-start gap-4">
+              <div className="text-3xl shrink-0">🛡️</div>
+              <div className="space-y-2 text-xs">
+                <h3 className="text-sm font-extrabold text-[#562C2C]">
+                  Mon engagement 100% Transparence (Zéro Risque)
+                </h3>
+                <p className="text-[#562C2C]/80 leading-relaxed">
+                  Je suis cash avec toi : je lancerai les enregistrements uniquement si nous atteignons un minimum de <strong>15 précommandes</strong> d'ici le 20 août.
+                </p>
+                <p className="text-[#127475] font-extrabold leading-relaxed">
+                  Si l'objectif n'est pas atteint ? Je te rembourse tes 29€ intégralement, dans l'heure, directement sur ton compte bancaire. Sans blabla, sans condition. Tu ne prends absolument aucun risque financier !
+                </p>
               </div>
-
-              <p className="text-slate-700 leading-relaxed">
-                Je ne veux pas travailler pour rien. Je lancerai les enregistrements uniquement si nous atteignons un minimum de <strong>15 précommandes</strong> avant le <strong>20 août</strong>.
-              </p>
-
-              <p className="text-[#18757d] font-extrabold leading-relaxed">
-                Si l'objectif n'est pas atteint ? Tu es intégralement remboursé(e) sur ton compte bancaire dans l'heure, sans poser de question. Tu ne prends absolument aucun risque !
-              </p>
             </div>
 
           </div>
@@ -340,10 +380,64 @@ export default function SalesFunnelPage() {
         </div>
       </section>
 
-      {/* 6. FOOTER SECTION */}
-      <footer className="bg-[#f4ede0] py-8 border-t border-[#e8ded0] text-center text-xs text-slate-600">
-        <div className="max-w-4xl mx-auto px-4 space-y-3">
-          <div className="relative h-10 w-44 mx-auto mb-1">
+      {/* 6. SECTION 4: FAQ (ACCORDÉON) */}
+      <section className="py-12 bg-white border-t border-[#F5DFBB]">
+        <div className="max-w-3xl mx-auto px-4 space-y-8">
+          
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#562C2C] text-center">
+            Des questions ? J'y réponds sans filtre :
+          </h2>
+
+          <div className="space-y-3">
+            <details className="bg-[#FAF8F5] border border-[#F5DFBB] rounded-2xl p-5 group cursor-pointer">
+              <summary className="font-extrabold text-sm text-[#562C2C] flex items-center justify-between list-none">
+                <span>👉 Je suis vraiment nul(le) en informatique, c'est pour moi ?</span>
+                <span className="text-[#0E9594] group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <p className="text-xs text-[#562C2C]/80 leading-relaxed mt-3 pt-3 border-t border-[#F5DFBB]">
+                C'est exactement pour toi ! Fichtre, je déteste le jargon. Je te montre mon écran, tu mets pause, tu fais pareil sur le tien. C'est simple comme bonjour.
+              </p>
+            </details>
+
+            <details className="bg-[#FAF8F5] border border-[#F5DFBB] rounded-2xl p-5 group cursor-pointer">
+              <summary className="font-extrabold text-sm text-[#562C2C] flex items-center justify-between list-none">
+                <span>👉 J'ai déjà une fiche Google, ça m'est utile ?</span>
+                <span className="text-[#0E9594] group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <p className="text-xs text-[#562C2C]/80 leading-relaxed mt-3 pt-3 border-t border-[#F5DFBB]">
+                Oui, à 200% ! On va passer en revue l'optimisation avancée, et surtout, on va voir comment la faire vivre chaque semaine pour qu'elle remonte devant tes concurrents.
+              </p>
+            </details>
+
+            <details className="bg-[#FAF8F5] border border-[#F5DFBB] rounded-2xl p-5 group cursor-pointer">
+              <summary className="font-extrabold text-sm text-[#562C2C] flex items-center justify-between list-none">
+                <span>👉 Comment j'accède à la formation ensuite ?</span>
+                <span className="text-[#0E9594] group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <p className="text-xs text-[#562C2C]/80 leading-relaxed mt-3 pt-3 border-t border-[#F5DFBB]">
+                Le 15 septembre, tu recevras un email avec tes accès à ton espace membre privé sur Guides-Digitaux.com. Tu pourras regarder les vidéos à ton rythme, à vie !
+              </p>
+            </details>
+          </div>
+
+          <div className="pt-6 text-center">
+            <button
+              onClick={handleDirectStripeCheckout}
+              disabled={isProcessing}
+              className="inline-flex items-center justify-center gap-2 px-8 py-5 text-sm sm:text-base font-extrabold text-white bg-[#F2542D] hover:bg-[#d8441f] rounded-full shadow-xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 cursor-pointer"
+            >
+              <Rocket className="w-5 h-5 text-white" />
+              {isProcessing ? 'Connexion Stripe sécurisée...' : '👉 Je sécurise ma place à 29€ au lieu de 69€ !'}
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 7. FOOTER SECTION (#562C2C & #F5DFBB) */}
+      <footer className="bg-[#562C2C] py-10 text-center text-xs text-[#F5DFBB]/80">
+        <div className="max-w-4xl mx-auto px-4 space-y-4">
+          <div className="relative h-10 w-44 mx-auto mb-1 brightness-0 invert">
             <Image
               src="/images/logo.png"
               alt="Guides Digitaux"
@@ -354,7 +448,7 @@ export default function SalesFunnelPage() {
 
           <p>© 2026 Guides Digitaux. Tous droits réservés.</p>
 
-          <div className="flex justify-center gap-4 text-[11px] text-[#18757d] font-bold">
+          <div className="flex justify-center gap-4 text-[11px] text-[#F5DFBB] font-bold">
             <Link href="/mentions-legales" className="hover:underline">Mentions légales & Confidentialité</Link>
             <span>•</span>
             <Link href="/cgv" className="hover:underline">CGV</Link>

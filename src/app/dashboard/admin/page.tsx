@@ -61,114 +61,90 @@ export default function SuperadminDashboardPage() {
   }, [user, role, router]);
 
   // Load real accounts & purchases from Supabase DB & localStorage
+  // Load real accounts & purchases directly from Supabase DB tables (profiles, orders, enrollments, preorder_buyers)
   const loadDashboardData = async () => {
-    if (typeof window === 'undefined') return;
-
     try {
       const accountsMap = new Map<string, AdminUserItem>();
 
-      // 1. Official Superadmin Accounts
-      const baseSuperadmins: AdminUserItem[] = [
-        { id: 'sa-1', name: 'Vivien', email: 'vivien274@gmail.com', role: 'superadmin', purchasesCount: 0, totalSpent: 0 },
-        { id: 'sa-2', name: 'Guides Digitaux Contact', email: 'contact@guides-digitaux.com', role: 'superadmin', purchasesCount: 0, totalSpent: 0 },
-        { id: 'sa-3', name: 'Stéphanie ROCQ', email: 'stephanie@guides-digitaux.com', role: 'superadmin', purchasesCount: 0, totalSpent: 0 }
-      ];
-      baseSuperadmins.forEach(u => accountsMap.set(u.email.toLowerCase().trim(), u));
+      // 1. Fetch all registered user profiles from Supabase DB
+      const { data: profiles } = await supabase.from('profiles').select('*');
+      if (profiles && Array.isArray(profiles)) {
+        profiles.forEach((p: any) => {
+          const em = p.email?.toLowerCase().trim();
+          if (em) {
+            accountsMap.set(em, {
+              id: p.id || `sp-${Date.now()}`,
+              name: p.full_name || em.split('@')[0],
+              email: em,
+              role: p.role || 'eleve',
+              purchasesCount: 0,
+              totalSpent: 0
+            });
+          }
+        });
+      }
 
-      // 2. Load custom registered Formateur accounts
-      const storedFormateurs = JSON.parse(localStorage.getItem('gd_formateur_accounts') || '[]');
-      storedFormateurs.forEach((f: any, idx: number) => {
-        const em = f.email?.toLowerCase().trim();
-        if (em && !accountsMap.has(em)) {
-          accountsMap.set(em, {
-            id: `formateur-${idx}`,
-            name: f.name || em.split('@')[0],
-            email: em,
-            role: 'formateur',
-            purchasesCount: 0,
-            totalSpent: 0
-          });
-        }
-      });
-
-      // 3. Load all registered users from AuthContext storage
-      const registeredUsers = JSON.parse(localStorage.getItem('gd_all_registered_users') || '[]');
-      registeredUsers.forEach((u: any, idx: number) => {
-        const em = u.email?.toLowerCase().trim();
-        if (em && !accountsMap.has(em)) {
-          accountsMap.set(em, {
-            id: `user-${idx}`,
-            name: u.fullName || em.split('@')[0],
-            email: em,
-            role: u.role || 'eleve',
-            purchasesCount: 0,
-            totalSpent: 0
-          });
-        }
-      });
-
-      // 4. Fetch Supabase DB profiles table
-      try {
-        const { data: profiles } = await supabase.from('profiles').select('*');
-        if (profiles && Array.isArray(profiles)) {
-          profiles.forEach((p: any) => {
-            const em = p.email?.toLowerCase().trim();
-            if (em) {
-              const existing = accountsMap.get(em);
-              if (existing) {
-                existing.role = p.role || existing.role;
-                existing.name = p.full_name || existing.name;
-              } else {
-                accountsMap.set(em, {
-                  id: p.id || `sp-${Date.now()}`,
-                  name: p.full_name || em.split('@')[0],
-                  email: em,
-                  role: p.role || 'eleve',
-                  purchasesCount: 0,
-                  totalSpent: 0
-                });
-              }
-            }
-          });
-        }
-      } catch (e) {}
-
-      // 5. Calculate student purchases & revenue across all gd_user_purchases_ keys
       let totalRev = 0;
       let totalOrdersCount = 0;
 
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('gd_user_purchases_')) {
-          const userEmail = key.replace('gd_user_purchases_', '').toLowerCase().trim();
-          try {
-            const purchases = JSON.parse(localStorage.getItem(key) || '[]');
-            if (Array.isArray(purchases) && purchases.length > 0) {
-              totalOrdersCount += purchases.length;
-              let userSpent = 0;
-              purchases.forEach((p: any) => {
-                const cost = p.price || 29;
-                userSpent += cost;
-                totalRev += cost;
-              });
+      // 2. Fetch sales from orders table
+      const { data: orders } = await supabase.from('orders').select('*');
+      if (orders && Array.isArray(orders)) {
+        orders.forEach((ord: any) => {
+          const em = ord.customer_email?.toLowerCase().trim();
+          const amount = ord.amount ? Number(ord.amount) : (ord.total_amount_cents ? ord.total_amount_cents / 100 : 29);
+          totalOrdersCount += 1;
+          totalRev += amount;
 
-              if (accountsMap.has(userEmail)) {
-                const acc = accountsMap.get(userEmail)!;
-                acc.purchasesCount = purchases.length;
-                acc.totalSpent = userSpent;
-              } else {
-                accountsMap.set(userEmail, {
-                  id: `eleve-${Date.now()}`,
-                  name: userEmail.split('@')[0],
-                  email: userEmail,
-                  role: 'eleve',
-                  purchasesCount: purchases.length,
-                  totalSpent: userSpent
-                });
-              }
+          if (em) {
+            const existing = accountsMap.get(em);
+            if (existing) {
+              existing.purchasesCount += 1;
+              existing.totalSpent += amount;
+            } else {
+              accountsMap.set(em, {
+                id: ord.id || `o-${Date.now()}`,
+                name: em.split('@')[0],
+                email: em,
+                role: 'eleve',
+                purchasesCount: 1,
+                totalSpent: amount
+              });
             }
-          } catch (e) {}
-        }
-      });
+          }
+        });
+      }
+
+      // 3. Fetch sales from enrollments table
+      const { data: enrollments } = await supabase.from('enrollments').select('*');
+      if (enrollments && Array.isArray(enrollments)) {
+        enrollments.forEach((enr: any) => {
+          const em = enr.user_email?.toLowerCase().trim();
+          const amount = enr.price ? Number(enr.price) : 29;
+          if (em) {
+            const existing = accountsMap.get(em);
+            if (existing) {
+              if (existing.purchasesCount === 0) {
+                existing.purchasesCount += 1;
+                existing.totalSpent += amount;
+                totalOrdersCount += 1;
+                totalRev += amount;
+              }
+            } else {
+              accountsMap.set(em, {
+                id: enr.id || `e-${Date.now()}`,
+                name: em.split('@')[0],
+                email: em,
+                role: 'eleve',
+                purchasesCount: 1,
+                totalSpent: amount
+              });
+              totalOrdersCount += 1;
+              totalRev += amount;
+            }
+          }
+        });
+      }
 
       const uniqueList = Array.from(accountsMap.values());
 
@@ -187,49 +163,47 @@ export default function SuperadminDashboardPage() {
     loadDashboardData();
   }, []);
 
-  const handleCreateFormateur = (e: React.FormEvent) => {
+  const handleCreateFormateur = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFormateurEmail) return;
 
     const normalizedEmail = newFormateurEmail.toLowerCase().trim();
+    const formateurName = newFormateurName || normalizedEmail.split('@')[0];
 
-    const newFormateur: AdminUserItem = {
-      id: `u-${Date.now()}`,
-      name: newFormateurName || normalizedEmail.split('@')[0],
-      email: normalizedEmail,
-      role: 'formateur',
-      purchasesCount: 0,
-      totalSpent: 0.0
-    };
-
-    // Update state
-    const updatedUsers = [newFormateur, ...usersList.filter(u => u.email.toLowerCase() !== normalizedEmail)];
-    setUsersList(updatedUsers);
-
-    // Persist in localStorage
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = JSON.parse(localStorage.getItem('gd_formateur_accounts') || '[]');
-        if (!stored.some((f: any) => f.email?.toLowerCase().trim() === normalizedEmail)) {
-          stored.push({ name: newFormateur.name, email: normalizedEmail });
-          localStorage.setItem('gd_formateur_accounts', JSON.stringify(stored));
-        }
-      } catch (err) {
-        console.error('Failed to save formateur account', err);
-      }
+    // Save directly to Supabase profiles table
+    try {
+      await supabase.from('profiles').upsert({
+        email: normalizedEmail,
+        full_name: formateurName,
+        role: 'formateur',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'email' });
+    } catch (e) {
+      console.warn('Error upserting formateur profile in Supabase', e);
     }
 
     setNewFormateurName('');
     setNewFormateurEmail('');
     setShowCreateFormateur(false);
-    loadDashboardData();
-    alert(`Compte Formateur créé avec succès pour ${normalizedEmail} !`);
+    await loadDashboardData();
+    alert(`Compte Formateur créé et enregistré dans Supabase BDD pour ${normalizedEmail} !`);
   };
 
-  const handleRoleChange = (userId: string, newRole: UserRole) => {
+  const handleRoleChange = async (userEmail: string, newRole: UserRole) => {
+    // Update local state immediately for UI responsiveness
     setUsersList(
-      usersList.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+      usersList.map((u) => (u.email === userEmail ? { ...u, role: newRole } : u))
     );
+
+    // Persist role update in Supabase DB profiles table
+    try {
+      await supabase.from('profiles').update({
+        role: newRole,
+        updated_at: new Date().toISOString()
+      }).eq('email', userEmail.toLowerCase().trim());
+    } catch (e) {
+      console.warn('Failed to update user role in Supabase profiles', e);
+    }
   };
 
   const handleResetPurchasesOnly = async () => {
@@ -441,7 +415,7 @@ export default function SuperadminDashboardPage() {
                       <td className="py-4 px-4 text-right">
                         <select
                           value={u.role}
-                          onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
+                          onChange={(e) => handleRoleChange(u.email, e.target.value as UserRole)}
                           className="bg-[#faf8f5] border border-[#eee7da] rounded-xl px-3 py-1.5 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
                         >
                           <option value="eleve">Élève</option>
