@@ -199,50 +199,84 @@ export async function addStudentEnrollment(userId: string, courseId: string) {
   }
 }
 
+export function getKnownRoleForEmail(email: string): 'superadmin' | 'formateur' | 'eleve' {
+  const normalized = (email || '').toLowerCase().trim();
+  if (['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@guides-digitaux.com'].includes(normalized)) {
+    return 'superadmin';
+  }
+  if (['contact@spoolio.fr'].includes(normalized)) {
+    return 'formateur';
+  }
+  return 'eleve';
+}
+
 /**
  * 5. Upsert User Profile to Supabase DB profiles table
  */
-export async function upsertUserProfileToDb(email: string, role: string = 'eleve', fullName?: string) {
+export async function upsertUserProfileToDb(email: string, role?: string, fullName?: string) {
   if (!email) return;
   try {
     const normalizedEmail = email.toLowerCase().trim();
+    const knownRole = getKnownRoleForEmail(normalizedEmail);
+    const effectiveRole = (role && role !== 'eleve') ? role : (knownRole !== 'eleve' ? knownRole : (role || 'eleve'));
     const name = fullName || normalizedEmail.split('@')[0];
 
-    const { error } = await supabase.from('profiles').upsert({
-      email: normalizedEmail,
-      full_name: name,
-      role: role,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'email' });
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
 
-    if (error) {
-      await supabase.from('profiles').upsert({
-        id: `usr_${Date.now()}`,
+    if (existing) {
+      await supabase.from('profiles').update({
+        full_name: name,
+        role: effectiveRole,
+        updated_at: new Date().toISOString()
+      }).eq('id', existing.id);
+    } else {
+      await supabase.from('profiles').insert({
         email: normalizedEmail,
         full_name: name,
-        role: role,
+        role: effectiveRole,
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
     }
   } catch (e) {
-    console.warn('Supabase profile upsert fallback executed', e);
+    console.warn('Supabase profile upsert error', e);
   }
 }
 
 export async function fetchUserProfileFromDb(email: string) {
   if (!email) return null;
+  const normalized = email.toLowerCase().trim();
+  const knownRole = getKnownRoleForEmail(normalized);
+
   try {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('email', email.toLowerCase().trim())
-      .single();
+      .eq('email', normalized)
+      .maybeSingle();
 
-    if (!error && data) return data;
+    if (!error && data) {
+      if (data.role === 'eleve' && knownRole !== 'eleve') {
+        data.role = knownRole;
+        supabase.from('profiles').update({ role: knownRole }).eq('email', normalized).then();
+      }
+      return data;
+    }
   } catch (e) {
     console.warn('Error fetching profile from Supabase', e);
   }
-  return null;
+
+  const defaultProfile = {
+    email: normalized,
+    full_name: normalized.split('@')[0],
+    role: knownRole
+  };
+  await upsertUserProfileToDb(normalized, knownRole);
+  return defaultProfile;
 }
 
 /**

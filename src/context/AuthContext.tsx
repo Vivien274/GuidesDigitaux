@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-import { fetchUserProfileFromDb, upsertUserProfileToDb } from '@/lib/supabaseLms';
+import { fetchUserProfileFromDb, upsertUserProfileToDb, getKnownRoleForEmail } from '@/lib/supabaseLms';
 
 export type UserRole = 'superadmin' | 'formateur' | 'eleve';
 
@@ -38,12 +38,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (savedUser) {
             const parsed = JSON.parse(savedUser);
             if (parsed?.email) {
-              const dbProfile = await fetchUserProfileFromDb(parsed.email);
-              const effectiveRole: UserRole = dbProfile?.role || parsed.role || 'eleve';
+              const normalizedEmail = parsed.email.toLowerCase().trim();
+              const knownRole = getKnownRoleForEmail(normalizedEmail);
+              const dbProfile = await fetchUserProfileFromDb(normalizedEmail);
+              const effectiveRole: UserRole = (dbProfile?.role && dbProfile.role !== 'eleve')
+                ? (dbProfile.role as UserRole)
+                : (knownRole !== 'eleve' ? knownRole : (parsed.role || 'eleve'));
               const updatedProfile: UserProfile = {
                 id: dbProfile?.id || parsed.id || `usr_${Date.now()}`,
-                email: parsed.email,
-                fullName: dbProfile?.full_name || parsed.fullName || parsed.email.split('@')[0],
+                email: normalizedEmail,
+                fullName: dbProfile?.full_name || parsed.fullName || normalizedEmail.split('@')[0],
                 role: effectiveRole
               };
               setUser(updatedProfile);
@@ -75,13 +79,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, targetRole: UserRole = 'eleve') => {
-    const dbProfile = await fetchUserProfileFromDb(email);
-    const effectiveRole: UserRole = dbProfile?.role || targetRole;
+    const normalizedEmail = email.toLowerCase().trim();
+    const knownRole = getKnownRoleForEmail(normalizedEmail);
+    const dbProfile = await fetchUserProfileFromDb(normalizedEmail);
+    const effectiveRole: UserRole = (dbProfile?.role && dbProfile.role !== 'eleve')
+      ? (dbProfile.role as UserRole)
+      : (knownRole !== 'eleve' ? knownRole : targetRole);
     
     const newUser: UserProfile = {
       id: dbProfile?.id || `user-${Date.now()}`,
-      email,
-      fullName: dbProfile?.full_name || email.split('@')[0].replace('.', ' '),
+      email: normalizedEmail,
+      fullName: dbProfile?.full_name || normalizedEmail.split('@')[0].replace('.', ' '),
       role: effectiveRole
     };
     
@@ -92,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('gd_auth_user', JSON.stringify(newUser));
     }
     
-    await upsertUserProfileToDb(email, effectiveRole, newUser.fullName);
+    await upsertUserProfileToDb(normalizedEmail, effectiveRole, newUser.fullName);
   };
 
   const logout = () => {
