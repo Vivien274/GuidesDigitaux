@@ -581,11 +581,13 @@ export default function FormateurPreorderPage() {
                 const remaining = Math.max(0, po.targetEnrollments - po.currentEnrollments);
 
                 const campaignBuyers = buyers.filter(b => 
+                  !b.courseId ||
                   b.courseId === po.id || 
                   b.courseId === po.courseId || 
                   po.id.includes(b.courseId) || 
                   b.courseId.includes(po.id) ||
-                  (po.courseTitle && b.courseTitle && b.courseTitle.toLowerCase().includes(po.courseTitle.toLowerCase().slice(0, 12)))
+                  (po.courseTitle && b.courseTitle && b.courseTitle.toLowerCase().includes(po.courseTitle.toLowerCase().slice(0, 6))) ||
+                  preorders.length === 1
                 );
 
                 const cleanDesc = (po.description || '').replace(/<br\s*\/?>/gi, ' ');

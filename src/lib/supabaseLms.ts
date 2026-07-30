@@ -356,6 +356,26 @@ export async function fetchPreordersFromDb(): Promise<PreorderCampaign[]> {
 
     if (!error && dbData) {
       const mapped = dbData.map(mapDbRowToPreorder);
+
+      // Reconcile current_enrollments count with actual DB enrollments & orders
+      try {
+        const { data: enrollments } = await supabase.from('enrollments').select('*');
+        const { data: orders } = await supabase.from('orders').select('*');
+        
+        const allBuyersEmails = new Set<string>();
+        if (enrollments) enrollments.forEach((e: any) => e.email && allBuyersEmails.add(e.email.toLowerCase().trim()));
+        if (orders) orders.forEach((o: any) => o.customer_email && allBuyersEmails.add(o.customer_email.toLowerCase().trim()));
+
+        mapped.forEach(po => {
+          if (allBuyersEmails.size > po.currentEnrollments) {
+            po.currentEnrollments = allBuyersEmails.size;
+            supabase.from('preorders').update({ current_enrollments: allBuyersEmails.size }).eq('id', po.id).then();
+          }
+        });
+      } catch (recErr) {
+        console.warn('Reconcile notice', recErr);
+      }
+
       if (typeof window !== 'undefined') {
         localStorage.setItem('gd_custom_preorders', JSON.stringify(mapped));
       }
@@ -413,15 +433,35 @@ export async function incrementPreorderEnrollmentInDb(campaignId: string): Promi
   const updatedLocal = incrementLocalPreorderEnrollment(campaignId);
 
   try {
-    const { data: existing } = await supabase
+    let { data: existing } = await supabase
       .from('preorders')
-      .select('current_enrollments, target_enrollments')
+      .select('id, current_enrollments, target_enrollments')
       .eq('id', campaignId)
-      .single();
+      .maybeSingle();
+
+    if (!existing) {
+      const { data: byCourseId } = await supabase
+        .from('preorders')
+        .select('id, current_enrollments, target_enrollments')
+        .eq('course_id', campaignId)
+        .maybeSingle();
+      existing = byCourseId;
+    }
+
+    if (!existing) {
+      const { data: firstPo } = await supabase
+        .from('preorders')
+        .select('id, current_enrollments, target_enrollments')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (firstPo && firstPo.length > 0) {
+        existing = firstPo[0];
+      }
+    }
 
     if (existing) {
       const nextCount = (existing.current_enrollments || 0) + 1;
-      const isGoalReached = nextCount >= (existing.target_enrollments || 25);
+      const isGoalReached = nextCount >= (existing.target_enrollments || 15);
       await supabase
         .from('preorders')
         .update({
@@ -429,7 +469,7 @@ export async function incrementPreorderEnrollmentInDb(campaignId: string): Promi
           status: isGoalReached ? 'Objectif atteint' : 'En cours',
           updated_at: new Date().toISOString()
         })
-        .eq('id', campaignId);
+        .eq('id', existing.id);
     }
   } catch (err) {
     console.warn('Supabase incrementPreorderEnrollmentInDb fallback executed', err);
@@ -471,16 +511,19 @@ export interface PreorderBuyer {
 }
 
 /**
- * 14. Fetch Preorder Buyers ONLY from real Supabase DB enrollments & orders
+ * 14. Fetch Preorder Buyers from real Supabase DB enrollments & orders
  */
 export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
   try {
-    const { data: enrollmentsData, error } = await supabase
+    const { data: enrollmentsData } = await supabase
       .from('enrollments')
       .select('*')
       .order('purchased_at', { ascending: false });
 
-    if (error || !enrollmentsData) return [];
+    const { data: ordersData } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     const { data: profilesData } = await supabase
       .from('profiles')
@@ -497,30 +540,54 @@ export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
 
     const buyersMap = new Map<string, PreorderBuyer>();
 
-    enrollmentsData.forEach((row: any) => {
-      const email = row.user_email || row.email || row.customer_email || '';
-      const item = row.item_data || {};
-      const title = row.item_title || item.title || row.course_id || '';
-      const cId = row.course_id || row.item_id || item.id || '';
-      const isPre = row.is_preorder || item.isPreorder || title.toLowerCase().includes('précommande') || cId.includes('po-') || cId.includes('precommande');
+    if (enrollmentsData && enrollmentsData.length > 0) {
+      enrollmentsData.forEach((row: any) => {
+        const email = row.user_email || row.email || row.customer_email || '';
+        const item = row.item_data || {};
+        const title = row.item_title || item.title || row.course_id || '';
+        const cId = row.course_id || row.item_id || item.id || '';
 
-      if (email && isPre) {
-        const normalizedEmail = email.toLowerCase().trim();
-        const fullName = profileMap.get(normalizedEmail) || (item.customerName || normalizedEmail.split('@')[0]);
-        const uniqueKey = `${normalizedEmail}_${cId}`;
-        if (!buyersMap.has(uniqueKey)) {
-          buyersMap.set(uniqueKey, {
-            id: row.id || `b-${Date.now()}-${Math.random()}`,
-            customerEmail: normalizedEmail,
-            customerName: fullName,
-            courseId: cId,
-            courseTitle: title.replace('[PRÉCOMMANDE] ', ''),
-            price: parseFloat(row.price || item.price || 29),
-            purchasedAt: row.purchased_at || new Date().toISOString()
-          });
+        if (email) {
+          const normalizedEmail = email.toLowerCase().trim();
+          const fullName = profileMap.get(normalizedEmail) || (item.customerName || normalizedEmail.split('@')[0]);
+          const uniqueKey = `${normalizedEmail}_${cId || title}`;
+          if (!buyersMap.has(uniqueKey)) {
+            buyersMap.set(uniqueKey, {
+              id: row.id || `b-${Date.now()}-${Math.random()}`,
+              customerEmail: normalizedEmail,
+              customerName: fullName,
+              courseId: cId || 'precommande',
+              courseTitle: title.replace('[PRÉCOMMANDE] ', ''),
+              price: parseFloat(row.price || item.price || 29),
+              purchasedAt: row.purchased_at || new Date().toISOString()
+            });
+          }
         }
-      }
-    });
+      });
+    }
+
+    if (ordersData && ordersData.length > 0) {
+      ordersData.forEach((row: any) => {
+        const email = row.customer_email || row.email || '';
+        const cId = row.product_id || row.course_id || '';
+        if (email) {
+          const normalizedEmail = email.toLowerCase().trim();
+          const fullName = profileMap.get(normalizedEmail) || normalizedEmail.split('@')[0];
+          const uniqueKey = `${normalizedEmail}_${cId || 'order'}`;
+          if (!buyersMap.has(uniqueKey)) {
+            buyersMap.set(uniqueKey, {
+              id: row.id || `o-${Date.now()}-${Math.random()}`,
+              customerEmail: normalizedEmail,
+              customerName: fullName,
+              courseId: cId || 'precommande',
+              courseTitle: 'Précommande',
+              price: row.total_amount_cents ? (row.total_amount_cents / 100) : 29,
+              purchasedAt: row.created_at || new Date().toISOString()
+            });
+          }
+        }
+      });
+    }
 
     return Array.from(buyersMap.values());
   } catch (err) {
