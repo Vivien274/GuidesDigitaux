@@ -5,7 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { getStoredPreorders, PreorderCampaign } from '@/lib/preordersStore';
+import { getStoredPreorders, PreorderCampaign, getPreorderDestinationUrl } from '@/lib/preordersStore';
+import { fetchPreordersFromDb } from '@/lib/supabaseLms';
 import { 
   Rocket, 
   Clock, 
@@ -21,7 +22,7 @@ export default function PrecommandesPage() {
   const [preorders, setPreorders] = useState<PreorderCampaign[]>([]);
 
   useEffect(() => {
-    setPreorders(getStoredPreorders());
+    fetchPreordersFromDb().then(setPreorders);
   }, []);
 
   return (
@@ -158,11 +159,12 @@ export default function PrecommandesPage() {
                   {/* CTA Footer */}
                   <div className="p-6 sm:p-8 pt-0">
                     <Link
-                      href={`/tunnel/${po.id}`}
+                      href={getPreorderDestinationUrl(po)}
+                      target={getPreorderDestinationUrl(po).startsWith('http') ? '_blank' : '_self'}
                       className="w-full py-4 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Rocket className="w-4 h-4 text-amber-300" />
-                      PRÉCOMMANDER À {po.price} € (ACHAT DIRECT STRIPE)
+                      PRÉCOMMANDER À {po.price} €
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>

@@ -5,8 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { getStoredCourses, Course } from '@/lib/coursesStore';
-import { getStoredPreorders, savePreorder, PreorderCampaign, formatFrenchDate, getPreorderStatusDetails } from '@/lib/preordersStore';
+import { Course } from '@/lib/coursesStore';
+import { fetchCoursesFromDb, fetchPreordersFromDb, savePreorderToDb, deletePreorderFromDb } from '@/lib/supabaseLms';
+import { getStoredPreorders, savePreorder, PreorderCampaign, formatFrenchDate, getPreorderStatusDetails, getPreorderDestinationUrl } from '@/lib/preordersStore';
 import { 
   ArrowLeft, 
   Plus, 
@@ -25,7 +26,11 @@ import {
   Rocket,
   ExternalLink,
   ImageIcon,
-  Upload
+  Upload,
+  Link2,
+  Globe,
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
 
 export default function FormateurPreorderPage() {
@@ -46,12 +51,41 @@ export default function FormateurPreorderPage() {
   const [description, setDescription] = useState<string>('Formation pratique en précommande avec tarif privilégié de lancement.');
   const [bonus, setBonus] = useState<string>('Accès VIP au groupe privé + Fiche bonus exclusive');
 
+  // Destination page state
+  const [destinationType, setDestinationType] = useState<'existing' | 'custom'>('existing');
+  const [selectedExistingPage, setSelectedExistingPage] = useState<string>('tunnel');
+  const [customDestinationUrl, setCustomDestinationUrl] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    setSyncStatus('Synchronisation avec Supabase BDD...');
+    const updatedList = await fetchPreordersFromDb();
+    setPreorders(updatedList);
+    setIsSyncing(false);
+    setSyncStatus('✓ Précommandes synchronisées avec succès en BDD !');
+    setTimeout(() => setSyncStatus(null), 4000);
+  };
+
+  const handleDeletePreorder = async (po: PreorderCampaign) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer définitivement la précommande "${po.courseTitle}" de Supabase BDD ?`)) {
+      const updated = await deletePreorderFromDb(po.id);
+      setPreorders(updated);
+      setSyncStatus(`✓ Précommande "${po.courseTitle}" supprimée définitivement de Supabase BDD.`);
+      setTimeout(() => setSyncStatus(null), 4000);
+    }
+  };
 
   useEffect(() => {
-    const list = getStoredCourses();
-    setCourses(list);
-    setPreorders(getStoredPreorders());
+    async function loadData() {
+      const courseList = await fetchCoursesFromDb();
+      setCourses(courseList);
+      const preorderList = await fetchPreordersFromDb();
+      setPreorders(preorderList);
+    }
+    loadData();
   }, []);
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,6 +114,9 @@ export default function FormateurPreorderPage() {
     setImageUrl('https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp');
     setDescription('Formation pratique en précommande avec tarif privilégié de lancement.');
     setBonus('Accès VIP au groupe privé + Fiche bonus exclusive');
+    setDestinationType('existing');
+    setSelectedExistingPage('tunnel');
+    setCustomDestinationUrl('');
     setIsFormOpen(true);
   };
 
@@ -96,6 +133,16 @@ export default function FormateurPreorderPage() {
     setImageUrl(po.image || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp');
     setDescription(po.description);
     setBonus(po.bonus);
+
+    const type = po.destinationType || (po.destinationUrl?.startsWith('http') ? 'custom' : 'existing');
+    setDestinationType(type);
+    if (type === 'custom') {
+      setCustomDestinationUrl(po.destinationUrl || '');
+      setSelectedExistingPage('tunnel');
+    } else {
+      setSelectedExistingPage(po.destinationUrl || 'tunnel');
+      setCustomDestinationUrl('');
+    }
     setIsFormOpen(true);
 
     window.scrollTo({ top: 300, behavior: 'smooth' });
@@ -113,10 +160,24 @@ export default function FormateurPreorderPage() {
     }
   };
 
-  const handleSaveCampaign = (e: React.FormEvent) => {
+  const handleSaveCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
+    const currentId = editingId || `po-${Date.now()}`;
+    let computedUrl = '';
+    if (destinationType === 'custom') {
+      computedUrl = customDestinationUrl.trim();
+    } else {
+      if (selectedExistingPage === 'tunnel') {
+        computedUrl = `/tunnel/${currentId}`;
+      } else if (selectedExistingPage === 'precommande_public') {
+        computedUrl = `/precommande/${currentId}`;
+      } else {
+        computedUrl = selectedExistingPage;
+      }
+    }
+
     const updatedCamp: PreorderCampaign = {
-      id: editingId || `po-${Date.now()}`,
+      id: currentId,
       courseId: selectedCourseId !== 'new' ? selectedCourseId : undefined,
       courseTitle: courseTitle || 'Nouvelle Formation en Précommande',
       price: parseFloat(price) || 79,
@@ -128,10 +189,12 @@ export default function FormateurPreorderPage() {
       image: imageUrl,
       description,
       bonus,
-      status: 'En cours'
+      status: 'En cours',
+      destinationType,
+      destinationUrl: computedUrl
     };
 
-    const updated = savePreorder(updatedCamp);
+    const updated = await savePreorderToDb(updatedCamp);
     setPreorders(updated);
     setIsFormOpen(false);
     setEditingId(null);
@@ -174,14 +237,36 @@ export default function FormateurPreorderPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleOpenCreateForm}
-            className="px-6 py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            LANCER UNE NOUVELLE PRÉCOMMANDE
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <button
+              type="button"
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="px-5 py-4 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-2xl border border-[#bce3e0] uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+              title="Transférer et synchroniser les précommandes dans Supabase BDD"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+              {isSyncing ? 'Synchronisation...' : 'Synchroniser avec Supabase'}
+            </button>
+
+            <button
+              onClick={handleOpenCreateForm}
+              className="px-6 py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              LANCER UNE NOUVELLE PRÉCOMMANDE
+            </button>
+          </div>
         </div>
+
+        {syncStatus && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            <div className="p-3.5 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-2xl text-xs font-extrabold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+              <span>{syncStatus}</span>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* MAIN CONTENT AREA */}
@@ -374,6 +459,103 @@ export default function FormateurPreorderPage() {
                   />
                 </div>
 
+                {/* CHOICE OF DESTINATION PAGE / URL */}
+                <div className="space-y-4 sm:col-span-2 p-6 bg-[#faf8f5] rounded-2xl border border-[#eee7da]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <label className="text-xs font-extrabold text-[#332420] flex items-center gap-2">
+                      <Link2 className="w-4 h-4 text-[#18757d]" />
+                      Page de destination de la précommande (Redirection au clic) :
+                    </label>
+                    <span className="text-[11px] font-extrabold text-[#18757d] bg-[#e6f4f3] px-3 py-1 rounded-full border border-[#bce3e0] self-start sm:self-auto">
+                      📍 {destinationType === 'custom' ? (customDestinationUrl || 'URL non définie') : (selectedExistingPage === 'tunnel' ? `/tunnel/${editingId || 'nouvelle-po'}` : selectedExistingPage === 'precommande_public' ? `/precommande/${editingId || 'nouvelle-po'}` : selectedExistingPage)}
+                    </span>
+                  </div>
+
+                  {/* Toggle Type Radio Buttons */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setDestinationType('existing')}
+                      className={`p-3.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        destinationType === 'existing'
+                          ? 'bg-[#18757d] text-white border-[#18757d] shadow-xs'
+                          : 'bg-white text-slate-700 border-[#eee7da] hover:bg-slate-50'
+                      }`}
+                    >
+                      <Globe className="w-4 h-4" />
+                      Une page existante du site
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDestinationType('custom')}
+                      className={`p-3.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        destinationType === 'custom'
+                          ? 'bg-[#18757d] text-white border-[#18757d] shadow-xs'
+                          : 'bg-white text-slate-700 border-[#eee7da] hover:bg-slate-50'
+                      }`}
+                    >
+                      <Link2 className="w-4 h-4" />
+                      Une URL personnalisée (Lien libre)
+                    </button>
+                  </div>
+
+                  {/* Mode: Page existante */}
+                  {destinationType === 'existing' && (
+                    <div className="space-y-1.5 pt-1">
+                      <label className="text-[11px] font-extrabold text-slate-600">
+                        Sélectionner la page cible dans la liste :
+                      </label>
+                      <select
+                        value={selectedExistingPage}
+                        onChange={(e) => setSelectedExistingPage(e.target.value)}
+                        className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3 text-xs font-bold text-[#332420]"
+                      >
+                        <optgroup label="✨ Pages Spécifiques Précommande">
+                          <option value="tunnel">Tunnel de Vente Direct (/tunnel/{editingId || 'id'}) [Par défaut]</option>
+                          <option value="precommande_public">Fiche Publique Précommande (/precommande/{editingId || 'id'})</option>
+                          <option value="/precommande">Galerie de toutes les précommandes (/precommande)</option>
+                        </optgroup>
+                        
+                        <optgroup label="🛍️ Pages Principales du Site">
+                          <option value="/boutique">Boutique officielle (/boutique)</option>
+                          <option value="/dashboard/eleve">Espace Élève (/dashboard/eleve)</option>
+                          <option value="/a-propos">Page À propos (/a-propos)</option>
+                          <option value="/contact">Page Contact (/contact)</option>
+                          <option value="/blog">Le Blog (/blog)</option>
+                        </optgroup>
+
+                        {courses.length > 0 && (
+                          <optgroup label="📚 Formations du Catalogue">
+                            {courses.map(c => (
+                              <option key={c.id} value={`/formation/${c.id}`}>
+                                Formation : {c.title} (/formation/{c.id})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Mode: URL personnalisée */}
+                  {destinationType === 'custom' && (
+                    <div className="space-y-1.5 pt-1">
+                      <label className="text-[11px] font-extrabold text-slate-600">
+                        Saisissez l'URL personnalisée (externe `https://...` ou interne `/...`) :
+                      </label>
+                      <input
+                        type="text"
+                        required={destinationType === 'custom'}
+                        placeholder="Ex: https://mon-domaine.com/page-specifique ou /landing-page"
+                        value={customDestinationUrl}
+                        onChange={(e) => setCustomDestinationUrl(e.target.value)}
+                        className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3 text-xs font-bold text-[#332420]"
+                      />
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               <div className="pt-6 border-t border-[#eee7da] flex justify-end gap-3">
@@ -439,6 +621,13 @@ export default function FormateurPreorderPage() {
 
                           <h3 className="text-xl font-extrabold text-[#332420]">{po.courseTitle}</h3>
                           <p className="text-xs text-[#5e4d46] leading-relaxed">{po.description}</p>
+                          
+                          <div className="pt-1 flex items-center gap-2 text-xs font-bold text-[#18757d]">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#e6f4f3] border border-[#bce3e0]">
+                              <Link2 className="w-3.5 h-3.5" />
+                              Page de destination : <strong className="font-extrabold">{getPreorderDestinationUrl(po)}</strong>
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -454,17 +643,27 @@ export default function FormateurPreorderPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleOpenEditForm(po)}
-                            className="px-5 py-3 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-xs transition-colors flex items-center gap-2 uppercase tracking-wider"
+                            className="px-5 py-3 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-xs transition-colors flex items-center gap-2 uppercase tracking-wider cursor-pointer"
                           >
                             <Edit3 className="w-4 h-4" />
                             ÉDITER
                           </button>
 
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePreorder(po)}
+                            className="px-4 py-3 text-xs font-extrabold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-colors flex items-center gap-1.5 uppercase tracking-wider cursor-pointer"
+                            title="Supprimer la précommande de Supabase BDD"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                            SUPPRIMER
+                          </button>
+
                           <Link
-                            href={`/precommande/${po.id}`}
+                            href={getPreorderDestinationUrl(po)}
                             target="_blank"
-                            className="p-3 text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors"
-                            title="Voir la page publique de précommande"
+                            className="p-3 text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center gap-1.5 text-xs font-extrabold"
+                            title={`Ouvrir la page de destination (${getPreorderDestinationUrl(po)})`}
                           >
                             <ExternalLink className="w-4 h-4" />
                           </Link>

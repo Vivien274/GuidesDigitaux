@@ -14,6 +14,15 @@ export interface PreorderCampaign {
   bonus: string;
   image?: string;
   status: 'En cours' | 'Objectif atteint' | 'Terminée' | 'Annulé & Remboursé';
+  destinationType?: 'existing' | 'custom';
+  destinationUrl?: string;
+}
+
+export function getPreorderDestinationUrl(campaign: PreorderCampaign): string {
+  if (campaign.destinationUrl && campaign.destinationUrl.trim() !== '') {
+    return campaign.destinationUrl.trim();
+  }
+  return `/tunnel/${campaign.id}`;
 }
 
 export function formatFrenchDate(dateStr: string): string {
@@ -119,6 +128,15 @@ export function purgeAllPreorders(): void {
     localStorage.removeItem('gd_custom_preorders');
     localStorage.removeItem('gd_processed_sessions');
   }
+}
+
+export function deletePreorder(id: string): PreorderCampaign[] {
+  const current = getStoredPreorders();
+  const updated = current.filter(p => p.id !== id);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('gd_custom_preorders', JSON.stringify(updated));
+  }
+  return updated;
 }
 
 export function savePreorder(campaign: PreorderCampaign): PreorderCampaign[] {

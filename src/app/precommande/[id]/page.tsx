@@ -8,6 +8,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
 import { getStoredPreorders, PreorderCampaign, getPreorderStatusDetails, formatFrenchDate } from '@/lib/preordersStore';
+import { fetchPreordersFromDb } from '@/lib/supabaseLms';
 import { 
   Rocket, 
   Target, 
@@ -35,13 +36,14 @@ export default function PreorderProductPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    const list = getStoredPreorders();
-    const match = list.find(p => p.id === id || p.courseId === id);
-    if (match) {
-      setCampaign(match);
-    } else if (list.length > 0) {
-      setCampaign(list[0]);
-    }
+    fetchPreordersFromDb().then(list => {
+      const match = list.find(p => p.id === id || p.courseId === id);
+      if (match) {
+        setCampaign(match);
+      } else if (list.length > 0) {
+        setCampaign(list[0]);
+      }
+    });
   }, [id]);
 
   if (!campaign) {

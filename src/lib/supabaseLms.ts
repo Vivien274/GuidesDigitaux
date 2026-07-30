@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Course, getStoredCourses, saveCourse as saveLocalCourse } from './coursesStore';
+import { PreorderCampaign, getStoredPreorders, savePreorder as saveLocalPreorder, incrementPreorderEnrollment as incrementLocalPreorderEnrollment, deletePreorder as deleteLocalPreorder } from './preordersStore';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kvnvfsahoblmcpurnmtn.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_KeSeRmMGA6zii9el1d_uBQ_piquLdfi';
@@ -321,4 +322,140 @@ export async function fetchUserOrdersFromDb(customerEmail: string): Promise<any[
     console.warn('Supabase DB fetchUserOrdersFromDb fallback', e);
   }
   return [];
+}
+
+function mapDbRowToPreorder(po: any): PreorderCampaign {
+  return {
+    id: po.id,
+    courseId: po.course_id,
+    courseTitle: po.course_title,
+    price: parseFloat(po.price) || 79,
+    originalPrice: po.original_price ? parseFloat(po.original_price) : undefined,
+    targetEnrollments: parseInt(po.target_enrollments, 10) || 25,
+    currentEnrollments: parseInt(po.current_enrollments, 10) || 0,
+    endDate: po.end_date,
+    releaseDate: po.release_date,
+    description: po.description || '',
+    bonus: po.bonus || '',
+    image: po.image || '',
+    status: po.status || 'En cours',
+    destinationType: po.destination_type || 'existing',
+    destinationUrl: po.destination_url || undefined
+  };
+}
+
+/**
+ * 10. Fetch Preorders from Supabase DB (Supabase DB is single source of truth)
+ */
+export async function fetchPreordersFromDb(): Promise<PreorderCampaign[]> {
+  try {
+    const { data: dbData, error } = await supabase
+      .from('preorders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && dbData) {
+      const mapped = dbData.map(mapDbRowToPreorder);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('gd_custom_preorders', JSON.stringify(mapped));
+      }
+      return mapped;
+    }
+
+    return getStoredPreorders();
+  } catch (err) {
+    console.warn('Supabase fetchPreordersFromDb fallback to local storage', err);
+    return getStoredPreorders();
+  }
+}
+
+/**
+ * 11. Save Preorder to Supabase DB and localStorage
+ */
+export async function savePreorderToDb(campaign: PreorderCampaign): Promise<PreorderCampaign[]> {
+  const updatedLocal = saveLocalPreorder(campaign);
+
+  try {
+    const payload = {
+      id: campaign.id,
+      course_id: campaign.courseId,
+      course_title: campaign.courseTitle,
+      price: campaign.price,
+      original_price: campaign.originalPrice,
+      target_enrollments: campaign.targetEnrollments,
+      current_enrollments: campaign.currentEnrollments,
+      end_date: campaign.endDate,
+      release_date: campaign.releaseDate,
+      description: campaign.description,
+      bonus: campaign.bonus,
+      image: campaign.image,
+      status: campaign.status,
+      destination_type: campaign.destinationType,
+      destination_url: campaign.destinationUrl,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase.from('preorders').upsert(payload);
+    if (error) {
+      console.warn('Supabase preorders upsert notice:', error);
+    }
+  } catch (err) {
+    console.warn('Supabase savePreorderToDb fallback executed', err);
+  }
+
+  return updatedLocal;
+}
+
+/**
+ * 12. Increment Preorder Enrollment in Supabase DB and localStorage
+ */
+export async function incrementPreorderEnrollmentInDb(campaignId: string): Promise<PreorderCampaign[]> {
+  const updatedLocal = incrementLocalPreorderEnrollment(campaignId);
+
+  try {
+    const { data: existing } = await supabase
+      .from('preorders')
+      .select('current_enrollments, target_enrollments')
+      .eq('id', campaignId)
+      .single();
+
+    if (existing) {
+      const nextCount = (existing.current_enrollments || 0) + 1;
+      const isGoalReached = nextCount >= (existing.target_enrollments || 25);
+      await supabase
+        .from('preorders')
+        .update({
+          current_enrollments: nextCount,
+          status: isGoalReached ? 'Objectif atteint' : 'En cours',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', campaignId);
+    }
+  } catch (err) {
+    console.warn('Supabase incrementPreorderEnrollmentInDb fallback executed', err);
+  }
+
+  return updatedLocal;
+}
+
+/**
+ * 13. Delete Preorder from Supabase DB and localStorage
+ */
+export async function deletePreorderFromDb(campaignId: string): Promise<PreorderCampaign[]> {
+  const updatedLocal = deleteLocalPreorder(campaignId);
+
+  try {
+    const { error } = await supabase
+      .from('preorders')
+      .delete()
+      .eq('id', campaignId);
+    
+    if (error) {
+      console.warn('Supabase preorder delete notice:', error);
+    }
+  } catch (err) {
+    console.warn('Supabase deletePreorderFromDb fallback executed', err);
+  }
+
+  return updatedLocal;
 }

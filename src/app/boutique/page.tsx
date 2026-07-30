@@ -41,8 +41,8 @@ interface Product {
   features: string[];
 }
 
-import { getStoredPreorders, PreorderCampaign } from '@/lib/preordersStore';
-import { fetchCoursesFromDb } from '@/lib/supabaseLms';
+import { getStoredPreorders, PreorderCampaign, getPreorderDestinationUrl } from '@/lib/preordersStore';
+import { fetchCoursesFromDb, fetchPreordersFromDb } from '@/lib/supabaseLms';
 import { Rocket, Target, Calendar, Gift } from 'lucide-react';
 
 const INITIAL_PRODUCTS: Product[] = productsData as unknown as Product[];
@@ -56,7 +56,7 @@ export default function BoutiquePage() {
   const { addToCart } = useCart();
 
   React.useEffect(() => {
-    setPreorders(getStoredPreorders());
+    fetchPreordersFromDb().then(setPreorders);
 
     async function syncDynamicCourses() {
       const dbCourses = await fetchCoursesFromDb();
@@ -294,7 +294,11 @@ export default function BoutiquePage() {
                         )}
                       </div>
 
-                      <Link href={`/tunnel/${po.id}`} className="block">
+                      <Link 
+                        href={getPreorderDestinationUrl(po)} 
+                        target={getPreorderDestinationUrl(po).startsWith('http') ? '_blank' : '_self'}
+                        className="block"
+                      >
                         <h3 className="text-base font-extrabold text-[#332420] line-clamp-2 leading-snug hover:text-[#18757d] transition-colors">
                           {po.courseTitle}
                         </h3>
@@ -316,7 +320,8 @@ export default function BoutiquePage() {
                     </div>
 
                     <Link
-                      href={`/tunnel/${po.id}`}
+                      href={getPreorderDestinationUrl(po)}
+                      target={getPreorderDestinationUrl(po).startsWith('http') ? '_blank' : '_self'}
                       className="w-full py-3.5 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
                     >
                       <Rocket className="w-4 h-4 text-[#332420]" />

@@ -141,3 +141,33 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 7. Create PREORDERS Table
+CREATE TABLE IF NOT EXISTS public.preorders (
+  id TEXT PRIMARY KEY,
+  course_id TEXT,
+  course_title TEXT NOT NULL,
+  price NUMERIC(10, 2) NOT NULL DEFAULT 79.00,
+  original_price NUMERIC(10, 2),
+  target_enrollments INTEGER NOT NULL DEFAULT 25,
+  current_enrollments INTEGER NOT NULL DEFAULT 0,
+  end_date TEXT NOT NULL,
+  release_date TEXT NOT NULL,
+  description TEXT,
+  bonus TEXT,
+  image TEXT,
+  status TEXT NOT NULL DEFAULT 'En cours',
+  destination_type TEXT DEFAULT 'existing',
+  destination_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.preorders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Preorders viewable by everyone" 
+  ON public.preorders FOR SELECT USING (true);
+
+CREATE POLICY "Preorders manageable by all" 
+  ON public.preorders FOR ALL USING (true);
+
