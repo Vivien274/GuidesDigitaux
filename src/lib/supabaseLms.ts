@@ -471,14 +471,16 @@ export interface PreorderBuyer {
 }
 
 /**
- * 14. Fetch Preorder Buyers (name, email, course, date) from Supabase DB and local purchases
+ * 14. Fetch Preorder Buyers ONLY from real Supabase DB enrollments & orders
  */
 export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
   try {
-    const { data: enrollmentsData } = await supabase
+    const { data: enrollmentsData, error } = await supabase
       .from('enrollments')
       .select('*')
       .order('purchased_at', { ascending: false });
+
+    if (error || !enrollmentsData) return [];
 
     const { data: profilesData } = await supabase
       .from('profiles')
@@ -495,69 +497,30 @@ export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
 
     const buyersMap = new Map<string, PreorderBuyer>();
 
-    if (enrollmentsData && enrollmentsData.length > 0) {
-      enrollmentsData.forEach((row: any) => {
-        const email = row.user_email || row.email || row.customer_email || '';
-        const item = row.item_data || {};
-        const title = row.item_title || item.title || row.course_id || '';
-        const cId = row.course_id || row.item_id || item.id || '';
-        const isPre = row.is_preorder || item.isPreorder || title.toLowerCase().includes('précommande') || cId.includes('po-') || cId.includes('precommande');
+    enrollmentsData.forEach((row: any) => {
+      const email = row.user_email || row.email || row.customer_email || '';
+      const item = row.item_data || {};
+      const title = row.item_title || item.title || row.course_id || '';
+      const cId = row.course_id || row.item_id || item.id || '';
+      const isPre = row.is_preorder || item.isPreorder || title.toLowerCase().includes('précommande') || cId.includes('po-') || cId.includes('precommande');
 
-        if (email && (isPre || cId)) {
-          const normalizedEmail = email.toLowerCase().trim();
-          const fullName = profileMap.get(normalizedEmail) || (item.customerName || normalizedEmail.split('@')[0]);
-          const uniqueKey = `${normalizedEmail}_${cId}`;
-          if (!buyersMap.has(uniqueKey)) {
-            buyersMap.set(uniqueKey, {
-              id: row.id || `b-${Date.now()}-${Math.random()}`,
-              customerEmail: normalizedEmail,
-              customerName: fullName,
-              courseId: cId,
-              courseTitle: title.replace('[PRÉCOMMANDE] ', ''),
-              price: parseFloat(row.price || item.price || 29),
-              purchasedAt: row.purchased_at || new Date().toISOString()
-            });
-          }
+      if (email && isPre) {
+        const normalizedEmail = email.toLowerCase().trim();
+        const fullName = profileMap.get(normalizedEmail) || (item.customerName || normalizedEmail.split('@')[0]);
+        const uniqueKey = `${normalizedEmail}_${cId}`;
+        if (!buyersMap.has(uniqueKey)) {
+          buyersMap.set(uniqueKey, {
+            id: row.id || `b-${Date.now()}-${Math.random()}`,
+            customerEmail: normalizedEmail,
+            customerName: fullName,
+            courseId: cId,
+            courseTitle: title.replace('[PRÉCOMMANDE] ', ''),
+            price: parseFloat(row.price || item.price || 29),
+            purchasedAt: row.purchased_at || new Date().toISOString()
+          });
         }
-      });
-    }
-
-    // Merge with local storage purchases
-    if (typeof window !== 'undefined') {
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('gd_user_purchases_') || key === 'gd_enrolled_courses') {
-          const emailFromKey = key.replace('gd_user_purchases_', '');
-          try {
-            const raw = localStorage.getItem(key);
-            if (raw) {
-              const list = JSON.parse(raw);
-              if (Array.isArray(list)) {
-                list.forEach((item: any) => {
-                  if (item.isPreorder || item.title?.toLowerCase().includes('précommande') || item.id?.includes('po-')) {
-                    const cId = item.id || 'precommande';
-                    const email = emailFromKey !== 'gd_enrolled_courses' ? emailFromKey : (item.email || 'eleve.precommande@exemple.fr');
-                    const normalizedEmail = email.toLowerCase().trim();
-                    const uniqueKey = `${normalizedEmail}_${cId}`;
-
-                    if (!buyersMap.has(uniqueKey)) {
-                      buyersMap.set(uniqueKey, {
-                        id: `local-${cId}-${normalizedEmail}`,
-                        customerEmail: normalizedEmail,
-                        customerName: profileMap.get(normalizedEmail) || normalizedEmail.split('@')[0],
-                        courseId: cId,
-                        courseTitle: item.title?.replace('[PRÉCOMMANDE] ', '') || 'Formation en Précommande',
-                        price: parseFloat(item.price || 29),
-                        purchasedAt: item.purchaseDate || new Date().toISOString()
-                      });
-                    }
-                  }
-                });
-              }
-            }
-          } catch (e) {}
-        }
-      });
-    }
+      }
+    });
 
     return Array.from(buyersMap.values());
   } catch (err) {

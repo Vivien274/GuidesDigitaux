@@ -783,13 +783,16 @@ export default function FormateurPreorderPage() {
                                       </a>
                                     </td>
                                     <td className="p-3 text-slate-600 font-semibold">
-                                      {new Date(buyer.purchasedAt).toLocaleDateString('fr-FR', {
-                                        day: 'numeric',
-                                        month: 'long',
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
+                                      {(() => {
+                                        if (!buyer.purchasedAt) return formatFrenchDate(new Date().toISOString().split('T')[0]);
+                                        if (typeof buyer.purchasedAt === 'string' && buyer.purchasedAt.includes('/')) return buyer.purchasedAt;
+                                        const d = new Date(buyer.purchasedAt);
+                                        return isNaN(d.getTime()) ? buyer.purchasedAt : d.toLocaleDateString('fr-FR', {
+                                          day: 'numeric',
+                                          month: 'long',
+                                          year: 'numeric'
+                                        });
+                                      })()}
                                     </td>
                                     <td className="p-3 text-right font-extrabold text-emerald-700">
                                       {buyer.price ? `${buyer.price.toFixed(2)} €` : `${po.price.toFixed(2)} €`}
