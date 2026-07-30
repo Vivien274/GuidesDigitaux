@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Course } from '@/lib/coursesStore';
-import { fetchCoursesFromDb, fetchPreordersFromDb, savePreorderToDb, deletePreorderFromDb } from '@/lib/supabaseLms';
+import { fetchCoursesFromDb, fetchPreordersFromDb, savePreorderToDb, deletePreorderFromDb, fetchPreorderBuyersFromDb, PreorderBuyer } from '@/lib/supabaseLms';
 import { getStoredPreorders, savePreorder, PreorderCampaign, formatFrenchDate, getPreorderStatusDetails, getPreorderDestinationUrl } from '@/lib/preordersStore';
 import { 
   ArrowLeft, 
@@ -30,7 +30,10 @@ import {
   Link2,
   Globe,
   RefreshCw,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Mail
 } from 'lucide-react';
 
 export default function FormateurPreorderPage() {
@@ -59,13 +62,18 @@ export default function FormateurPreorderPage() {
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
+  const [buyers, setBuyers] = useState<PreorderBuyer[]>([]);
+  const [expandedBuyersId, setExpandedBuyersId] = useState<string | null>(null);
+
   const handleManualSync = async () => {
     setIsSyncing(true);
     setSyncStatus('Synchronisation avec Supabase BDD...');
     const updatedList = await fetchPreordersFromDb();
     setPreorders(updatedList);
+    const updatedBuyers = await fetchPreorderBuyersFromDb();
+    setBuyers(updatedBuyers);
     setIsSyncing(false);
-    setSyncStatus('✓ Précommandes synchronisées avec succès en BDD !');
+    setSyncStatus('✓ Précommandes & Inscrits synchronisés avec succès en BDD !');
     setTimeout(() => setSyncStatus(null), 4000);
   };
 
@@ -84,6 +92,8 @@ export default function FormateurPreorderPage() {
       setCourses(courseList);
       const preorderList = await fetchPreordersFromDb();
       setPreorders(preorderList);
+      const buyersList = await fetchPreorderBuyersFromDb();
+      setBuyers(buyersList);
     }
     loadData();
   }, []);
@@ -596,6 +606,14 @@ export default function FormateurPreorderPage() {
                 const percent = Math.min(100, Math.round((po.currentEnrollments / po.targetEnrollments) * 100));
                 const remaining = Math.max(0, po.targetEnrollments - po.currentEnrollments);
 
+                const campaignBuyers = buyers.filter(b => 
+                  b.courseId === po.id || 
+                  b.courseId === po.courseId || 
+                  po.id.includes(b.courseId) || 
+                  b.courseId.includes(po.id) ||
+                  (po.courseTitle && b.courseTitle && b.courseTitle.toLowerCase().includes(po.courseTitle.toLowerCase().slice(0, 12)))
+                );
+
                 return (
                   <div key={po.id} className="p-8 bg-[#faf8f5] rounded-3xl border border-[#eee7da] space-y-6">
                     
@@ -640,7 +658,18 @@ export default function FormateurPreorderPage() {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedBuyersId(expandedBuyersId === po.id ? null : po.id)}
+                            className="px-4 py-3 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl border border-[#bce3e0] transition-colors flex items-center gap-1.5 uppercase tracking-wider cursor-pointer"
+                            title="Voir la liste des clients ayant précommandé"
+                          >
+                            <Users className="w-4 h-4 text-[#18757d]" />
+                            <span>INSCRITS ({campaignBuyers.length})</span>
+                            {expandedBuyersId === po.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+
                           <button
                             onClick={() => handleOpenEditForm(po)}
                             className="px-5 py-3 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-xs transition-colors flex items-center gap-2 uppercase tracking-wider cursor-pointer"
@@ -701,6 +730,78 @@ export default function FormateurPreorderPage() {
                       )}
                     </div>
 
+                    {/* PANNEAU DES PRÉCOMMANDEURS INSCRITS */}
+                    {expandedBuyersId === po.id && (
+                      <div className="mt-4 p-6 bg-[#eef4fb] rounded-2xl border-2 border-[#18757d]/30 space-y-4 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between border-b border-[#18757d]/20 pb-3">
+                          <h4 className="text-sm font-extrabold text-[#332420] flex items-center gap-2">
+                            <Users className="w-4 h-4 text-[#18757d]" />
+                            Liste des Précommandeurs pour "{po.courseTitle}" ({campaignBuyers.length})
+                          </h4>
+                          {campaignBuyers.length > 0 && (
+                            <a
+                              href={`mailto:${campaignBuyers.map(b => b.customerEmail).join(',')}`}
+                              className="text-xs font-extrabold text-[#18757d] hover:underline flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#bce3e0]"
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                              Contacter tous par email
+                            </a>
+                          )}
+                        </div>
+
+                        {campaignBuyers.length === 0 ? (
+                          <div className="p-6 bg-white rounded-xl text-center text-xs font-semibold text-slate-500 border border-slate-200">
+                            <p>Aucune précommande enregistrée pour cette formation pour le moment.</p>
+                            <p className="text-[11px] text-slate-400 mt-1">Dès qu'un client précommande via Stripe ou le tunnel, son nom et son email s'afficheront automatiquement ici.</p>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-xs">
+                            <table className="w-full text-left text-xs font-medium border-collapse">
+                              <thead>
+                                <tr className="bg-[#f5f1e8] text-[#332420] font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                                  <th className="p-3">#</th>
+                                  <th className="p-3">Nom & Prénom</th>
+                                  <th className="p-3">Adresse E-mail</th>
+                                  <th className="p-3">Date d'inscription</th>
+                                  <th className="p-3 text-right">Montant payé</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {campaignBuyers.map((buyer, idx) => (
+                                  <tr key={buyer.id || idx} className="hover:bg-[#faf8f5] transition-colors">
+                                    <td className="p-3 text-slate-400 font-extrabold">{idx + 1}</td>
+                                    <td className="p-3 font-extrabold text-[#332420] capitalize">
+                                      {buyer.customerName || buyer.customerEmail.split('@')[0]}
+                                    </td>
+                                    <td className="p-3">
+                                      <a
+                                        href={`mailto:${buyer.customerEmail}`}
+                                        className="text-[#18757d] font-bold hover:underline flex items-center gap-1"
+                                      >
+                                        <Mail className="w-3 h-3 text-[#18757d]/70" />
+                                        {buyer.customerEmail}
+                                      </a>
+                                    </td>
+                                    <td className="p-3 text-slate-600 font-semibold">
+                                      {new Date(buyer.purchasedAt).toLocaleDateString('fr-FR', {
+                                        day: 'numeric',
+                                        month: 'long',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </td>
+                                    <td className="p-3 text-right font-extrabold text-emerald-700">
+                                      {buyer.price ? `${buyer.price.toFixed(2)} €` : `${po.price.toFixed(2)} €`}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
