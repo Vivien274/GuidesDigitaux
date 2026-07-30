@@ -722,17 +722,21 @@ export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
         const email = row.customer_email || row.email || '';
         if (email) {
           const normalizedEmail = email.toLowerCase().trim();
-          const uniqueKey = row.id || `${normalizedEmail}_${row.campaign_id}`;
+          const campaignId = row.campaign_id || 'precommande-fiche-google';
+          const uniqueKey = `${normalizedEmail}_${campaignId}`;
           const fullName = profileMap.get(normalizedEmail) || row.customer_name || normalizedEmail.split('@')[0];
-          buyersMap.set(uniqueKey, {
-            id: row.id,
-            customerEmail: normalizedEmail,
-            customerName: fullName,
-            courseId: row.campaign_id || 'precommande-fiche-google',
-            courseTitle: 'Précommande',
-            price: parseFloat(row.price || 29),
-            purchasedAt: row.created_at || new Date().toISOString()
-          });
+          
+          if (!buyersMap.has(uniqueKey)) {
+            buyersMap.set(uniqueKey, {
+              id: row.id,
+              customerEmail: normalizedEmail,
+              customerName: fullName,
+              courseId: campaignId,
+              courseTitle: 'Précommande',
+              price: parseFloat(row.price || 29),
+              purchasedAt: row.created_at || new Date().toISOString()
+            });
+          }
         }
       });
     }
@@ -775,7 +779,7 @@ export async function deletePreorderBuyerFromDb(buyerId: string, email: string, 
 }
 
 /**
- * 15. Record a Preorder Buyer Purchase directly in Supabase DB
+ * 16. Record a Preorder Buyer Purchase directly in Supabase DB
  */
 export async function recordPreorderPurchaseInDb(
   campaignId: string,
@@ -785,32 +789,41 @@ export async function recordPreorderPurchaseInDb(
 ): Promise<void> {
   if (!customerEmail) return;
   const normalizedEmail = customerEmail.toLowerCase().trim();
-
-  // 1. Increment preorder enrollments counter in Supabase BDD
-  await incrementPreorderEnrollmentInDb(campaignId);
+  const targetCampaign = campaignId || 'precommande-fiche-google';
 
   try {
+    // Check if buyer has already preordered this campaign to prevent duplicate insertions
+    const { data: existing } = await supabase
+      .from('preorder_buyers')
+      .select('id')
+      .eq('customer_email', normalizedEmail)
+      .eq('campaign_id', targetCampaign)
+      .maybeSingle();
+
+    if (existing) {
+      return; // Already recorded for this campaign
+    }
+
+    // 1. Increment preorder enrollments counter in Supabase BDD
+    await incrementPreorderEnrollmentInDb(targetCampaign);
+
     // 2. Insert into preorder_buyers table
     await supabase.from('preorder_buyers').insert({
-      campaign_id: campaignId || 'precommande-fiche-google',
+      campaign_id: targetCampaign,
       customer_email: normalizedEmail,
       customer_name: customerName || normalizedEmail.split('@')[0],
       price: price,
       created_at: new Date().toISOString()
     });
-  } catch (e) {
-    console.warn('preorder_buyers insert notice:', e);
-  }
 
-  try {
     // 3. Insert into orders table
     await supabase.from('orders').insert({
       customer_email: normalizedEmail,
-      product_id: campaignId || 'precommande-fiche-google',
+      product_id: targetCampaign,
       status: 'paid',
       created_at: new Date().toISOString()
     });
   } catch (e) {
-    console.warn('orders insert notice:', e);
+    console.warn('recordPreorderPurchaseInDb insert notice:', e);
   }
 }
