@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Course } from '@/lib/coursesStore';
-import { fetchCoursesFromDb, fetchPreordersFromDb, savePreorderToDb, deletePreorderFromDb, fetchPreorderBuyersFromDb, PreorderBuyer } from '@/lib/supabaseLms';
+import { fetchCoursesFromDb, fetchPreordersFromDb, savePreorderToDb, deletePreorderFromDb, fetchPreorderBuyersFromDb, deletePreorderBuyerFromDb, PreorderBuyer } from '@/lib/supabaseLms';
 import { getStoredPreorders, savePreorder, PreorderCampaign, formatFrenchDate, getPreorderStatusDetails, getPreorderDestinationUrl } from '@/lib/preordersStore';
 import { 
   ArrowLeft, 
@@ -63,6 +63,18 @@ export default function FormateurPreorderPage() {
 
   const [buyers, setBuyers] = useState<PreorderBuyer[]>([]);
   const [expandedBuyersId, setExpandedBuyersId] = useState<string | null>(null);
+
+  const handleDeleteBuyer = async (buyer: PreorderBuyer, campaignId?: string) => {
+    if (confirm(`Voulez-vous supprimer définitivement la précommande de ${buyer.customerEmail} de la BDD Supabase ?`)) {
+      await deletePreorderBuyerFromDb(buyer.id, buyer.customerEmail, campaignId);
+      const updatedBuyers = await fetchPreorderBuyersFromDb();
+      setBuyers(updatedBuyers);
+      const updatedPreorders = await fetchPreordersFromDb();
+      setPreorders(updatedPreorders);
+      setSyncStatus(`✓ Précommande de ${buyer.customerEmail} supprimée définitivement de Supabase BDD.`);
+      setTimeout(() => setSyncStatus(null), 4000);
+    }
+  };
 
   const handleDeletePreorder = async (po: PreorderCampaign) => {
     if (confirm(`Êtes-vous sûr de vouloir supprimer définitivement la précommande "${po.courseTitle}" de Supabase BDD ?`)) {
@@ -737,7 +749,7 @@ export default function FormateurPreorderPage() {
                         </div>
 
                         {campaignBuyers.length === 0 ? (
-                          <div className="p-6 bg-white rounded-xl text-center text-xs font-semibold text-slate-500 border border-slate-200">
+              <div className="p-6 bg-white rounded-xl text-center text-xs font-semibold text-slate-500 border border-slate-200">
                             <p>Aucune précommande enregistrée pour cette formation pour le moment.</p>
                             <p className="text-[11px] text-slate-400 mt-1">Dès qu'un client précommande via Stripe ou le tunnel, son nom et son email s'afficheront automatiquement ici.</p>
                           </div>
@@ -751,6 +763,7 @@ export default function FormateurPreorderPage() {
                                   <th className="p-3.5">Adresse E-mail</th>
                                   <th className="p-3.5">Date d'inscription</th>
                                   <th className="p-3.5 text-right">Montant payé</th>
+                                  <th className="p-3.5 text-center">Action</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -783,6 +796,16 @@ export default function FormateurPreorderPage() {
                                     </td>
                                     <td className="p-3.5 text-right font-extrabold text-emerald-700">
                                       {buyer.price ? `${buyer.price.toFixed(2)} €` : `${po.price.toFixed(2)} €`}
+                                    </td>
+                                    <td className="p-3.5 text-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteBuyer(buyer, po.id)}
+                                        className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center justify-center cursor-pointer"
+                                        title="Supprimer définitivement ce précommandeur"
+                                      >
+                                        <Trash2 className="w-4 h-4 text-red-600" />
+                                      </button>
                                     </td>
                                   </tr>
                                 ))}

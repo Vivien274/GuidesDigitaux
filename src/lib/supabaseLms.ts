@@ -492,20 +492,17 @@ export async function fetchPreordersFromDb(): Promise<PreorderCampaign[]> {
     if (!error && dbData) {
       const mapped = dbData.map(mapDbRowToPreorder);
 
-      // Reconcile current_enrollments count with actual DB preorder_buyers, enrollments & orders
+      // Reconcile current_enrollments count strictly with actual DB preorder_buyers table
       try {
-        const { data: preorderBuyers } = await supabase.from('preorder_buyers').select('*');
-        const { data: enrollments } = await supabase.from('enrollments').select('*');
-        const { data: orders } = await supabase.from('orders').select('*');
+        const { data: preorderBuyers } = await supabase.from('preorder_buyers').select('campaign_id, customer_email');
         
-        const allBuyersEmails = new Set<string>();
-        if (preorderBuyers) preorderBuyers.forEach((pb: any) => (pb.customer_email || pb.email) && allBuyersEmails.add((pb.customer_email || pb.email).toLowerCase().trim()));
-        if (enrollments) enrollments.forEach((e: any) => (e.user_email || e.email) && allBuyersEmails.add((e.user_email || e.email).toLowerCase().trim()));
-        if (orders) orders.forEach((o: any) => (o.customer_email || o.email) && allBuyersEmails.add((o.customer_email || o.email).toLowerCase().trim()));
-
         mapped.forEach(po => {
-          po.currentEnrollments = allBuyersEmails.size;
-          supabase.from('preorders').update({ current_enrollments: allBuyersEmails.size }).eq('id', po.id).then();
+          const matchingBuyers = (preorderBuyers || []).filter((pb: any) => 
+            pb.campaign_id === po.id || pb.campaign_id === po.courseId || po.id === 'precommande-fiche-google'
+          );
+          const uniqueEmails = new Set(matchingBuyers.map((pb: any) => (pb.customer_email || pb.email || '').toLowerCase().trim()).filter(Boolean));
+          po.currentEnrollments = uniqueEmails.size;
+          supabase.from('preorders').update({ current_enrollments: uniqueEmails.size }).eq('id', po.id).then();
         });
       } catch (recErr) {
         console.warn('Reconcile notice', recErr);
@@ -519,7 +516,7 @@ export async function fetchPreordersFromDb(): Promise<PreorderCampaign[]> {
 
     return getStoredPreorders();
   } catch (err) {
-    console.warn('Supabase fetchPreordersFromDb fallback to local storage', err);
+    console.warn('Supabase DB fetchPreordersFromDb fallback executed', err);
     return getStoredPreorders();
   }
 }
@@ -595,12 +592,12 @@ export async function incrementPreorderEnrollmentInDb(campaignId: string): Promi
     }
 
     if (existing) {
-      const nextCount = (existing.current_enrollments || 0) + 1;
-      const isGoalReached = nextCount >= (existing.target_enrollments || 15);
+      const newCount = (existing.current_enrollments || 0) + 1;
+      const isGoalReached = newCount >= (existing.target_enrollments || 15);
       await supabase
         .from('preorders')
-        .update({
-          current_enrollments: nextCount,
+        .update({ 
+          current_enrollments: newCount,
           status: isGoalReached ? 'Objectif atteint' : 'En cours',
           updated_at: new Date().toISOString()
         })
@@ -694,38 +691,13 @@ export interface PreorderBuyer {
 }
 
 /**
- * 14. Fetch Preorder Buyers from real Supabase DB (preorder_buyers, orders & enrollments)
+ * 14. Fetch Preorder Buyers strictly from real Supabase DB preorder_buyers table
  */
 export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
   try {
     const buyersMap = new Map<string, PreorderBuyer>();
 
-    // 1. Fetch from dedicated preorder_buyers table
-    const { data: preorderBuyersData } = await supabase
-      .from('preorder_buyers')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (preorderBuyersData && preorderBuyersData.length > 0) {
-      preorderBuyersData.forEach((row: any) => {
-        const email = row.customer_email || row.email || '';
-        if (email) {
-          const normalizedEmail = email.toLowerCase().trim();
-          const uniqueKey = `${normalizedEmail}_${row.campaign_id}`;
-          buyersMap.set(uniqueKey, {
-            id: row.id || `pb-${Date.now()}`,
-            customerEmail: normalizedEmail,
-            customerName: row.customer_name || normalizedEmail.split('@')[0],
-            courseId: row.campaign_id || 'precommande',
-            courseTitle: 'Précommande',
-            price: parseFloat(row.price || 29),
-            purchasedAt: row.created_at || new Date().toISOString()
-          });
-        }
-      });
-    }
-
-    // 2. Fetch profiles for name matching
+    // 1. Fetch profiles for name matching
     const { data: profilesData } = await supabase
       .from('profiles')
       .select('email, full_name');
@@ -739,63 +711,28 @@ export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
       });
     }
 
-    // 3. Fetch from orders table
-    const { data: ordersData } = await supabase
-      .from('orders')
+    // 2. Fetch strictly from dedicated preorder_buyers table
+    const { data: preorderBuyersData } = await supabase
+      .from('preorder_buyers')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (ordersData && ordersData.length > 0) {
-      ordersData.forEach((row: any) => {
+    if (preorderBuyersData && preorderBuyersData.length > 0) {
+      preorderBuyersData.forEach((row: any) => {
         const email = row.customer_email || row.email || '';
-        const cId = row.product_id || row.course_id || 'precommande-fiche-google';
         if (email) {
           const normalizedEmail = email.toLowerCase().trim();
-          const fullName = profileMap.get(normalizedEmail) || normalizedEmail.split('@')[0];
-          const uniqueKey = `${normalizedEmail}_${cId}`;
-          if (!buyersMap.has(uniqueKey)) {
-            buyersMap.set(uniqueKey, {
-              id: row.id || `o-${Date.now()}`,
-              customerEmail: normalizedEmail,
-              customerName: fullName,
-              courseId: cId,
-              courseTitle: 'Précommande',
-              price: row.total_amount_cents ? (row.total_amount_cents / 100) : 29,
-              purchasedAt: row.created_at || new Date().toISOString()
-            });
-          }
-        }
-      });
-    }
-
-    // 4. Fetch from enrollments table
-    const { data: enrollmentsData } = await supabase
-      .from('enrollments')
-      .select('*')
-      .order('purchased_at', { ascending: false });
-
-    if (enrollmentsData && enrollmentsData.length > 0) {
-      enrollmentsData.forEach((row: any) => {
-        const email = row.user_email || row.email || row.customer_email || '';
-        const item = row.item_data || {};
-        const title = row.item_title || item.title || row.course_id || '';
-        const cId = row.course_id || row.item_id || item.id || '';
-
-        if (email) {
-          const normalizedEmail = email.toLowerCase().trim();
-          const fullName = profileMap.get(normalizedEmail) || (item.customerName || normalizedEmail.split('@')[0]);
-          const uniqueKey = `${normalizedEmail}_${cId || title}`;
-          if (!buyersMap.has(uniqueKey)) {
-            buyersMap.set(uniqueKey, {
-              id: row.id || `b-${Date.now()}`,
-              customerEmail: normalizedEmail,
-              customerName: fullName,
-              courseId: cId || 'precommande',
-              courseTitle: title.replace('[PRÉCOMMANDE] ', ''),
-              price: parseFloat(row.price || item.price || 29),
-              purchasedAt: row.purchased_at || new Date().toISOString()
-            });
-          }
+          const uniqueKey = row.id || `${normalizedEmail}_${row.campaign_id}`;
+          const fullName = profileMap.get(normalizedEmail) || row.customer_name || normalizedEmail.split('@')[0];
+          buyersMap.set(uniqueKey, {
+            id: row.id,
+            customerEmail: normalizedEmail,
+            customerName: fullName,
+            courseId: row.campaign_id || 'precommande-fiche-google',
+            courseTitle: 'Précommande',
+            price: parseFloat(row.price || 29),
+            purchasedAt: row.created_at || new Date().toISOString()
+          });
         }
       });
     }
@@ -804,6 +741,36 @@ export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
   } catch (err) {
     console.warn('fetchPreorderBuyersFromDb error fallback', err);
     return [];
+  }
+}
+
+/**
+ * 15. Delete a preorder buyer permanently from Supabase DB across all tables (preorder_buyers, orders & enrollments)
+ */
+export async function deletePreorderBuyerFromDb(buyerId: string, email: string, campaignId?: string): Promise<void> {
+  const normalizedEmail = email ? email.toLowerCase().trim() : '';
+
+  try {
+    if (buyerId) {
+      await supabase.from('preorder_buyers').delete().eq('id', buyerId);
+    }
+    if (normalizedEmail) {
+      await supabase.from('preorder_buyers').delete().eq('customer_email', normalizedEmail);
+      await supabase.from('orders').delete().eq('customer_email', normalizedEmail);
+      await supabase.from('enrollments').delete().eq('user_email', normalizedEmail);
+    }
+
+    // Re-count remaining preorders for campaign and update current_enrollments
+    if (campaignId) {
+      const { data: remaining } = await supabase
+        .from('preorder_buyers')
+        .select('id')
+        .eq('campaign_id', campaignId);
+      const newCount = remaining ? remaining.length : 0;
+      await supabase.from('preorders').update({ current_enrollments: newCount }).eq('id', campaignId);
+    }
+  } catch (err) {
+    console.warn('Error deleting preorder buyer from Supabase DB', err);
   }
 }
 
