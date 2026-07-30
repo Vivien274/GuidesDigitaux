@@ -48,48 +48,13 @@ function ConfirmationContent() {
   const savedUserEmail = typeof window !== 'undefined' && localStorage.getItem('gd_auth_user')
     ? JSON.parse(localStorage.getItem('gd_auth_user')!).email
     : '';
-  const activeEmail = customerEmail || searchParams.get('email') || user?.email || savedUserEmail || '';
+  
+  // Explicit priority: customerEmail from Stripe > searchParams email > savedUserEmail > user.email
+  const activeEmail = customerEmail || searchParams.get('email') || savedUserEmail || user?.email || '';
 
   useEffect(() => {
     // 1. Check if this is a cart checkout purchase
     const isCartCheckout = searchParams.get('cart_checkout') === 'true' || searchParams.get('id') === 'cart_items';
-
-    if (typeof window !== 'undefined' && isCartCheckout) {
-      const pendingCartRaw = localStorage.getItem('gd_pending_cart_checkout');
-      const targetEmail = activeEmail || savedUserEmail || 'beber@gmail.com';
-
-      if (pendingCartRaw) {
-        try {
-          const pendingItems = JSON.parse(pendingCartRaw);
-          if (Array.isArray(pendingItems)) {
-            pendingItems.forEach((it: any) => {
-              const isPdf = it.category === 'ebook' || it.category === 'checklist' || it.type === 'ebook' || it.type === 'checklist' || !!it.downloadPdf || it.id?.includes('guide') || it.title?.toLowerCase().includes('guide');
-              
-              saveOrderToDb(targetEmail, it.id || it.slug || 'product', 'paid', Number(it.price) || 5, sessionId);
-              saveUserPurchaseToDb(targetEmail, {
-                id: it.id || `item-${Date.now()}`,
-                title: it.title || 'Produit Digital',
-                slug: it.slug || it.id || 'produit',
-                type: it.type || it.category || (isPdf ? 'ebook' : 'formation'),
-                typeLabel: it.typeLabel || (isPdf ? '📄 E-Book / Guide PDF' : 'Formation Vidéo'),
-                thumbnail: it.image || it.thumbnail,
-                progress: 0,
-                completedLessons: 0,
-                totalLessons: isPdf ? 0 : 4,
-                duration: it.duration || (isPdf ? 'PDF' : '2h15'),
-                instructor: 'Stéphanie ROCQ',
-                price: Number(it.price) || 5,
-                downloadPdf: it.downloadPdf || '/downloads/support-formation-woocommerce.pdf',
-                purchaseDate: new Date().toLocaleDateString('fr-FR')
-              });
-            });
-            localStorage.removeItem('gd_pending_cart_checkout');
-          }
-        } catch (e) {
-          console.error('Error unlocking cart items', e);
-        }
-      }
-    }
 
     // 2. Fetch real customer email entered on Stripe Checkout if available
     async function fetchStripeCustomerEmail() {
@@ -98,9 +63,14 @@ function ConfirmationContent() {
           const res = await fetch(`/api/stripe/session?session_id=${sessionId}`);
           const data = await res.json();
           if (data?.customerEmail) {
-            setCustomerEmail(data.customerEmail);
+            const stripeEmail = data.customerEmail.toLowerCase().trim();
+            setCustomerEmail(stripeEmail);
+            
+            // Switch session to buyer's email
+            login(stripeEmail, 'eleve');
+
             if (!isCartCheckout) {
-              addPurchaseToUser(data.customerEmail, {
+              addPurchaseToUser(stripeEmail, {
                 id: courseId || 'precommande-fiche-google',
                 title: 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
                 slug: 'precommande-fiche-google',
@@ -116,7 +86,7 @@ function ConfirmationContent() {
                 price: Number(price) || 29,
                 purchaseDate: new Date().toLocaleDateString('fr-FR')
               });
-              recordPreorderPurchaseInDb(courseId || 'precommande-fiche-google', data.customerEmail, data.customerName, Number(price) || 29);
+              recordPreorderPurchaseInDb(courseId || 'precommande-fiche-google', stripeEmail, data.customerName, Number(price) || 29);
             }
           }
         } catch (e) {
@@ -287,7 +257,7 @@ function ConfirmationContent() {
               <div className="space-y-1">
                 <h3 className="text-sm font-extrabold text-[#332420]">Produit ajouté à votre compte !</h3>
                 <p className="text-xs text-slate-600">
-                  Bonjour <strong className="text-[#18757d]">{user?.email || activeEmail}</strong>, vos accès sont prêts et enregistrés dans votre espace.
+                  Bonjour <strong className="text-[#18757d]">{activeEmail || user?.email}</strong>, vos accès sont prêts et enregistrés dans votre espace.
                 </p>
               </div>
               <Link
