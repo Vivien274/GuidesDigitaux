@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, notFound } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import VideoPlayer from '@/components/VideoPlayer';
 import { getStoredCourses, Course } from '@/lib/coursesStore';
+import { fetchCoursesFromDb } from '@/lib/supabaseLms';
 import { 
   Play, 
   CheckCircle2, 
@@ -42,189 +43,6 @@ const getShuffledOptions = (options: string[], qId: string) => {
   });
 };
 
-const WOOCOMMERCE_COURSE_DATA = {
-  id: 'c2',
-  title: 'Formation Vidéo : Vendre ses créations avec WooCommerce',
-  instructor: 'Stéphanie ROCQ',
-  congratulationsMsg: 'Félicitations ! Votre boutique WooCommerce est prête à encaisser des commandes.',
-  bonusDocTitle: 'Checklist des 25 points à vérifier avant d’ouvrir sa boutique',
-  bonusDocUrl: 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp',
-  modules: [
-    {
-      id: 'm1',
-      title: 'Module 1 : Configuration WooCommerce & Produits',
-      lessons: [
-        {
-          id: 'l1',
-          title: '1.1 Installer et configurer l’extension WooCommerce',
-          duration: '12:15',
-          completed: false,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-          notes: 'Suivez étape par étape la configuration initiale des devises, adresses et réglages de votre boutique.'
-        },
-        {
-          id: 'l2',
-          title: '1.2 Créer ses premières fiches produits',
-          duration: '18:30',
-          completed: false,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-          notes: 'Ajouter les photos de vos créations, fixer les prix TTC et rédiger des descriptions captivantes.'
-        }
-      ]
-    },
-    {
-      id: 'm2',
-      title: 'Module 2 : Paiement Stripe & Expédition',
-      lessons: [
-        {
-          id: 'l3',
-          title: '2.1 Connecter Stripe pour encaisser par Carte Bancaire',
-          duration: '14:20',
-          completed: false,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-          notes: 'Activer le paiement sécurisé par carte sans frais d’abonnement fixes.'
-        },
-        {
-          id: 'l4',
-          title: '2.2 Configurer les modes de livraison et frais de port',
-          duration: '11:45',
-          completed: false,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback2012.mp4',
-          notes: 'Paramétrer la livraison Colissimo, Mondial Relay ou le retrait en atelier.'
-        }
-      ]
-    }
-  ]
-};
-
-const WORDPRESS_COURSE_DATA = {
-  id: 'c1',
-  title: 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
-  instructor: 'Stéphanie ROCQ',
-  congratulationsMsg: 'Bravo ! Tu as construit ton site vitrine en toute autonomie.',
-  bonusDocTitle: 'Feuille de route de maintenance & sécurité WordPress',
-  bonusDocUrl: 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-securite-et-anti-spam-wordpress.webp',
-  modules: [
-    {
-      id: 'm1',
-      title: 'Module 1 : Prise en main & Choix de l’hébergement',
-      lessons: [
-        {
-          id: 'l1',
-          title: '1.1 Bienvenue & Présentation du programme',
-          duration: '08:15',
-          completed: true,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-          notes: 'Dans cette première leçon, nous faisons le tour de votre espace de formation et posons les bases de votre projet de site vitrine.'
-        },
-        {
-          id: 'l2',
-          title: '1.2 Réserver son nom de domaine et son hébergement',
-          duration: '14:30',
-          completed: true,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-          notes: 'Comment choisir un bon nom de domaine pour son activité d’artisan et réserver son hébergement web sans payer de suppléments inutiles.'
-        }
-      ],
-      quiz: {
-        id: 'q1',
-        title: 'Quizz de validation du Module 1 : Hébergement & Domaine',
-        passingScorePercent: 100,
-        questions: [
-          {
-            id: 'q1-1',
-            question: 'Quel est l\'élément indispensable pour installer WordPress et héberger son site web ?',
-            options: [
-              'Un serveur d\'hébergement web et un nom de domaine',
-              'Un compte Instagram Pro',
-              'Une imprimante 3D'
-            ],
-            correctOptionIndex: 0,
-            explanation: 'Un nom de domaine et un serveur d\'hébergement sont requis pour rendre votre site accessible en ligne.'
-          },
-          {
-            id: 'q1-2',
-            question: 'Quelle est la bonne pratique pour choisir son nom de domaine ?',
-            options: [
-              'Prendre un nom le plus long possible avec plein d\'accents',
-              'Choisir un nom court, mémorisable et en rapport avec sa marque',
-              'Utiliser des caractères spéciaux étranges'
-            ],
-            correctOptionIndex: 1,
-            explanation: 'Un nom court et mémorisable facilite le bouche-à-oreille et les recherches de vos clients.'
-          }
-        ]
-      }
-    },
-    {
-      id: 'm2',
-      title: 'Module 2 : Installation & Réglages WordPress',
-      lessons: [
-        {
-          id: 'l3',
-          title: '2.1 Installer WordPress en 1 clic chez l’hébergeur',
-          duration: '12:40',
-          completed: true,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-          notes: 'Procédure pas à pas pour lancer l’installation automatique et se connecter au tableau de bord.'
-        },
-        {
-          id: 'l4',
-          title: '2.2 Configurer les paramètres généraux et les permaliens',
-          duration: '10:15',
-          completed: false,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyshakes.mp4',
-          notes: 'Réglages d’affichage, fuseau horaire et structure des liens personnalisés pour le référencement Google.'
-        }
-      ]
-    },
-    {
-      id: 'm3',
-      title: 'Module 3 : Personnalisation Graphique & Thème',
-      lessons: [
-        {
-          id: 'l5',
-          title: '3.1 Choisir et installer un thème rapide et épuré',
-          duration: '16:50',
-          completed: false,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-          notes: 'Sélection d’un thème léger adapté aux créateurs (Astra, Kadence ou GeneratePress).'
-        },
-        {
-          id: 'l6',
-          title: '3.2 Créer son en-tête avec son logo et son menu',
-          duration: '19:10',
-          completed: false,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-          notes: 'Mettre en place la navigation principale et intégrer son identité visuelle.'
-        }
-      ]
-    },
-    {
-      id: 'm4',
-      title: 'Module 4 : Pages Clés & Mise en Ligne',
-      lessons: [
-        {
-          id: 'l7',
-          title: '4.1 Rédiger et concevoir la page d’accueil',
-          duration: '22:00',
-          completed: false,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback2012.mp4',
-          notes: 'Agencement des blocs de présentation, témoignages clients et boutons d’appel à l’action.'
-        },
-        {
-          id: 'l8',
-          title: '4.2 Ajouter un formulaire de contact & mettre en ligne',
-          duration: '15:20',
-          completed: false,
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-          notes: 'Dernières vérifications avant l’ouverture officielle de votre site au public.'
-        }
-      ]
-    }
-  ]
-};
-
 export default function FormationViewerPage() {
   const params = useParams();
   const router = useRouter();
@@ -238,9 +56,10 @@ export default function FormationViewerPage() {
     }
   }, [slug, router]);
 
-  const [courseData, setCourseData] = useState<any>(WORDPRESS_COURSE_DATA);
-  const [activeLesson, setActiveLesson] = useState<any>(WORDPRESS_COURSE_DATA.modules[0].lessons[0]);
+  const [courseData, setCourseData] = useState<any>(null);
+  const [activeLesson, setActiveLesson] = useState<any>(null);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // QUIZ STATE
   const [passedQuizzes, setPassedQuizzes] = useState<Record<string, boolean>>({});
@@ -250,15 +69,26 @@ export default function FormationViewerPage() {
   const [quizPassed, setQuizPassed] = useState<boolean>(false);
 
   useEffect(() => {
-    // 1. Check if an edited version exists in localStorage first
-    const customCourses = getStoredCourses();
-    const match = customCourses.find(c => 
-      c.id === slug || 
-      (slug === 'formation-woocommerce' && (c.id === 'c2' || c.title.toLowerCase().includes('woocommerce'))) ||
-      (slug === 'creer-sa-vitrine-wordpress' && (c.id === 'c1' || c.title.toLowerCase().includes('wordpress')))
-    );
+    async function syncCourse() {
+      setIsLoading(true);
+      const dbCourses = await fetchCoursesFromDb();
+      let match = (dbCourses || []).find(c => 
+        c.id === slug || 
+        (c as any).slug === slug ||
+        (slug === 'formation-woocommerce' && (c.id === 'c2' || c.title.toLowerCase().includes('woocommerce'))) ||
+        (slug === 'creer-sa-vitrine-wordpress' && (c.id === 'c1' || c.title.toLowerCase().includes('wordpress')))
+      );
 
-    if (match && match.modules && match.modules.length > 0 && match.modules[0].lessons.length > 0) {
+      if (!match) {
+        const localCourses = getStoredCourses();
+        match = localCourses.find(c => c.id === slug || (c as any).slug === slug);
+      }
+
+      if (!match || !match.modules || match.modules.length === 0) {
+        notFound();
+        return;
+      }
+
       const formatted = {
         id: match.id,
         title: match.title,
@@ -272,19 +102,14 @@ export default function FormationViewerPage() {
         liveStreamTitle: match.liveStreamTitle,
         modules: match.modules
       };
-      setCourseData(formatted);
-      setActiveLesson(match.modules[0].lessons[0]);
-      return;
-    }
 
-    // 2. Fallback default static mock courses
-    if (slug === 'formation-woocommerce' || slug === 'c2') {
-      setCourseData(WOOCOMMERCE_COURSE_DATA);
-      setActiveLesson(WOOCOMMERCE_COURSE_DATA.modules[0].lessons[0]);
-    } else {
-      setCourseData(WORDPRESS_COURSE_DATA);
-      setActiveLesson(WORDPRESS_COURSE_DATA.modules[0].lessons[0]);
+      setCourseData(formatted);
+      if (formatted.modules[0]?.lessons?.length > 0) {
+        setActiveLesson(formatted.modules[0].lessons[0]);
+      }
+      setIsLoading(false);
     }
+    syncCourse();
   }, [slug]);
 
   // Flattened array of all lessons across all modules for sequential navigation
@@ -336,6 +161,14 @@ export default function FormationViewerPage() {
       localStorage.setItem(`gd_completed_lessons_${courseData.id}`, JSON.stringify(updated));
     }
   };
+
+  if (isLoading || !courseData) {
+    return (
+      <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#18757d] border-t-transparent"></div>
+      </div>
+    );
+  }
 
   // Find active module
   const activeModuleIndex = courseData?.modules?.findIndex((m: any) => m.lessons?.some((l: any) => l.id === activeLesson?.id)) ?? 0;

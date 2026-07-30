@@ -55,45 +55,15 @@ function EleveDashboardContent() {
 
         let baseList: any[] = userPurchases || [];
 
-        // If no purchases found for logged-in student, auto-unlock default purchased products so dashboard is never empty
-        if (baseList.length === 0 && userEmail) {
-          const defaultItems = [
-            {
-              id: 'mini-guide-ecrire-web-artisan',
-              title: 'Mini-guide : Écrire pour le web quand on est artisan',
-              slug: 'mini-guide-ecrire-web-artisan',
-              type: 'ebook',
-              typeLabel: '📄 E-Book / Guide PDF HD',
-              downloadPdf: '/downloads/support-formation-woocommerce.pdf',
-              price: 5,
-              purchaseDate: new Date().toLocaleDateString('fr-FR')
-            },
-            {
-              id: 'c1',
-              title: 'Créer sa vitrine WordPress pas à pas',
-              slug: 'creer-sa-vitrine-wordpress',
-              type: 'formation',
-              typeLabel: 'Formation Vidéo HD',
-              progress: 0,
-              totalLessons: 4,
-              duration: '3h30',
-              instructor: 'Stéphanie ROCQ',
-              price: 99,
-              purchaseDate: new Date().toLocaleDateString('fr-FR')
-            }
-          ];
-
-          defaultItems.forEach(it => addPurchaseToUser(userEmail, it as any));
-          baseList = defaultItems;
-        }
-
         const formattedReal = baseList.map((item: any) => {
           const matchedDb = dbCourses.find(c => c.id === item.id || c.title === item.title);
-          const targetTitle = matchedDb?.title || item.title || 'Formation sans titre';
-          const targetId = matchedDb?.id || item.id || 'c2';
-          const targetSlug = item.slug || (targetTitle.toLowerCase().includes('woocommerce') ? 'formation-woocommerce' : 'creer-sa-vitrine-wordpress');
+          const targetTitle = matchedDb?.title || item.title || 'Produit Guides Digitaux';
+          const targetId = matchedDb?.id || item.id || `item-${Date.now()}`;
+          const isPreorder = !!item.isPreorder || item.slug === 'precommande-fiche-google' || item.id === 'precommande-fiche-google' || (item.slug && item.slug.includes('precommande'));
+          const isPdfItem = !isPreorder && (item.category === 'ebook' || item.category === 'checklist' || item.type === 'ebook' || item.type === 'checklist' || !!item.downloadPdf || (item.slug && item.slug.includes('guide')) || (item.id && item.id.includes('guide')));
+          const targetSlug = item.slug || item.id || (targetTitle.toLowerCase().includes('woocommerce') ? 'formation-woocommerce' : 'creer-sa-vitrine-wordpress');
           
-          const totalLess = matchedDb?.modules ? matchedDb.modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) : (item.totalLessons || 4);
+          const totalLess = matchedDb?.modules ? matchedDb.modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) : (item.totalLessons || (isPdfItem ? 0 : 4));
 
           const storedBySlug = localStorage.getItem(`gd_completed_lessons_${targetSlug}`);
           const storedById = localStorage.getItem(`gd_completed_lessons_${targetId}`);
@@ -110,23 +80,21 @@ function EleveDashboardContent() {
             } catch (e) {}
           }
 
-          const isPdfItem = item.category === 'ebook' || item.category === 'checklist' || item.type === 'ebook' || item.type === 'checklist' || !!item.downloadPdf;
-
           return {
             id: targetId,
             title: targetTitle,
             slug: targetSlug,
-            type: item.type || (isPdfItem ? 'ebook' : 'formation'),
-            typeLabel: item.typeLabel || (isPdfItem ? '📄 E-Book / Guide PDF' : 'Formation Vidéo HD'),
+            type: isPreorder ? 'formation' : (item.type || (isPdfItem ? 'ebook' : 'formation')),
+            typeLabel: isPreorder ? 'Précommande Enregistrée' : (item.typeLabel || (isPdfItem ? '📄 E-Book / Guide PDF' : 'Formation Vidéo')),
             thumbnail: item.image || item.thumbnail || DEFAULT_THUMBNAIL,
-            progress: liveProg,
+            progress: isPdfItem ? 100 : liveProg,
             completedLessons: item.completedLessons || 0,
             totalLessons: totalLess,
-            duration: matchedDb?.duration || item.duration || (isPdfItem ? 'PDF HD' : '2h15'),
+            duration: matchedDb?.duration || item.duration || (isPdfItem ? 'PDF' : '2h15'),
             instructor: 'Stéphanie ROCQ',
-            isPreorder: item.isPreorder || item.slug === 'precommande-fiche-google' || item.id === 'precommande-fiche-google',
+            isPreorder: isPreorder,
             isPdf: isPdfItem,
-            downloadPdf: item.downloadPdf || '/downloads/support-formation-woocommerce.pdf'
+            downloadPdf: isPdfItem ? (item.downloadPdf || '/downloads/support-formation-woocommerce.pdf') : undefined
           };
         });
 
@@ -139,7 +107,7 @@ function EleveDashboardContent() {
   }, [user?.email]);
 
   const activeCourse = courses.length > 0 ? courses[0] : null;
-  const pdfCount = courses.filter(c => c.isPdf || c.type === 'ebook' || c.type === 'checklist' || c.downloadPdf).length;
+  const pdfCount = courses.filter(c => c.isPdf && !c.isPreorder).length;
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans">
@@ -298,7 +266,7 @@ function EleveDashboardContent() {
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-[#eee7da] pb-4">
               <h2 className="text-xl sm:text-2xl font-extrabold text-[#332420]">
-                Tes ressources & formations accréditées
+                Tes ressources & formations
               </h2>
               <span className="text-xs text-slate-500 font-medium">{courses.length} contenu{courses.length > 1 ? 's' : ''} débloqué{courses.length > 1 ? 's' : ''}</span>
             </div>
@@ -411,7 +379,7 @@ function EleveDashboardContent() {
                           className="w-full py-3.5 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
                         >
                           <Download className="w-4 h-4" />
-                          TÉLÉCHARGER LE PDF HD
+                          TÉLÉCHARGER LE PDF
                         </a>
                       )}
                     </div>

@@ -24,7 +24,9 @@ import {
   Layers
 } from 'lucide-react';
 
-import productsData from '@/data/products.json';
+import { getStoredPreorders, PreorderCampaign, getPreorderDestinationUrl } from '@/lib/preordersStore';
+import { fetchCoursesFromDb, fetchPreordersFromDb, fetchProductsFromDb } from '@/lib/supabaseLms';
+import { Rocket, Target, Calendar, Gift } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -41,65 +43,56 @@ interface Product {
   features: string[];
 }
 
-import { getStoredPreorders, PreorderCampaign, getPreorderDestinationUrl } from '@/lib/preordersStore';
-import { fetchCoursesFromDb, fetchPreordersFromDb } from '@/lib/supabaseLms';
-import { Rocket, Target, Calendar, Gift } from 'lucide-react';
-
-const INITIAL_PRODUCTS: Product[] = productsData as unknown as Product[];
-
 export default function BoutiquePage() {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'ebook' | 'checklist' | 'formation'>('all');
   const [activeModalProduct, setActiveModalProduct] = useState<Product | null>(null);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [preorders, setPreorders] = useState<PreorderCampaign[]>([]);
-  const [productsList, setProductsList] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [productsList, setProductsList] = useState<Product[]>([]);
   const { addToCart } = useCart();
 
   React.useEffect(() => {
     fetchPreordersFromDb().then(setPreorders);
 
-    async function syncDynamicCourses() {
-      const dbCourses = await fetchCoursesFromDb();
-      if (dbCourses && dbCourses.length > 0) {
-        const now = new Date();
-        const publishedDbCourses = dbCourses.filter(c => {
-          if (c.status === 'Brouillon') return false;
-          if (c.status === 'Planifié') {
-            if (!c.scheduledPublishDate) return false;
-            return now >= new Date(c.scheduledPublishDate);
-          }
-          return true;
-        });
+    async function syncDynamicCatalog() {
+      const [dbProducts, dbCourses] = await Promise.all([
+        fetchProductsFromDb(),
+        fetchCoursesFromDb()
+      ]);
 
-        const nonFormations = INITIAL_PRODUCTS.filter(p => p.category !== 'formation');
-        
-        const dynamicFormations: Product[] = publishedDbCourses.map(c => {
-          const staticMatch = INITIAL_PRODUCTS.find(p => p.id === c.id || (p.title && c.title.toLowerCase().includes(p.title.toLowerCase().slice(0, 10))));
-          return {
-            id: c.id,
-            title: c.title,
-            category: 'formation',
-            categoryLabel: 'Formation Vidéo HD',
-            price: c.price || 99,
-            originalPrice: c.originalPrice,
-            rating: 5,
-            reviewsCount: 0,
-            badge: c.isPreorder ? 'PRÉCOMMANDE' : undefined,
-            image: c.image || staticMatch?.image || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp',
-            description: c.description || 'Formation vidéo complète pas-à-pas avec exercices pratiques.',
-            features: [
-              'Accès illimité 24/7',
-              `${c.modules?.length || 0} Modules vidéo pas-à-pas`,
-              'Support et exercices pratiques',
-              'Mises à jour gratuites incluses'
-            ]
-          };
-        });
+      const now = new Date();
+      const publishedDbCourses = (dbCourses || []).filter(c => {
+        if (c.status === 'Brouillon') return false;
+        if (c.status === 'Planifié') {
+          if (!c.scheduledPublishDate) return false;
+          return now >= new Date(c.scheduledPublishDate);
+        }
+        return true;
+      });
 
-        setProductsList([...nonFormations, ...dynamicFormations]);
-      }
+      const dynamicFormations: Product[] = publishedDbCourses.map(c => ({
+        id: c.id,
+        title: c.title,
+        category: 'formation',
+        categoryLabel: 'Formation Vidéo',
+        price: c.price || 99,
+        originalPrice: c.originalPrice,
+        rating: 5,
+        reviewsCount: 0,
+        badge: c.isPreorder ? 'PRÉCOMMANDE' : undefined,
+        image: c.image || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp',
+        description: c.description || 'Formation vidéo complète pas-à-pas avec exercices pratiques.',
+        features: [
+          'Accès illimité 24/7',
+          `${c.modules?.length || 0} Modules vidéo pas-à-pas`,
+          'Support et exercices pratiques',
+          'Mises à jour gratuites incluses'
+        ]
+      }));
+
+      setProductsList([...(dbProducts || []), ...dynamicFormations]);
     }
-    syncDynamicCourses();
+    syncDynamicCatalog();
   }, []);
 
   const filteredProducts = productsList.filter(product => {

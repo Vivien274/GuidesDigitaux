@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { useAuth, getRoleForEmail } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { fetchCoursesFromDb } from '@/lib/supabaseLms';
 import { getRealCourseStats, Course } from '@/lib/coursesStore';
 import { 
@@ -38,19 +38,13 @@ export default function FormateurDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('gd_auth_user');
-      const userEmail = user?.email || (savedUser ? JSON.parse(savedUser).email : '');
-      const activeRole = getRoleForEmail(userEmail);
-
-      if (!userEmail) {
-        router.push('/mon-compte');
-        return;
-      }
-      if (activeRole !== 'formateur' && activeRole !== 'superadmin') {
-        router.push('/dashboard/eleve');
-        return;
-      }
+    if (!user) {
+      router.push('/mon-compte');
+      return;
+    }
+    if (role !== 'formateur' && role !== 'superadmin') {
+      router.push('/dashboard/eleve');
+      return;
     }
   }, [user, role, router]);
 

@@ -229,6 +229,22 @@ export async function upsertUserProfileToDb(email: string, role: string = 'eleve
   }
 }
 
+export async function fetchUserProfileFromDb(email: string) {
+  if (!email) return null;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', email.toLowerCase().trim())
+      .single();
+
+    if (!error && data) return data;
+  } catch (e) {
+    console.warn('Error fetching profile from Supabase', e);
+  }
+  return null;
+}
+
 /**
  * 6. Save User Purchase to Supabase DB enrollments table
  */
@@ -238,51 +254,132 @@ export async function saveUserPurchaseToDb(email: string, item: any) {
   try {
     await upsertUserProfileToDb(normalizedEmail, 'eleve');
 
-    const payload = {
-      user_email: normalizedEmail,
-      email: normalizedEmail,
+    const profile = await fetchUserProfileFromDb(normalizedEmail);
+    const userId = profile?.id;
+
+    const payload: any = {
+      product_id: item.id || `item-${Date.now()}`,
       course_id: item.id || `item-${Date.now()}`,
-      item_id: item.id || `item-${Date.now()}`,
       item_title: item.title || 'Produit Guides Digitaux',
-      item_data: item,
+      item_type: item.type || (item.category === 'ebook' || item.downloadPdf ? 'ebook' : 'formation'),
+      download_pdf: item.downloadPdf || null,
+      price: Number(item.price) || 0,
       purchased_at: new Date().toISOString()
     };
 
-    await supabase.from('enrollments').upsert(payload);
+    if (userId) {
+      payload.user_id = userId;
+    }
+
+    await supabase.from('enrollments').insert(payload);
   } catch (e) {
     console.warn('Supabase DB purchase save fallback', e);
   }
 }
 
 /**
- * 7. Fetch User Purchases directly from Supabase DB enrollments table
+ * 7. Fetch User Purchases directly from Supabase DB (enrollments, preorder_buyers & orders tables)
  */
 export async function fetchUserPurchasesFromDb(email: string): Promise<any[]> {
   if (!email) return [];
   const normalizedEmail = email.toLowerCase().trim();
-  try {
-    const { data, error } = await supabase
-      .from('enrollments')
-      .select('*')
-      .or(`user_email.eq.${normalizedEmail},email.eq.${normalizedEmail}`);
+  const purchasesMap = new Map<string, any>();
 
-    if (!error && data && data.length > 0) {
-      return data.map((row: any) => {
-        if (row.item_data && typeof row.item_data === 'object' && Object.keys(row.item_data).length > 0) {
-          return row.item_data;
-        }
-        return {
-          id: row.course_id || row.item_id || row.id,
-          title: row.item_title || 'Formation / Produit débloqué',
-          slug: row.item_slug || row.course_id,
-          type: row.type || 'formation',
-          price: row.price || 29,
+  try {
+    const profile = await fetchUserProfileFromDb(normalizedEmail);
+    const userId = profile?.id;
+
+    // 1. Fetch from enrollments table
+    let enrollmentsQuery = supabase.from('enrollments').select('*');
+    if (userId) {
+      enrollmentsQuery = enrollmentsQuery.or(`user_id.eq.${userId},user_email.eq.${normalizedEmail},email.eq.${normalizedEmail},customer_email.eq.${normalizedEmail}`);
+    } else {
+      enrollmentsQuery = enrollmentsQuery.or(`user_email.eq.${normalizedEmail},email.eq.${normalizedEmail},customer_email.eq.${normalizedEmail}`);
+    }
+
+    const { data: enrollmentsData } = await enrollmentsQuery;
+
+    if (enrollmentsData && enrollmentsData.length > 0) {
+      enrollmentsData.forEach((row: any) => {
+        const itemKey = row.course_id || row.product_id || row.id;
+        const isPdf = row.item_type === 'ebook' || row.item_type === 'checklist' || !!row.download_pdf;
+        purchasesMap.set(itemKey, {
+          id: itemKey,
+          title: row.item_title || 'Produit Guides Digitaux',
+          slug: row.item_slug || itemKey,
+          type: row.item_type || (isPdf ? 'ebook' : 'formation'),
+          typeLabel: isPdf ? '📄 E-Book / Guide PDF' : 'Formation Vidéo',
+          price: Number(row.price) || 29,
+          downloadPdf: row.download_pdf || (isPdf ? '/downloads/support-formation-woocommerce.pdf' : undefined),
           purchaseDate: row.purchased_at ? new Date(row.purchased_at).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')
-        };
+        });
       });
     }
+
+    // 2. Fetch from preorder_buyers table (for preorders purchased)
+    const { data: preorderBuyersData } = await supabase
+      .from('preorder_buyers')
+      .select('*')
+      .eq('customer_email', normalizedEmail);
+
+    if (preorderBuyersData && preorderBuyersData.length > 0) {
+      const allPreorders = await fetchPreordersFromDb();
+      preorderBuyersData.forEach((buyer: any) => {
+        const campaignMatch = allPreorders.find(p => p.id === buyer.campaign_id || p.courseId === buyer.campaign_id) || {
+          id: buyer.campaign_id,
+          courseTitle: 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
+          price: buyer.price || 29,
+          releaseDate: '2026-09-15'
+        };
+
+        if (!purchasesMap.has(campaignMatch.id)) {
+          purchasesMap.set(campaignMatch.id, {
+            id: campaignMatch.id,
+            title: campaignMatch.courseTitle || 'Précommande Fiche Google',
+            slug: campaignMatch.id,
+            type: 'formation',
+            typeLabel: 'Précommande Enregistrée',
+            price: Number(buyer.price) || 29,
+            isPreorder: true,
+            releaseDate: campaignMatch.releaseDate || '2026-09-15',
+            purchaseDate: buyer.created_at ? new Date(buyer.created_at).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')
+          });
+        }
+      });
+    }
+
+    // 3. Fetch from orders table (for checkout orders)
+    const { data: ordersData } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('customer_email', normalizedEmail);
+
+    if (ordersData && ordersData.length > 0) {
+      const allProducts = await fetchProductsFromDb();
+      ordersData.forEach((order: any) => {
+        if (order.product_id) {
+          const productMatch = allProducts.find(p => p.id === order.product_id || p.slug === order.product_id);
+          const itemKey = order.product_id;
+          if (!purchasesMap.has(itemKey)) {
+            const isPdf = productMatch?.category === 'ebook' || productMatch?.category === 'checklist' || !!productMatch?.downloadPdf || itemKey.includes('guide');
+            purchasesMap.set(itemKey, {
+              id: itemKey,
+              title: productMatch?.title || 'Mini-guide / Produit Digital',
+              slug: productMatch?.slug || itemKey,
+              type: productMatch?.category || (isPdf ? 'ebook' : 'formation'),
+              typeLabel: isPdf ? '📄 E-Book / Guide PDF' : 'Formation Vidéo',
+              price: productMatch?.price || (order.total_amount_cents ? order.total_amount_cents / 100 : 5),
+              downloadPdf: productMatch?.downloadPdf || '/downloads/support-formation-woocommerce.pdf',
+              purchaseDate: order.created_at ? new Date(order.created_at).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')
+            });
+          }
+        }
+      });
+    }
+
+    return Array.from(purchasesMap.values());
   } catch (e) {
-    console.warn('Supabase fetchUserPurchasesFromDb fallback', e);
+    console.warn('Supabase fetchUserPurchasesFromDb error', e);
   }
   return [];
 }
@@ -290,16 +387,20 @@ export async function fetchUserPurchasesFromDb(email: string): Promise<any[]> {
 /**
  * 8. Save Customer Order to Supabase DB orders table
  */
-export async function saveOrderToDb(customerEmail: string, productId: string, status: string = 'paid') {
+export async function saveOrderToDb(customerEmail: string, productId: string, status: string = 'paid', price: number = 5, sessionId?: string) {
   if (!customerEmail) return;
   const normalizedEmail = customerEmail.toLowerCase().trim();
   try {
-    await supabase.from('orders').insert({
+    const payload = {
       customer_email: normalizedEmail,
       product_id: productId,
+      stripe_session_id: sessionId || `sess_cart_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      amount: Number(price) || 5,
+      currency: 'eur',
       status: status,
       created_at: new Date().toISOString()
-    });
+    };
+    await supabase.from('orders').insert(payload);
   } catch (e) {
     console.warn('Supabase DB order insert fallback', e);
   }
@@ -369,11 +470,8 @@ export async function fetchPreordersFromDb(): Promise<PreorderCampaign[]> {
         if (orders) orders.forEach((o: any) => (o.customer_email || o.email) && allBuyersEmails.add((o.customer_email || o.email).toLowerCase().trim()));
 
         mapped.forEach(po => {
-          const count = Math.max(po.currentEnrollments, allBuyersEmails.size);
-          if (count > po.currentEnrollments) {
-            po.currentEnrollments = count;
-            supabase.from('preorders').update({ current_enrollments: count }).eq('id', po.id).then();
-          }
+          po.currentEnrollments = allBuyersEmails.size;
+          supabase.from('preorders').update({ current_enrollments: allBuyersEmails.size }).eq('id', po.id).then();
         });
       } catch (recErr) {
         console.warn('Reconcile notice', recErr);
@@ -501,6 +599,54 @@ export async function deletePreorderFromDb(campaignId: string): Promise<Preorder
   }
 
   return updatedLocal;
+}
+
+export interface DBCourse {
+  id: string;
+  title: string;
+  description: string;
+  duration?: string;
+  level?: string;
+  prerequisites?: string;
+  price?: number;
+  image?: string;
+  status?: string;
+  scheduledPublishDate?: string;
+  modules?: any[];
+}
+
+export async function fetchProductsFromDb(): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data && data.length > 0) {
+      return data.map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        slug: row.slug || row.id,
+        category: row.category,
+        categoryLabel: row.category_label || row.categoryLabel || 'Mini-Guide / Ebook',
+        price: Number(row.price),
+        originalPrice: row.original_price ? Number(row.original_price) : undefined,
+        rating: Number(row.rating) || 5,
+        reviewsCount: Number(row.reviews_count) || 0,
+        badge: row.badge || undefined,
+        image: row.image,
+        description: row.description,
+        longDescription: row.long_description,
+        htmlContent: row.html_content,
+        downloadPdf: row.download_pdf,
+        features: Array.isArray(row.features) ? row.features : [],
+        gallery: Array.isArray(row.gallery) ? row.gallery : []
+      }));
+    }
+  } catch (e) {
+    console.warn('Error fetching products from Supabase DB', e);
+  }
+  return [];
 }
 
 export interface PreorderBuyer {

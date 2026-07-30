@@ -587,7 +587,7 @@ export default function FormateurPreorderPage() {
                   preorders.length === 1
                 );
 
-                const effectiveEnrollments = Math.max(po.currentEnrollments, campaignBuyers.length);
+                const effectiveEnrollments = campaignBuyers.length;
                 const percent = Math.min(100, Math.round((effectiveEnrollments / po.targetEnrollments) * 100));
                 const remaining = Math.max(0, po.targetEnrollments - effectiveEnrollments);
 

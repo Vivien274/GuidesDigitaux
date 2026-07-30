@@ -20,7 +20,8 @@ import {
   ShoppingCart
 } from 'lucide-react';
 
-import productsData from '@/data/products.json';
+import { notFound } from 'next/navigation';
+import { fetchCoursesFromDb, fetchProductsFromDb } from '@/lib/supabaseLms';
 
 interface Product {
   id: string;
@@ -39,17 +40,6 @@ interface Product {
   features: string[];
 }
 
-const PRODUCTS_LIST: Product[] = productsData as unknown as Product[];
-const PRODUCTS_MAP: Record<string, Product> = PRODUCTS_LIST.reduce(
-  (acc, prod) => {
-    acc[prod.id] = prod;
-    return acc;
-  },
-  {} as Record<string, Product>
-);
-
-import { fetchCoursesFromDb } from '@/lib/supabaseLms';
-
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -57,40 +47,74 @@ export default function ProductDetailPage() {
   const [isBuying, setIsBuying] = useState(false);
   const { addToCart } = useCart();
 
-  // Retrieve exact product by slug/id with fallback to static map
-  const initialProduct = PRODUCTS_MAP[productId] || PRODUCTS_LIST[0];
-  const [product, setProduct] = useState<Product>(initialProduct);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function syncProductFromDb() {
-      const dbCourses = await fetchCoursesFromDb();
-      const match = dbCourses.find(c => c.id === productId || (initialProduct?.title && c.title.toLowerCase().includes(initialProduct.title.toLowerCase().slice(0, 10))));
-      if (match) {
-        setProduct(prev => ({
-          ...prev,
-          title: match.title || prev.title,
-          price: match.price || prev.price,
-          originalPrice: match.originalPrice !== undefined ? match.originalPrice : prev.originalPrice,
-          image: match.image || prev.image,
-          description: match.description || prev.description
-        }));
+      setIsLoading(true);
+      const [dbProducts, dbCourses] = await Promise.all([
+        fetchProductsFromDb(),
+        fetchCoursesFromDb()
+      ]);
+
+      setAllProducts(dbProducts || []);
+      let match = (dbProducts || []).find(p => p.id === productId || p.slug === productId);
+      
+      if (!match) {
+        const courseMatch = (dbCourses || []).find(c => c.id === productId);
+        if (courseMatch) {
+          match = {
+            id: courseMatch.id,
+            title: courseMatch.title,
+            category: 'formation',
+            categoryLabel: 'Formation Vidéo',
+            price: courseMatch.price || 99,
+            originalPrice: courseMatch.originalPrice,
+            rating: 5,
+            reviewsCount: 0,
+            image: courseMatch.image || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp',
+            description: courseMatch.description || 'Formation vidéo complète pas-à-pas.',
+            features: [
+              'Accès illimité 24/7',
+              `${courseMatch.modules?.length || 0} Modules vidéo pas-à-pas`,
+              'Support et exercices pratiques'
+            ]
+          };
+        }
       }
+
+      if (!match) {
+        notFound();
+        return;
+      }
+
+      setProduct(match);
+      setIsLoading(false);
     }
     syncProductFromDb();
   }, [productId]);
 
-  // Active main image state
-  const productGallery = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image];
-  const [activeImage, setActiveImage] = useState<string>(productGallery[0]);
+  const [activeImage, setActiveImage] = useState<string>('');
 
   useEffect(() => {
-    if (productGallery && productGallery.length > 0) {
-      setActiveImage(productGallery[0]);
+    if (product) {
+      const gallery = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image];
+      setActiveImage(gallery[0]);
     }
-  }, [product.id]);
+  }, [product?.id]);
 
-  // Related products from the same category
-  const relatedProducts = PRODUCTS_LIST.filter(
+  if (isLoading || !product) {
+    return (
+      <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#18757d] border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  const productGallery = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image];
+  const relatedProducts = allProducts.filter(
     (p) => p.id !== product.id && (p.category === product.category || p.category === 'ebook')
   ).slice(0, 3);
 

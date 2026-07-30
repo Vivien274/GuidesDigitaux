@@ -66,21 +66,40 @@ export async function POST(request: Request) {
       });
 
       // 3. Enregistrement de la commande dans la table `orders`
+      const amountEur = (session.amount_total ?? 0) / 100;
       const { data: order, error: orderError } = await supabaseAdmin
         .from('orders')
         .insert({
           user_id: userId,
+          customer_email: customerEmail,
+          product_id: productId,
           stripe_session_id: session.id,
           stripe_payment_intent_id: session.payment_intent as string,
-          total_amount_cents: session.amount_total ?? 0,
-          status: 'completed',
-          customer_details: session.customer_details as any,
+          amount: amountEur,
+          currency: session.currency || 'eur',
+          status: 'paid'
         })
         .select('id')
         .single();
 
       if (orderError) {
         console.error('Erreur insertion commande:', orderError);
+      }
+
+      // 3.b Enregistrement dans `enrollments`
+      try {
+        await supabaseAdmin.from('enrollments').insert({
+          user_id: userId,
+          user_email: customerEmail,
+          product_id: productId,
+          course_id: productId,
+          item_title: (session as any).description || 'Produit Digital',
+          item_type: 'ebook',
+          price: amountEur,
+          stripe_session_id: session.id
+        });
+      } catch (e) {
+        console.warn('Webhook enrollments insert fallback', e);
       }
 
       // 4. Récupérer le produit pour vérifier s'il s'agit d'une précommande (V2)

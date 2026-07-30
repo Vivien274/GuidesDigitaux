@@ -1,6 +1,6 @@
 -- SQL Migration Script for LMS & User Account Management in Supabase
 
--- 1. Create PROFILES Table
+-- 1. Create / Update PROFILES Table
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
@@ -10,14 +10,27 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Garantir la présence de la colonne role sur les tables existantes
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'eleve';
+
 -- Enable RLS on profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public profiles are viewable by everyone" 
-  ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Instructors and admins can view profiles" ON public.profiles;
+
+CREATE POLICY "Users can view their own profile" 
+  ON public.profiles FOR SELECT USING (auth.uid() = id);
 
 CREATE POLICY "Users can update their own profile" 
   ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Instructors and admins can view profiles" 
+  ON public.profiles FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('superadmin', 'formateur'))
+  );
 
 -- 2. Create COURSES Table
 CREATE TABLE IF NOT EXISTS public.courses (
@@ -188,4 +201,24 @@ CREATE POLICY "Preorder buyers viewable by everyone"
 
 CREATE POLICY "Preorder buyers manageable by everyone" 
   ON public.preorder_buyers FOR ALL USING (true);
+
+-- 9. Create ORDERS Table
+CREATE TABLE IF NOT EXISTS public.orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_email TEXT,
+  product_id TEXT,
+  stripe_session_id TEXT,
+  stripe_payment_intent_id TEXT,
+  total_amount_cents INTEGER DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'paid',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Orders viewable by everyone" 
+  ON public.orders FOR SELECT USING (true);
+
+CREATE POLICY "Orders manageable by everyone" 
+  ON public.orders FOR ALL USING (true);
 

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { useAuth, UserRole, getRoleForEmail } from '@/context/AuthContext';
+import { useAuth, UserRole } from '@/context/AuthContext';
 import { Lock, Mail, User, Key, ArrowRight, ShieldCheck, Download, Sparkles, GraduationCap, Shield } from 'lucide-react';
 
 export default function MonComptePage() {
@@ -15,18 +15,11 @@ export default function MonComptePage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    const computedRole = getRoleForEmail(email);
-    login(email, computedRole);
-    if (computedRole === 'superadmin') {
-      router.push('/dashboard/admin');
-    } else if (computedRole === 'formateur') {
-      router.push('/dashboard/formateur');
-    } else {
-      router.push('/dashboard/eleve');
-    }
+    await login(email);
+    router.push('/dashboard/eleve');
   };
 
   return (

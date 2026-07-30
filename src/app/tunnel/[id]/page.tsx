@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, notFound } from 'next/navigation';
 import { getStoredPreorders, incrementPreorderEnrollment, PreorderCampaign } from '@/lib/preordersStore';
 import { fetchPreordersFromDb, incrementPreorderEnrollmentInDb } from '@/lib/supabaseLms';
 import { 
@@ -24,27 +24,20 @@ export default function SalesFunnelPage() {
   const [campaign, setCampaign] = useState<PreorderCampaign | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     fetchPreordersFromDb().then(list => {
       let match = list.find(p => p.id === rawId || p.courseId === rawId);
-      if (!match || rawId === 'precommande-fiche-google' || rawId.includes('google') || !rawId) {
-        match = {
-          id: 'precommande-fiche-google',
-          courseId: 'c-google',
-          courseTitle: 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
-          price: 29,
-          originalPrice: 69,
-          targetEnrollments: 15,
-          currentEnrollments: 12,
-          endDate: '2026-08-20',
-          releaseDate: '2026-09-15',
-          description: 'En moins de 2 heures de vidéos courtes (hébergées directement ici, sur ton espace sécurisé), on va faire ça ensemble, pas à pas.',
-          bonus: 'Accès immédiat à la liste des 15 catégories Google My Business les plus rentables + Fiche méthode avis 5 étoiles',
-          image: 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp',
-          status: 'En cours'
-        };
+      if (!match) {
+        match = list.find(p => p.id.includes('google') || p.courseId?.includes('google'));
       }
-      setCampaign(match || null);
+      if (!match) {
+        notFound();
+        return;
+      }
+      setCampaign(match);
+      setIsLoading(false);
     });
   }, [rawId]);
 

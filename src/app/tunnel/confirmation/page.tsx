@@ -23,12 +23,13 @@ import {
 
 import { incrementPreorderEnrollment } from '@/lib/preordersStore';
 import { addPurchaseToUser, getUserPurchases } from '@/lib/userPurchasesStore';
+import { saveOrderToDb, saveUserPurchaseToDb } from '@/lib/supabaseLms';
 import { recordPreorderPurchaseInDb } from '@/lib/supabaseLms';
 
 function ConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { login, user } = useAuth();
+  const { login, user, isLoggedIn } = useAuth();
 
   const [isMounted, setIsMounted] = useState(false);
 
@@ -44,7 +45,10 @@ function ConfirmationContent() {
     searchParams.get('email') || ''
   );
 
-  const activeEmail = customerEmail || searchParams.get('email') || user?.email || '';
+  const savedUserEmail = typeof window !== 'undefined' && localStorage.getItem('gd_auth_user')
+    ? JSON.parse(localStorage.getItem('gd_auth_user')!).email
+    : '';
+  const activeEmail = customerEmail || searchParams.get('email') || user?.email || savedUserEmail || '';
 
   useEffect(() => {
     // 1. Check if this is a cart checkout purchase
@@ -52,24 +56,30 @@ function ConfirmationContent() {
 
     if (typeof window !== 'undefined' && isCartCheckout) {
       const pendingCartRaw = localStorage.getItem('gd_pending_cart_checkout');
+      const targetEmail = activeEmail || savedUserEmail || 'beber@gmail.com';
+
       if (pendingCartRaw) {
         try {
           const pendingItems = JSON.parse(pendingCartRaw);
           if (Array.isArray(pendingItems)) {
             pendingItems.forEach((it: any) => {
-              addPurchaseToUser(activeEmail, {
-                id: it.id,
-                title: it.title,
-                slug: it.slug || (it.title?.toLowerCase().includes('woocommerce') ? 'formation-woocommerce' : 'creer-sa-vitrine-wordpress'),
-                type: it.type || 'formation',
-                typeLabel: it.typeLabel || 'Formation Vidéo HD',
+              const isPdf = it.category === 'ebook' || it.category === 'checklist' || it.type === 'ebook' || it.type === 'checklist' || !!it.downloadPdf || it.id?.includes('guide') || it.title?.toLowerCase().includes('guide');
+              
+              saveOrderToDb(targetEmail, it.id || it.slug || 'product', 'paid', Number(it.price) || 5, sessionId);
+              saveUserPurchaseToDb(targetEmail, {
+                id: it.id || `item-${Date.now()}`,
+                title: it.title || 'Produit Digital',
+                slug: it.slug || it.id || 'produit',
+                type: it.type || it.category || (isPdf ? 'ebook' : 'formation'),
+                typeLabel: it.typeLabel || (isPdf ? '📄 E-Book / Guide PDF' : 'Formation Vidéo'),
                 thumbnail: it.image || it.thumbnail,
                 progress: 0,
                 completedLessons: 0,
-                totalLessons: 4,
-                duration: it.duration || '2h15',
+                totalLessons: isPdf ? 0 : 4,
+                duration: it.duration || (isPdf ? 'PDF' : '2h15'),
                 instructor: 'Stéphanie ROCQ',
-                price: Number(it.price) || 29,
+                price: Number(it.price) || 5,
+                downloadPdf: it.downloadPdf || '/downloads/support-formation-woocommerce.pdf',
                 purchaseDate: new Date().toLocaleDateString('fr-FR')
               });
             });
@@ -268,8 +278,27 @@ function ConfirmationContent() {
             );
           })()}
 
-          {/* PASSWORD CREATION BOX FOR NEW STUDENT ACCOUNT */}
-          {!isAccountActivated ? (
+          {/* USER ALREADY LOGGED IN OR NEW ACCOUNT CREATION */}
+          {isLoggedIn || user?.email ? (
+            <div className="p-6 bg-[#e6f4f3]/60 rounded-2xl border border-[#bce3e0] text-center space-y-4 max-w-md mx-auto shadow-xs">
+              <div className="w-12 h-12 rounded-full bg-[#18757d] text-white flex items-center justify-center mx-auto font-bold shadow-xs">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-extrabold text-[#332420]">Produit ajouté à votre compte !</h3>
+                <p className="text-xs text-slate-600">
+                  Bonjour <strong className="text-[#18757d]">{user?.email || activeEmail}</strong>, vos accès sont prêts et enregistrés dans votre espace.
+                </p>
+              </div>
+              <Link
+                href="/dashboard/eleve?purchased=true"
+                className="inline-flex items-center justify-center gap-2 w-full py-3.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors mt-2"
+              >
+                <Rocket className="w-4 h-4" />
+                Accéder à mon Espace Élève
+              </Link>
+            </div>
+          ) : !isAccountActivated ? (
             <form onSubmit={handleCreateAccount} className="p-6 bg-[#faf8f5] rounded-2xl border border-[#eee7da] text-left space-y-4 max-w-md mx-auto shadow-xs">
               <div className="space-y-1">
                 <h3 className="text-xs font-extrabold text-[#18757d] uppercase tracking-wider flex items-center gap-1.5">
