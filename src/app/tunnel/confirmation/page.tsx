@@ -44,7 +44,7 @@ function ConfirmationContent() {
     searchParams.get('email') || ''
   );
 
-  const activeEmail = customerEmail || searchParams.get('email') || user?.email || 'eleve.precommande@exemple.fr';
+  const activeEmail = customerEmail || searchParams.get('email') || user?.email || '';
 
   useEffect(() => {
     // 1. Check if this is a cart checkout purchase
