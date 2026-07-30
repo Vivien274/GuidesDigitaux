@@ -758,19 +758,15 @@ export async function fetchPreorderBuyersFromDb(): Promise<PreorderBuyer[]> {
 }
 
 /**
- * 15. Delete a preorder buyer permanently from Supabase DB across all tables (preorder_buyers, orders & enrollments)
+ * 15. Delete a preorder buyer permanently from Supabase DB (preorder_buyers table row strictly by ID)
  */
-export async function deletePreorderBuyerFromDb(buyerId: string, email: string, campaignId?: string): Promise<void> {
-  const normalizedEmail = email ? email.toLowerCase().trim() : '';
-
+export async function deletePreorderBuyerFromDb(buyerId: string, email?: string, campaignId?: string): Promise<void> {
   try {
     if (buyerId) {
       await supabase.from('preorder_buyers').delete().eq('id', buyerId);
-    }
-    if (normalizedEmail) {
+    } else if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
       await supabase.from('preorder_buyers').delete().eq('customer_email', normalizedEmail);
-      await supabase.from('orders').delete().eq('customer_email', normalizedEmail);
-      await supabase.from('enrollments').delete().eq('user_email', normalizedEmail);
     }
 
     // Re-count remaining preorders for campaign and update current_enrollments

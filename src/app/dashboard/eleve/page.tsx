@@ -22,7 +22,7 @@ import {
   Award
 } from 'lucide-react';
 
-import { fetchCoursesFromDb } from '@/lib/supabaseLms';
+import { fetchCoursesFromDb, saveUserPurchaseToDb } from '@/lib/supabaseLms';
 import { getUserPurchases, getUserPurchasesAsync, addPurchaseToUser } from '@/lib/userPurchasesStore';
 
 const DEFAULT_THUMBNAIL = 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp';
@@ -52,8 +52,38 @@ function EleveDashboardContent() {
         const savedEmail = typeof window !== 'undefined' && localStorage.getItem('gd_auth_user') ? JSON.parse(localStorage.getItem('gd_auth_user')!).email : '';
         const userEmail = user?.email || savedEmail;
         const userPurchases = await getUserPurchasesAsync(userEmail);
-
         let baseList: any[] = userPurchases || [];
+
+        // Fallback check from localStorage keys if BDD list returned empty
+        if (typeof window !== 'undefined' && baseList.length === 0 && userEmail) {
+          const norm = userEmail.toLowerCase().trim();
+          const fallbackKeys = [`gd_user_purchases_${norm}`, 'gd_enrolled_courses', 'gd_user_purchases_anonymous'];
+          const fallbackItems: any[] = [];
+          
+          fallbackKeys.forEach(k => {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                  parsed.forEach(it => {
+                    if (!fallbackItems.some(x => x.id === it.id || x.title === it.title)) {
+                      fallbackItems.push(it);
+                    }
+                  });
+                }
+              } catch (e) {}
+            }
+          });
+
+          if (fallbackItems.length > 0) {
+            baseList = fallbackItems;
+            // Sync back to Supabase DB
+            fallbackItems.forEach(fit => {
+              saveUserPurchaseToDb(norm, fit);
+            });
+          }
+        }
 
         const formattedReal = baseList.map((item: any) => {
           const matchedDb = dbCourses.find(c => c.id === item.id || c.title === item.title);
