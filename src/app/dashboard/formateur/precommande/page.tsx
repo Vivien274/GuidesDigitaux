@@ -577,9 +577,6 @@ export default function FormateurPreorderPage() {
 
             <div className="space-y-6">
               {preorders.map((po) => {
-                const percent = Math.min(100, Math.round((po.currentEnrollments / po.targetEnrollments) * 100));
-                const remaining = Math.max(0, po.targetEnrollments - po.currentEnrollments);
-
                 const campaignBuyers = buyers.filter(b => 
                   !b.courseId ||
                   b.courseId === po.id || 
@@ -589,6 +586,10 @@ export default function FormateurPreorderPage() {
                   (po.courseTitle && b.courseTitle && b.courseTitle.toLowerCase().includes(po.courseTitle.toLowerCase().slice(0, 6))) ||
                   preorders.length === 1
                 );
+
+                const effectiveEnrollments = Math.max(po.currentEnrollments, campaignBuyers.length);
+                const percent = Math.min(100, Math.round((effectiveEnrollments / po.targetEnrollments) * 100));
+                const remaining = Math.max(0, po.targetEnrollments - effectiveEnrollments);
 
                 const cleanDesc = (po.description || '').replace(/<br\s*\/?>/gi, ' ');
 
@@ -691,7 +692,7 @@ export default function FormateurPreorderPage() {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-extrabold text-[#332420] gap-2">
                         <span className="flex items-center gap-2 text-[#18757d]">
                           <Target className="w-4 h-4 text-amber-500" />
-                          Jauge d'Objectif : {po.currentEnrollments} / {po.targetEnrollments} précommandes validées ({percent}%)
+                          Jauge d'Objectif : {effectiveEnrollments} / {po.targetEnrollments} précommandes validées ({percent}%)
                         </span>
 
                         <span className="text-amber-900 bg-amber-100 px-3.5 py-1 rounded-full border border-amber-200">

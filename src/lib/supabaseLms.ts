@@ -357,19 +357,22 @@ export async function fetchPreordersFromDb(): Promise<PreorderCampaign[]> {
     if (!error && dbData) {
       const mapped = dbData.map(mapDbRowToPreorder);
 
-      // Reconcile current_enrollments count with actual DB enrollments & orders
+      // Reconcile current_enrollments count with actual DB preorder_buyers, enrollments & orders
       try {
+        const { data: preorderBuyers } = await supabase.from('preorder_buyers').select('*');
         const { data: enrollments } = await supabase.from('enrollments').select('*');
         const { data: orders } = await supabase.from('orders').select('*');
         
         const allBuyersEmails = new Set<string>();
-        if (enrollments) enrollments.forEach((e: any) => e.email && allBuyersEmails.add(e.email.toLowerCase().trim()));
-        if (orders) orders.forEach((o: any) => o.customer_email && allBuyersEmails.add(o.customer_email.toLowerCase().trim()));
+        if (preorderBuyers) preorderBuyers.forEach((pb: any) => (pb.customer_email || pb.email) && allBuyersEmails.add((pb.customer_email || pb.email).toLowerCase().trim()));
+        if (enrollments) enrollments.forEach((e: any) => (e.user_email || e.email) && allBuyersEmails.add((e.user_email || e.email).toLowerCase().trim()));
+        if (orders) orders.forEach((o: any) => (o.customer_email || o.email) && allBuyersEmails.add((o.customer_email || o.email).toLowerCase().trim()));
 
         mapped.forEach(po => {
-          if (allBuyersEmails.size > po.currentEnrollments) {
-            po.currentEnrollments = allBuyersEmails.size;
-            supabase.from('preorders').update({ current_enrollments: allBuyersEmails.size }).eq('id', po.id).then();
+          const count = Math.max(po.currentEnrollments, allBuyersEmails.size);
+          if (count > po.currentEnrollments) {
+            po.currentEnrollments = count;
+            supabase.from('preorders').update({ current_enrollments: count }).eq('id', po.id).then();
           }
         });
       } catch (recErr) {
