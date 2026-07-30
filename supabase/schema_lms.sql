@@ -2,35 +2,44 @@
 
 -- 1. Create / Update PROFILES Table
 CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
   full_name TEXT,
   avatar_url TEXT,
   role TEXT NOT NULL DEFAULT 'eleve' CHECK (role IN ('superadmin', 'formateur', 'eleve')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Garantir la présence de la colonne role sur les tables existantes
+-- Garantir la présence de la colonne role, la contrainte unique et la clé primaire par défaut
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'eleve';
+ALTER TABLE public.profiles ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+CREATE UNIQUE INDEX IF NOT EXISTS profiles_email_key ON public.profiles(email);
 
--- Enable RLS on profiles
+-- Enable RLS on profiles with permissive policies for reading/writing
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public profiles select policy" ON public.profiles;
+DROP POLICY IF EXISTS "Public profiles insert policy" ON public.profiles;
+DROP POLICY IF EXISTS "Public profiles update policy" ON public.profiles;
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
 DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Instructors and admins can view profiles" ON public.profiles;
 
-CREATE POLICY "Users can view their own profile" 
-  ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Public profiles select policy" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Public profiles insert policy" ON public.profiles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public profiles update policy" ON public.profiles FOR UPDATE USING (true);
 
-CREATE POLICY "Users can update their own profile" 
-  ON public.profiles FOR UPDATE USING (auth.uid() = id);
-
-CREATE POLICY "Instructors and admins can view profiles" 
-  ON public.profiles FOR SELECT USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('superadmin', 'formateur'))
-  );
+-- Initialiser les comptes superadmin et formateur
+INSERT INTO public.profiles (email, full_name, role)
+VALUES 
+  ('vivien274@gmail.com', 'Vivien', 'superadmin'),
+  ('contact@guides-digitaux.com', 'Guides Digitaux Contact', 'superadmin'),
+  ('stephanie@guides-digitaux.com', 'Stéphanie ROCQ', 'superadmin'),
+  ('contact@spoolio.fr', 'Formateur Spoolio', 'formateur')
+ON CONFLICT (email) DO UPDATE SET role = EXCLUDED.role;
 
 -- 2. Create COURSES Table
 CREATE TABLE IF NOT EXISTS public.courses (

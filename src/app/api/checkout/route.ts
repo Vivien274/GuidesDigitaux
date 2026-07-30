@@ -25,7 +25,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Produit introuvable ou non disponible' }, { status: 404 });
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const requestOrigin = request.headers.get('origin') || request.headers.get('referer');
+    let originUrl: string | null = null;
+    if (requestOrigin) {
+      try {
+        originUrl = new URL(requestOrigin).origin;
+      } catch (e) {}
+    }
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || originUrl || 'https://www.guides-digitaux.com';
 
     // 2. Création de la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({

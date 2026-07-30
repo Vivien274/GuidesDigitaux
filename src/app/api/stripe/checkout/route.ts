@@ -19,7 +19,14 @@ export async function POST(request: Request) {
       : 'sk_test_51TAqk4D882WcsUbmbsySyL6DrZMMa6PPMsFdk2DJ9xa7iakf5XKBp9baIF69AsOxZE1ZWpfok6cZQxPbQQOYW6y500qA4E6NRT';
 
     const hasRealStripeKey = secretKey.startsWith('sk_test_') && secretKey.length > 20;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const requestOrigin = request.headers.get('origin') || request.headers.get('referer');
+    let originUrl: string | null = null;
+    if (requestOrigin) {
+      try {
+        originUrl = new URL(requestOrigin).origin;
+      } catch (e) {}
+    }
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || originUrl || 'https://www.guides-digitaux.com';
 
     let lineItems: any[] = [];
     let totalPriceSum = 0;
