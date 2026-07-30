@@ -291,12 +291,18 @@ export async function saveUserPurchaseToDb(email: string, item: any) {
     const profile = await fetchUserProfileFromDb(normalizedEmail);
     const userId = profile?.id;
 
+    const isPdf = item.category === 'ebook' || item.category === 'checklist' || item.type === 'ebook' || item.type === 'checklist' || !!item.downloadPdf || (item.slug && item.slug.includes('guide')) || (item.id && item.id.includes('guide'));
+
     const payload: any = {
-      product_id: item.id || `item-${Date.now()}`,
-      course_id: item.id || `item-${Date.now()}`,
+      user_email: normalizedEmail,
+      email: normalizedEmail,
+      customer_email: normalizedEmail,
+      product_id: item.id || item.slug || `item-${Date.now()}`,
+      course_id: item.id || item.slug || `item-${Date.now()}`,
       item_title: item.title || 'Produit Guides Digitaux',
-      item_type: item.type || (item.category === 'ebook' || item.downloadPdf ? 'ebook' : 'formation'),
-      download_pdf: item.downloadPdf || null,
+      item_slug: item.slug || item.id || 'produit',
+      item_type: item.type || (isPdf ? 'ebook' : 'formation'),
+      download_pdf: item.downloadPdf || (isPdf ? '/downloads/support-formation-woocommerce.pdf' : null),
       price: Number(item.price) || 0,
       purchased_at: new Date().toISOString()
     };
@@ -319,38 +325,37 @@ export async function fetchUserPurchasesFromDb(email: string): Promise<any[]> {
   const normalizedEmail = email.toLowerCase().trim();
   const purchasesMap = new Map<string, any>();
 
+  // 1. Fetch from enrollments table
   try {
-    const profile = await fetchUserProfileFromDb(normalizedEmail);
-    const userId = profile?.id;
-
-    // 1. Fetch from enrollments table
-    let enrollmentsQuery = supabase.from('enrollments').select('*');
-    if (userId) {
-      enrollmentsQuery = enrollmentsQuery.or(`user_id.eq.${userId},user_email.eq.${normalizedEmail},email.eq.${normalizedEmail},customer_email.eq.${normalizedEmail}`);
-    } else {
-      enrollmentsQuery = enrollmentsQuery.or(`user_email.eq.${normalizedEmail},email.eq.${normalizedEmail},customer_email.eq.${normalizedEmail}`);
-    }
-
-    const { data: enrollmentsData } = await enrollmentsQuery;
+    const { data: enrollmentsData } = await supabase
+      .from('enrollments')
+      .select('*');
 
     if (enrollmentsData && enrollmentsData.length > 0) {
       enrollmentsData.forEach((row: any) => {
-        const itemKey = row.course_id || row.product_id || row.id;
-        const isPdf = row.item_type === 'ebook' || row.item_type === 'checklist' || !!row.download_pdf;
-        purchasesMap.set(itemKey, {
-          id: itemKey,
-          title: row.item_title || 'Produit Guides Digitaux',
-          slug: row.item_slug || itemKey,
-          type: row.item_type || (isPdf ? 'ebook' : 'formation'),
-          typeLabel: isPdf ? '📄 E-Book / Guide PDF' : 'Formation Vidéo',
-          price: Number(row.price) || 29,
-          downloadPdf: row.download_pdf || (isPdf ? '/downloads/support-formation-woocommerce.pdf' : undefined),
-          purchaseDate: row.purchased_at ? new Date(row.purchased_at).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')
-        });
+        const rowEmail = (row.user_email || row.email || row.customer_email || '').toLowerCase().trim();
+        if (rowEmail === normalizedEmail) {
+          const itemKey = row.course_id || row.product_id || row.item_slug || row.id;
+          const isPdf = row.item_type === 'ebook' || row.item_type === 'checklist' || !!row.download_pdf || itemKey.includes('guide');
+          purchasesMap.set(itemKey, {
+            id: itemKey,
+            title: row.item_title || 'Produit Guides Digitaux',
+            slug: row.item_slug || itemKey,
+            type: row.item_type || (isPdf ? 'ebook' : 'formation'),
+            typeLabel: isPdf ? '📄 E-Book / Guide PDF' : 'Formation Vidéo',
+            price: Number(row.price) || 29,
+            downloadPdf: row.download_pdf || (isPdf ? '/downloads/support-formation-woocommerce.pdf' : undefined),
+            purchaseDate: row.purchased_at ? new Date(row.purchased_at).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')
+          });
+        }
       });
     }
+  } catch (err) {
+    console.warn('Error fetching enrollments from DB', err);
+  }
 
-    // 2. Fetch from preorder_buyers table (for preorders purchased)
+  // 2. Fetch from preorder_buyers table (for preorders purchased)
+  try {
     const { data: preorderBuyersData } = await supabase
       .from('preorder_buyers')
       .select('*')
@@ -359,8 +364,9 @@ export async function fetchUserPurchasesFromDb(email: string): Promise<any[]> {
     if (preorderBuyersData && preorderBuyersData.length > 0) {
       const allPreorders = await fetchPreordersFromDb();
       preorderBuyersData.forEach((buyer: any) => {
-        const campaignMatch = allPreorders.find(p => p.id === buyer.campaign_id || p.courseId === buyer.campaign_id) || {
-          id: buyer.campaign_id,
+        const campaignId = buyer.campaign_id || 'precommande-fiche-google';
+        const campaignMatch = allPreorders.find(p => p.id === campaignId || p.courseId === campaignId) || {
+          id: campaignId,
           courseTitle: 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
           price: buyer.price || 29,
           releaseDate: '2026-09-15'
@@ -381,8 +387,12 @@ export async function fetchUserPurchasesFromDb(email: string): Promise<any[]> {
         }
       });
     }
+  } catch (err) {
+    console.warn('Error fetching preorder_buyers from DB', err);
+  }
 
-    // 3. Fetch from orders table (for checkout orders)
+  // 3. Fetch from orders table (for checkout orders)
+  try {
     const { data: ordersData } = await supabase
       .from('orders')
       .select('*')
@@ -398,24 +408,23 @@ export async function fetchUserPurchasesFromDb(email: string): Promise<any[]> {
             const isPdf = productMatch?.category === 'ebook' || productMatch?.category === 'checklist' || !!productMatch?.downloadPdf || itemKey.includes('guide');
             purchasesMap.set(itemKey, {
               id: itemKey,
-              title: productMatch?.title || 'Mini-guide / Produit Digital',
+              title: productMatch?.title || (itemKey.includes('fiche-google') ? 'Précommande Fiche Google' : 'Mini-guide / Produit Digital'),
               slug: productMatch?.slug || itemKey,
               type: productMatch?.category || (isPdf ? 'ebook' : 'formation'),
-              typeLabel: isPdf ? '📄 E-Book / Guide PDF' : 'Formation Vidéo',
+              typeLabel: isPdf ? '📄 E-Book / Guide PDF' : (itemKey.includes('precommande') ? 'Précommande Enregistrée' : 'Formation Vidéo'),
               price: productMatch?.price || (order.total_amount_cents ? order.total_amount_cents / 100 : 5),
-              downloadPdf: productMatch?.downloadPdf || '/downloads/support-formation-woocommerce.pdf',
+              downloadPdf: productMatch?.downloadPdf || (isPdf ? '/downloads/support-formation-woocommerce.pdf' : undefined),
               purchaseDate: order.created_at ? new Date(order.created_at).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')
             });
           }
         }
       });
     }
-
-    return Array.from(purchasesMap.values());
-  } catch (e) {
-    console.warn('Supabase fetchUserPurchasesFromDb error', e);
+  } catch (err) {
+    console.warn('Error fetching orders from DB', err);
   }
-  return [];
+
+  return Array.from(purchasesMap.values());
 }
 
 /**

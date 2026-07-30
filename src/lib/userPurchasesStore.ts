@@ -28,20 +28,44 @@ export function getUserPurchasesKey(email?: string | null): string {
 import { saveUserPurchaseToDb, fetchUserPurchasesFromDb, saveOrderToDb } from './supabaseLms';
 
 export function getUserPurchases(email?: string | null): EnrolledCourseItem[] {
+  const normalized = (email || '').toLowerCase().trim();
+  if (!normalized || typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(getUserPurchasesKey(normalized));
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {}
   return [];
 }
 
 export async function getUserPurchasesAsync(email?: string | null): Promise<EnrolledCourseItem[]> {
   if (!email) return [];
-  const dbList = await fetchUserPurchasesFromDb(email);
-  return dbList || [];
+  const normalized = email.toLowerCase().trim();
+  const dbList = await fetchUserPurchasesFromDb(normalized);
+  
+  if (typeof window !== 'undefined' && dbList && dbList.length > 0) {
+    try {
+      localStorage.setItem(getUserPurchasesKey(normalized), JSON.stringify(dbList));
+    } catch (e) {}
+  }
+  
+  return dbList || getUserPurchases(normalized);
 }
 
 export function addPurchaseToUser(email: string | null | undefined, item: EnrolledCourseItem): EnrolledCourseItem[] {
   const normalized = (email || '').toLowerCase().trim();
   if (normalized) {
+    const existing = getUserPurchases(normalized);
+    const updated = [item, ...existing.filter(i => i.id !== item.id && i.slug !== item.slug)];
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(getUserPurchasesKey(normalized), JSON.stringify(updated));
+      } catch (e) {}
+    }
     saveUserPurchaseToDb(normalized, item);
     saveOrderToDb(normalized, item.id || item.slug || 'product', 'paid');
+    return updated;
   }
   return [item];
 }
