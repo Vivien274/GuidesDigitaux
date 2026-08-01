@@ -75,7 +75,9 @@ export async function POST(request: Request) {
         success_url: Array.isArray(items) && items.length > 0
           ? `${siteUrl}/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&cart_checkout=true&price=${totalPriceSum}`
           : `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id={CHECKOUT_SESSION_ID}&price=${price}`,
-        cancel_url: `${siteUrl}/boutique?canceled=true`,
+        cancel_url: (isPreorder || courseId)
+          ? `${siteUrl}/tunnel/${courseId}`
+          : `${siteUrl}/boutique?canceled=true`,
         metadata: {
           courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : courseId,
           isPreorder: isPreorder ? 'true' : 'false',
