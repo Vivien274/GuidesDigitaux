@@ -32,11 +32,9 @@ export default function SalesFunnelPage() {
       if (!match) {
         match = list.find(p => p.id.includes('google') || p.courseId?.includes('google'));
       }
-      if (!match) {
-        notFound();
-        return;
+      if (match) {
+        setCampaign(match);
       }
-      setCampaign(match);
       setIsLoading(false);
     });
   }, [rawId]);
@@ -120,7 +118,7 @@ export default function SalesFunnelPage() {
       {/* 1. HEADER (Official logo, no main navigation links) */}
       <header className="bg-white border-b border-[#F5DFBB] py-3.5">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-          <Link href="/" className="relative h-12 w-48 sm:w-52 block">
+          <div className="relative h-12 w-48 sm:w-52 block">
             <Image
               src="/images/logo.png"
               alt="Guides Digitaux"
@@ -128,7 +126,7 @@ export default function SalesFunnelPage() {
               className="object-contain object-left"
               priority
             />
-          </Link>
+          </div>
 
           <span className="px-3.5 py-1 rounded-full text-xs font-extrabold bg-[#F5DFBB] text-[#562C2C] uppercase tracking-wider border border-[#F2542D]/30 flex items-center gap-1.5 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-[#F2542D] animate-pulse"></span>
