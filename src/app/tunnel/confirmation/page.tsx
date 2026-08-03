@@ -25,6 +25,7 @@ import { incrementPreorderEnrollment } from '@/lib/preordersStore';
 import { addPurchaseToUser, getUserPurchases } from '@/lib/userPurchasesStore';
 import { saveOrderToDb, saveUserPurchaseToDb } from '@/lib/supabaseLms';
 import { recordPreorderPurchaseInDb } from '@/lib/supabaseLms';
+import { trackPurchase } from '@/lib/metaPixel';
 
 function ConfirmationContent() {
   const searchParams = useSearchParams();
@@ -130,6 +131,23 @@ function ConfirmationContent() {
         incrementPreorderEnrollment(courseId);
       }
     }
+
+    // 5. Track Meta Pixel Purchase event once per checkout session
+    if (typeof window !== 'undefined') {
+      try {
+        const trackedPixel = JSON.parse(localStorage.getItem('gd_meta_pixel_tracked') || '[]');
+        const currentOrderKey = sessionId || `order_${courseId}_${price}`;
+        if (!trackedPixel.includes(currentOrderKey)) {
+          trackPurchase(Number(price) || 0, 'EUR', {
+            content_name: courseId || 'Commande Guides Digitaux',
+            order_id: sessionId || undefined,
+          });
+          localStorage.setItem('gd_meta_pixel_tracked', JSON.stringify([...trackedPixel, currentOrderKey]));
+        }
+      } catch (e) {
+        console.error('Erreur lors du suivi Meta Pixel Purchase:', e);
+      }
+    }
   }, [sessionId, courseId, activeEmail, price]);
 
   const [password, setPassword] = useState('');
@@ -180,6 +198,10 @@ function ConfirmationContent() {
         }
       }
       setAddedUpsells(prev => ({ ...prev, [upsellItem.id]: true }));
+      trackPurchase(upsellItem.price, 'EUR', {
+        content_name: upsellItem.title,
+        content_ids: [upsellItem.id],
+      });
     } catch (e) {
       console.error('Failed to add upsell product', e);
     }

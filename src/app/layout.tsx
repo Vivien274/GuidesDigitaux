@@ -22,6 +22,9 @@ export const metadata: Metadata = {
   },
 };
 
+import { Suspense } from "react";
+import MetaPixel from "@/components/MetaPixel";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,6 +33,9 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${jakartaSans.variable} h-full antialiased scroll-smooth`}>
       <body className="min-h-full flex flex-col bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
+        <Suspense fallback={null}>
+          <MetaPixel />
+        </Suspense>
         <AuthProvider>
           <CartProvider>
             {children}
