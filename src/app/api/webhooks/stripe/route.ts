@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { subscribeOrUpdateMailchimpMember } from '@/lib/mailchimp';
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -19,9 +20,10 @@ export async function POST(request: Request) {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (err: any) {
-    console.error('Erreur signature Webhook Stripe:', err.message);
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Erreur inconnue';
+    console.error('Erreur signature Webhook Stripe:', message);
+    return NextResponse.json({ error: `Webhook Error: ${message}` }, { status: 400 });
   }
 
   if (event.type === 'checkout.session.completed') {
@@ -93,7 +95,7 @@ export async function POST(request: Request) {
           user_email: customerEmail,
           product_id: productId,
           course_id: productId,
-          item_title: (session as any).description || 'Produit Digital',
+          item_title: (session as unknown as { description?: string }).description || 'Produit Digital',
           item_type: 'ebook',
           price: amountEur,
           stripe_session_id: session.id
@@ -129,7 +131,18 @@ export async function POST(request: Request) {
       }
 
       console.log(`[Stripe Webhook] Accès attribué à l'utilisateur ${userId} pour le produit ${productId}`);
-    } catch (err: any) {
+
+      // 6. Inscription à la newsletter Mailchimp (avec tag précommande si applicable)
+      try {
+        await subscribeOrUpdateMailchimpMember({
+          email: customerEmail,
+          fullName: session.customer_details?.name,
+          tag: product?.is_preorder ? (process.env.MAILCHIMP_PREORDER_TAG || 'Précommande') : undefined,
+        });
+      } catch (mailchimpErr) {
+        console.error('[Stripe Webhook] Erreur inscription Mailchimp non-bloquante:', mailchimpErr);
+      }
+    } catch (err: unknown) {
       console.error('Erreur traitement Webhook:', err);
       return NextResponse.json({ error: 'Erreur interne Webhook' }, { status: 500 });
     }
@@ -137,3 +150,4 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ received: true });
 }
+
