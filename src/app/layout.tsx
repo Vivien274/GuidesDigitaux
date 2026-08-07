@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -33,7 +34,9 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${jakartaSans.variable} h-full antialiased scroll-smooth`}>
       <head>
-        <script
+        <Script
+          id="meta-pixel-script"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               !function(f,b,e,v,n,t,s)
@@ -49,6 +52,8 @@ export default function RootLayout({
             `,
           }}
         />
+      </head>
+      <body className="min-h-full flex flex-col bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
         <noscript>
           <img
             height="1"
@@ -58,8 +63,6 @@ export default function RootLayout({
             alt="Meta Pixel"
           />
         </noscript>
-      </head>
-      <body className="min-h-full flex flex-col bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
         <Suspense fallback={null}>
           <MetaPixel />
         </Suspense>
