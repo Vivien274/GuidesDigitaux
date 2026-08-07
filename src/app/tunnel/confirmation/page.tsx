@@ -140,6 +140,8 @@ function ConfirmationContent() {
         if (!trackedPixel.includes(currentOrderKey)) {
           trackPurchase(Number(price) || 0, 'EUR', {
             content_name: courseId || 'Commande Guides Digitaux',
+            content_ids: [courseId || 'precommande-fiche-google'],
+            content_type: 'product',
             order_id: sessionId || undefined,
           });
           localStorage.setItem('gd_meta_pixel_tracked', JSON.stringify([...trackedPixel, currentOrderKey]));

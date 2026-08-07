@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useParams, useRouter, notFound } from 'next/navigation';
 import { getStoredPreorders, incrementPreorderEnrollment, PreorderCampaign } from '@/lib/preordersStore';
 import { fetchPreordersFromDb, incrementPreorderEnrollmentInDb } from '@/lib/supabaseLms';
+import { event } from '@/lib/metaPixel';
 import { 
   CheckCircle2, 
   Sparkles, 
@@ -36,6 +37,14 @@ export default function SalesFunnelPage() {
         setCampaign(match);
       }
       setIsLoading(false);
+
+      event('ViewContent', {
+        content_name: match ? match.courseTitle : 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
+        content_ids: [match ? match.id : 'precommande-fiche-google'],
+        content_type: 'product',
+        value: match ? (match.price > 50 ? 29 : match.price) : 29,
+        currency: 'EUR',
+      });
     });
   }, [rawId]);
 
@@ -55,6 +64,14 @@ export default function SalesFunnelPage() {
     const priceToSend = (campaign?.id === 'precommande-fiche-google' || !campaign || campaign.price > 50)
       ? 29
       : campaign.price;
+
+    event('InitiateCheckout', {
+      content_name: titleToSend,
+      content_ids: [targetCampaignId],
+      content_type: 'product',
+      value: priceToSend,
+      currency: 'EUR',
+    });
 
     try {
       if (typeof window !== 'undefined') {

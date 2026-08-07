@@ -9,6 +9,7 @@ import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
 import { getStoredPreorders, PreorderCampaign, getPreorderStatusDetails, formatFrenchDate } from '@/lib/preordersStore';
 import { fetchPreordersFromDb } from '@/lib/supabaseLms';
+import { event } from '@/lib/metaPixel';
 import { 
   Rocket, 
   Target, 
@@ -40,8 +41,24 @@ export default function PreorderProductPage() {
       const match = list.find(p => p.id === id || p.courseId === id);
       if (match) {
         setCampaign(match);
+        const status = getPreorderStatusDetails(match);
+        event('ViewContent', {
+          content_name: match.courseTitle,
+          content_ids: [match.id],
+          content_type: 'product',
+          value: status.effectivePrice,
+          currency: 'EUR',
+        });
       } else if (list.length > 0) {
         setCampaign(list[0]);
+        const status = getPreorderStatusDetails(list[0]);
+        event('ViewContent', {
+          content_name: list[0].courseTitle,
+          content_ids: [list[0].id],
+          content_type: 'product',
+          value: status.effectivePrice,
+          currency: 'EUR',
+        });
       }
     });
   }, [id]);
@@ -69,6 +86,24 @@ export default function PreorderProductPage() {
     if (!statusDetails.canOrder) return;
 
     setIsProcessing(true);
+
+    // Track Meta Pixel AddToCart & InitiateCheckout events
+    event('AddToCart', {
+      content_name: campaign.courseTitle,
+      content_ids: [campaign.id],
+      content_type: 'product',
+      value: statusDetails.effectivePrice,
+      currency: 'EUR',
+    });
+
+    event('InitiateCheckout', {
+      content_name: campaign.courseTitle,
+      content_ids: [campaign.id],
+      content_type: 'product',
+      value: statusDetails.effectivePrice,
+      currency: 'EUR',
+    });
+
     // Add preorder item to cart
     addToCart({
       id: campaign.id,
