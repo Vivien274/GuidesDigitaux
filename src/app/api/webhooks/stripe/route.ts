@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { subscribeOrUpdateMailchimpMember } from '@/lib/mailchimp';
+import { sendServerPurchaseEvent } from '@/lib/metaCapi';
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -132,17 +133,18 @@ export async function POST(request: Request) {
 
       console.log(`[Stripe Webhook] Accès attribué à l'utilisateur ${userId} pour le produit ${productId}`);
 
-      // 6. Inscription à la newsletter Mailchimp (avec tag précommande si applicable)
-      try {
-        await subscribeOrUpdateMailchimpMember({
-          email: customerEmail,
-          fullName: session.customer_details?.name,
-          tag: product?.is_preorder ? (process.env.MAILCHIMP_PREORDER_TAG || 'Précommande') : undefined,
-        });
-      } catch (mailchimpErr) {
-        console.error('[Stripe Webhook] Erreur inscription Mailchimp non-bloquante:', mailchimpErr);
-      }
-    } catch (err: unknown) {
+        // 7. Envoi de l'événement d'achat serveur (Meta CAPI) non-bloquant
+        try {
+          await sendServerPurchaseEvent({
+            email: customerEmail,
+            value: amountEur,
+            currency: session.currency || 'EUR',
+            orderId: order?.id || session.id,
+          });
+        } catch (capiErr) {
+          console.error('[Stripe Webhook] Erreur Meta CAPI non-bloquante:', capiErr);
+        }
+      } catch (err: unknown) {
       console.error('Erreur traitement Webhook:', err);
       return NextResponse.json({ error: 'Erreur interne Webhook' }, { status: 500 });
     }

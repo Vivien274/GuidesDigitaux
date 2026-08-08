@@ -33,10 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${jakartaSans.variable} h-full antialiased scroll-smooth`}>
-      <head>
+      <body className="min-h-full flex flex-col bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
         <Script
           id="meta-pixel-script"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               !function(f,b,e,v,n,t,s)
@@ -52,8 +52,6 @@ export default function RootLayout({
             `,
           }}
         />
-      </head>
-      <body className="min-h-full flex flex-col bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
         <noscript>
           <img
             height="1"
