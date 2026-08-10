@@ -6,7 +6,7 @@ import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { Suspense } from "react";
 import MetaPixel from "@/components/MetaPixel";
-import { FB_PIXEL_ID } from "@/lib/metaPixel";
+import { FB_PIXEL_ID_1, FB_PIXEL_ID_2 } from "@/lib/metaPixel";
 
 const jakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -47,7 +47,8 @@ export default function RootLayout({
               t.src=v;s=b.getElementsByTagName(e)[0];
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '${FB_PIXEL_ID}');
+              fbq('init', '${FB_PIXEL_ID_1}');
+              fbq('init', '${FB_PIXEL_ID_2}');
               fbq('track', 'PageView');
             `,
           }}
@@ -57,8 +58,15 @@ export default function RootLayout({
             height="1"
             width="1"
             style={{ display: 'none' }}
-            src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID}&ev=PageView&noscript=1`}
-            alt="Meta Pixel"
+            src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID_1}&ev=PageView&noscript=1`}
+            alt="Meta Pixel 1"
+          />
+          <img
+            height="1"
+            width="1"
+            style={{ display: 'none' }}
+            src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID_2}&ev=PageView&noscript=1`}
+            alt="Meta Pixel 2"
           />
         </noscript>
         <Suspense fallback={null}>

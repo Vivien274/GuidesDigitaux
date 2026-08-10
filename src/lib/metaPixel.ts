@@ -1,4 +1,8 @@
-export const FB_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '9330486780351572';
+export const FB_PIXEL_ID_1 = process.env.NEXT_PUBLIC_META_PIXEL_ID || '9330486780351572';
+export const FB_PIXEL_ID_2 = process.env.NEXT_PUBLIC_META_PIXEL_ID_2 || '52580458670170';
+
+export const FB_PIXEL_ID = FB_PIXEL_ID_1;
+export const FB_PIXEL_IDS = [FB_PIXEL_ID_1, FB_PIXEL_ID_2].filter(Boolean);
 
 declare global {
   interface Window {
@@ -8,7 +12,7 @@ declare global {
 }
 
 /**
- * Envoie un évènement PageView au Meta Pixel
+ * Envoie un évènement PageView au Meta Pixel (s'applique à tous les pixels initialisés)
  */
 export const pageview = () => {
   if (typeof window !== 'undefined' && window.fbq) {
