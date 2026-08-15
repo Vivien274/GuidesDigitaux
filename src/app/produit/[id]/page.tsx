@@ -7,6 +7,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { getUserPurchasesAsync } from '@/lib/userPurchasesStore';
+import { getCoachingStatusForUser } from '@/lib/coachingStore';
 import { 
   CheckCircle2, 
   Star, 
@@ -17,7 +20,8 @@ import {
   ShieldCheck, 
   Sparkles,
   ArrowRight,
-  ShoppingCart
+  ShoppingCart,
+  Calendar
 } from 'lucide-react';
 
 import { notFound } from 'next/navigation';
@@ -26,7 +30,8 @@ import { fetchCoursesFromDb, fetchProductsFromDb } from '@/lib/supabaseLms';
 interface Product {
   id: string;
   title: string;
-  category: 'ebook' | 'checklist' | 'formation';
+  slug?: string;
+  category: 'ebook' | 'checklist' | 'formation' | 'coaching';
   categoryLabel: string;
   price: number;
   originalPrice?: number;
@@ -34,10 +39,12 @@ interface Product {
   reviewsCount: number;
   badge?: string;
   image: string;
+  imageAlt?: string;
   gallery?: string[];
   description: string;
   longDescription?: string;
   features: string[];
+  bookingUrl?: string;
 }
 
 export default function ProductDetailPage() {
@@ -97,13 +104,33 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   const [activeImage, setActiveImage] = useState<string>('');
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [coachingStatus, setCoachingStatus] = useState<any>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (product) {
-      const gallery = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image];
+      const currentProd = product;
+      const gallery = currentProd.gallery && currentProd.gallery.length > 0 ? currentProd.gallery : [currentProd.image];
       setActiveImage(gallery[0]);
+
+      async function checkPurchased() {
+        try {
+          const savedEmail = typeof window !== 'undefined' && localStorage.getItem('gd_auth_user') ? JSON.parse(localStorage.getItem('gd_auth_user')!).email : '';
+          const userEmail = user?.email || savedEmail;
+          if (userEmail) {
+            setCoachingStatus(getCoachingStatusForUser(userEmail));
+            const purchases = await getUserPurchasesAsync(userEmail);
+            const isMatch = (purchases || []).some((p: any) => p.id === currentProd.id || (currentProd.slug && p.slug === currentProd.slug) || (currentProd.category === 'coaching' && p.slug === 'coaching-site'));
+            setHasPurchased(isMatch);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      checkPurchased();
     }
-  }, [product?.id]);
+  }, [product?.id, user?.email]);
 
   if (isLoading || !product) {
     return (
@@ -161,6 +188,57 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
+      {/* COACHING PURCHASED ACCESS BANNER */}
+      {hasPurchased && (product.category === 'coaching' || product.id === 'coaching-site' || !!product.bookingUrl) && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          {coachingStatus && coachingStatus.completedSessions >= coachingStatus.maxSessions ? (
+            <div className="bg-[#f5ebd9] text-[#332420] p-6 sm:p-8 rounded-3xl shadow-md border-2 border-amber-300 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="space-y-1.5 text-center sm:text-left">
+                <span className="inline-flex items-center gap-2 px-3.5 py-1 bg-amber-200/80 rounded-full text-xs font-black text-amber-900 uppercase tracking-wider">
+                  🔒 TES 2 RENDEZ-VOUS ONT ÉTÉ HONORÉS
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black text-[#332420]">
+                  Tes 2 sessions de coaching sont terminées
+                </h3>
+                <p className="text-xs sm:text-sm font-semibold text-[#5e4d46]">
+                  Tu as réalisé tes 2 rendez-vous en visio avec Stéphanie. Si tu souhaites reprogrammer de nouvelles sessions, tu peux commander un nouveau forfait ci-dessous.
+                </p>
+              </div>
+              <button
+                onClick={handleCheckout}
+                disabled={isBuying}
+                className="px-8 py-4 bg-[#18757d] hover:bg-[#12595f] text-white text-xs font-black rounded-2xl shadow-xl uppercase tracking-wider transition-transform hover:scale-105 shrink-0 flex items-center gap-2 cursor-pointer"
+              >
+                REPRENDRE DES SESSIONS DE COACHING (97 €) →
+              </button>
+            </div>
+          ) : (
+            <div className="bg-amber-400 text-[#332420] p-6 sm:p-8 rounded-3xl shadow-lg border-2 border-amber-500 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="space-y-1.5 text-center sm:text-left">
+                <span className="inline-flex items-center gap-2 px-3.5 py-1 bg-white/90 rounded-full text-xs font-black text-[#332420] uppercase tracking-wider">
+                  🎉 TON ACCOMPAGNEMENT EST RÉSERVÉ & DÉBLOQUÉ
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black">
+                  Réserve ton créneau avec Stéphanie
+                </h3>
+                <p className="text-xs sm:text-sm font-semibold text-[#4a362c]">
+                  Choisis la date et l'heure de ta session individuelle dans l'agenda Google ({2 - (coachingStatus?.completedSessions || 0)}/2 restant{2 - (coachingStatus?.completedSessions || 0) > 1 ? 's' : ''}).
+                </p>
+              </div>
+              <a
+                href={product.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18'}
+                target="_blank"
+                rel="noreferrer"
+                className="px-8 py-4 bg-[#18757d] hover:bg-[#12595f] text-white text-xs font-black rounded-2xl shadow-xl uppercase tracking-wider transition-transform hover:scale-105 shrink-0 flex items-center gap-2"
+              >
+                <Calendar className="w-5 h-5" />
+                RÉSERVER DANS L'AGENDA GOOGLE →
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ZONE HAUT : Visuels, Titre, Avis, Prix, Résumé */}
       <section className="py-8 md:py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -173,7 +251,7 @@ export default function ProductDetailPage() {
               <div className="relative h-96 sm:h-[450px] w-full rounded-3xl overflow-hidden border border-[#eee7da] shadow-md bg-white">
                 <Image
                   src={activeImage || product.image}
-                  alt={product.title}
+                  alt={product.imageAlt || `${product.title} - Guides digitaux - Nord (59)`}
                   fill
                   className="object-cover transition-all duration-300"
                 />
@@ -298,10 +376,57 @@ export default function ProductDetailPage() {
                 </p>
               </div>
 
+              {/* Special Bundle Highlight Box */}
+              {(product.id.includes('bundle') || (product.slug && product.slug.includes('bundle'))) && (
+                <div className="bg-gradient-to-br from-[#18757d]/10 via-[#e6f4f3] to-[#f4ede0] p-6 rounded-3xl border-2 border-[#18757d]/30 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="px-3.5 py-1 bg-[#18757d] text-white text-xs font-black rounded-full uppercase tracking-wider">
+                      Combo 2 Formations en 1
+                    </span>
+                    <span className="text-xs font-black text-[#e05a47] bg-white px-3 py-1 rounded-full border border-[#e05a47]/20 shadow-2xs">
+                      Économie de 48 €
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3 pt-1">
+                    <div className="bg-white p-4 rounded-2xl border border-[#eee7da] flex items-center justify-between shadow-2xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center font-extrabold text-sm">1</div>
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-[#332420]">Formation Vitrine WordPress</h4>
+                          <p className="text-[11px] text-slate-500">Créer sa vitrine en ligne professionnelle</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-black text-slate-400 line-through sm:text-sm">199 €</span>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-2xl border border-[#eee7da] flex items-center justify-between shadow-2xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center font-extrabold text-sm">2</div>
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-[#332420]">Formation WooCommerce E-commerce</h4>
+                          <p className="text-[11px] text-slate-500">Ajouter une boutique en ligne & paiements</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-black text-slate-400 line-through sm:text-sm">99 €</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#18757d]/20 flex items-center justify-between text-xs sm:text-sm">
+                    <span className="font-bold text-[#5e4d46]">Valeur totale des 2 formations : <span className="line-through text-slate-400">298 €</span></span>
+                    <span className="font-extrabold text-[#18757d] text-base">Prix Combo : 250 €</span>
+                  </div>
+                </div>
+              )}
+
               {/* Information de livraison numérique */}
               <div className="p-4 bg-[#f4ede0] rounded-2xl text-xs text-[#332420] font-semibold flex items-center gap-3">
                 <Sparkles className="w-5 h-5 text-[#e05a47] shrink-0" />
-                <span>Téléchargement immédiat par e-mail et accessible 24h/24 dans votre espace membre Supabase.</span>
+                <span>
+                  {(product.id.includes('bundle') || (product.slug && product.slug.includes('bundle')))
+                    ? 'Accès immédiat aux 2 formations par e-mail et accessible 24h/24 dans ton espace membre.'
+                    : 'Accès immédiat par e-mail et accessible 24h/24 dans ton espace membre.'}
+                </span>
               </div>
 
             </div>
@@ -322,9 +447,10 @@ export default function ProductDetailPage() {
               </h2>
             </div>
 
-            <div className="text-sm sm:text-base text-[#5e4d46] leading-relaxed space-y-4 whitespace-pre-line">
-              {product.longDescription || product.description}
-            </div>
+            <div 
+              className="text-sm sm:text-base text-[#5e4d46] leading-relaxed space-y-4 prose prose-emerald max-w-none [&_h3]:text-lg [&_h3]:font-extrabold [&_h3]:text-[#332420] [&_h3]:mt-6 [&_h3]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_a]:text-[#18757d] [&_a]:font-bold [&_a]:underline hover:[&_a]:text-[#12595f] [&_p]:mb-4"
+              dangerouslySetInnerHTML={{ __html: product.longDescription || product.description }}
+            />
           </div>
 
           {/* BAS - BLOC 2 : Ce qui est inclus dans ce produit */}

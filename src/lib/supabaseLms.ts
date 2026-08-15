@@ -44,11 +44,15 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
         )
       `);
 
-    if (error || !courses || courses.length === 0) {
-      return getStoredCourses();
-    }
+    const filteredCourses = (courses || []).filter((c: any) => {
+      const titleLower = (c.title || '').toLowerCase().trim();
+      const legacyIds = ['f36a0e1e-e959-4d75-bf4e-e162acdfcf70', 'f36d5622-0c07-431c-b22c-ded3af68f64f', 'a2c58a82-0857-4f45-b57d-2ae65f4fc935'];
+      if (legacyIds.includes(c.id)) return false;
+      if (titleLower.includes('bundle') || titleLower.includes('pas à pas') || (titleLower.includes('lancer sa boutique') && titleLower.includes('&'))) return false;
+      return true;
+    });
 
-    return courses.map((c: any) => {
+    return filteredCourses.map((c: any) => {
       const localMatch = getStoredCourses().find((sc: any) => sc.id === c.id);
       return {
         id: c.id,
@@ -58,7 +62,7 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
         level: c.level || 'Débutant',
         prerequisites: c.prerequisites || '',
         price: c.price || 99,
-        image: c.image || localMatch?.image,
+        image: c.image || c.image_url || localMatch?.image || '/images/products/coaching-site.webp',
         category: 'Formation Vidéo',
         status: c.status || 'Publié',
         scheduledPublishDate: c.scheduled_publish_date || localMatch?.scheduledPublishDate,
@@ -69,19 +73,27 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
         liveStreamUrl: (localMatch && localMatch.liveStreamUrl !== undefined) ? localMatch.liveStreamUrl : (c.live_stream_url ?? ''),
         liveStreamDate: (localMatch && localMatch.liveStreamDate !== undefined) ? localMatch.liveStreamDate : (c.live_stream_date ?? ''),
         liveStreamTitle: (localMatch && localMatch.liveStreamTitle !== undefined) ? localMatch.liveStreamTitle : (c.live_stream_title ?? ''),
-        modules: (c.modules || []).map((m: any) => ({
-          id: m.id,
-          title: m.title,
-          lessons: (m.lessons || []).map((l: any) => ({
-            id: l.id,
-            title: l.title,
-            videoUrl: l.video_url,
-            notes: l.notes,
-            pdfUrl: l.pdf_url,
-            externalLink: l.external_link,
-            duration: l.duration || '10:00'
-          }))
-        }))
+        modules: (c.modules && c.modules.length > 0)
+          ? c.modules.map((m: any) => {
+              const localMod = localMatch?.modules?.find((lm: any) => lm.id === m.id || lm.title === m.title);
+              return {
+                id: m.id,
+                title: m.title,
+                lessons: (m.lessons || []).map((l: any) => {
+                  const localLes = localMod?.lessons?.find((ll: any) => ll.id === l.id || ll.title === l.title);
+                  return {
+                    id: l.id,
+                    title: l.title,
+                    videoUrl: l.video_url || localLes?.videoUrl || 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+                    notes: l.notes || localLes?.notes || '',
+                    pdfUrl: l.pdf_url || localLes?.pdfUrl || '',
+                    externalLink: l.external_link || localLes?.externalLink || '',
+                    duration: l.duration || localLes?.duration || '10:00'
+                  };
+                })
+              };
+            })
+          : (localMatch?.modules || [])
       };
     });
 
@@ -91,15 +103,27 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
   }
 }
 
+export function toUuid(id: string): string {
+  if (!id) return '00000000-0000-4000-a000-000000000000';
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(id)) return id;
+  
+  const numericStr = id.replace(/[^0-9]/g, '') || '123456789';
+  const padded = (numericStr + '00000000000000000000000000000000').slice(0, 32);
+  return `${padded.slice(0,8)}-${padded.slice(8,12)}-4${padded.slice(13,16)}-a${padded.slice(17,20)}-${padded.slice(20,32)}`;
+}
+
 /**
  * 2. Save Course & Modules & Lessons to Supabase DB and localStorage
  */
 export async function saveCourseToDb(course: Course): Promise<Course[]> {
-  const updatedLocal = saveLocalCourse(course);
+  const courseUuid = toUuid(course.id);
+  const courseWithUuid = { ...course, id: courseUuid };
+  const updatedLocal = saveLocalCourse(courseWithUuid);
 
   try {
     const { error: courseErr } = await supabase.from('courses').upsert({
-      id: course.id,
+      id: courseUuid,
       title: course.title,
       description: course.description,
       price: course.price,
@@ -121,7 +145,7 @@ export async function saveCourseToDb(course: Course): Promise<Course[]> {
     if (courseErr) {
       console.warn('Supabase course upsert failed (schema column missing), basic fallback save:', courseErr);
       await supabase.from('courses').upsert({
-        id: course.id,
+        id: courseUuid,
         title: course.title,
         description: course.description,
         price: course.price,
@@ -133,27 +157,33 @@ export async function saveCourseToDb(course: Course): Promise<Course[]> {
       });
     }
 
-    if (!courseErr && course.modules) {
+    if (course.modules) {
       for (let mIdx = 0; mIdx < course.modules.length; mIdx++) {
         const mod = course.modules[mIdx];
-        const { data: modData } = await supabase.from('modules').upsert({
-          id: mod.id,
-          course_id: course.id,
+        const modUuid = toUuid(mod.id);
+
+        const { data: modData, error: modErr } = await supabase.from('modules').upsert({
+          id: modUuid,
+          course_id: courseUuid,
           title: mod.title,
           order_index: mIdx + 1
         }).select().single();
 
-        if (modData && mod.lessons) {
+        const targetModId = modData?.id || modUuid;
+
+        if (mod.lessons) {
           for (let lIdx = 0; lIdx < mod.lessons.length; lIdx++) {
             const les = mod.lessons[lIdx];
+            const lesUuid = toUuid(les.id);
             await supabase.from('lessons').upsert({
-              id: les.id,
-              module_id: modData.id,
+              id: lesUuid,
+              module_id: targetModId,
               title: les.title,
               video_url: les.videoUrl,
               notes: les.notes,
               pdf_url: les.pdfUrl,
               external_link: les.externalLink,
+              duration: les.duration || '10:00',
               order_index: lIdx + 1
             });
           }
@@ -201,7 +231,7 @@ export async function addStudentEnrollment(userId: string, courseId: string) {
 
 export function getKnownRoleForEmail(email: string): 'superadmin' | 'formateur' | 'eleve' {
   const normalized = (email || '').toLowerCase().trim();
-  if (['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@guides-digitaux.com'].includes(normalized)) {
+  if (['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@stratec-digital.com'].includes(normalized)) {
     return 'superadmin';
   }
   if (['contact@spoolio.fr'].includes(normalized)) {
@@ -655,6 +685,8 @@ export interface DBCourse {
   modules?: any[];
 }
 
+import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
+
 export async function fetchProductsFromDb(): Promise<any[]> {
   try {
     const { data, error } = await supabase
@@ -663,30 +695,37 @@ export async function fetchProductsFromDb(): Promise<any[]> {
       .order('created_at', { ascending: false });
 
     if (!error && data && data.length > 0) {
-      return data.map((row: any) => ({
-        id: row.id,
-        title: row.title,
-        slug: row.slug || row.id,
-        category: row.category,
-        categoryLabel: row.category_label || row.categoryLabel || 'Mini-Guide / Ebook',
-        price: Number(row.price),
-        originalPrice: row.original_price ? Number(row.original_price) : undefined,
-        rating: Number(row.rating) || 5,
-        reviewsCount: Number(row.reviews_count) || 0,
-        badge: row.badge || undefined,
-        image: row.image,
-        description: row.description,
-        longDescription: row.long_description,
-        htmlContent: row.html_content,
-        downloadPdf: row.download_pdf,
-        features: Array.isArray(row.features) ? row.features : [],
-        gallery: Array.isArray(row.gallery) ? row.gallery : []
-      }));
+      return data.map((row: any) => {
+        const isBundle = (row.id && row.id.includes('bundle')) || (row.slug && row.slug.includes('bundle'));
+        const localMatch = DEFAULT_PRODUCTS.find(p => p.id === row.id || p.slug === row.slug || p.title.toLowerCase() === (row.title || '').toLowerCase() || (isBundle && p.id.includes('bundle')));
+        const resolvedImage = localMatch?.image || row.image || row.image_url || 'https://www.guides-digitaux.com/wp-content/uploads/2025/10/GD-LogoFondTransparent.webp';
+        
+        return {
+          id: row.id,
+          title: localMatch?.title || row.title,
+          slug: row.slug || row.id,
+          category: row.category || 'formation',
+          categoryLabel: localMatch?.categoryLabel || row.category_label || row.categoryLabel || 'Combo 2 Formations',
+          price: isBundle ? 250 : (localMatch?.price ?? Number(row.price)),
+          originalPrice: isBundle ? 298 : (row.original_price ? Number(row.original_price) : localMatch?.originalPrice),
+          rating: Number(row.rating) || localMatch?.rating || 5,
+          reviewsCount: Number(row.reviews_count) || localMatch?.reviewsCount || 0,
+          badge: isBundle ? 'ÉCONOMISE 48€' : (row.badge || localMatch?.badge),
+          image: resolvedImage,
+          imageAlt: localMatch?.imageAlt || row.image_alt || row.imageAlt || `${row.title} - Guides digitaux - Métropole lilloise`,
+          description: localMatch?.description || row.description || '',
+          longDescription: localMatch?.longDescription || row.long_description || row.description || '',
+          htmlContent: row.html_content,
+          downloadPdf: row.download_pdf || row.pdf_file_url,
+          features: (isBundle && localMatch?.features) ? localMatch.features : (Array.isArray(row.features) && row.features.length > 0 ? row.features : (localMatch?.features || [])),
+          gallery: (localMatch?.gallery && localMatch.gallery.length > 0) ? localMatch.gallery : (Array.isArray(row.gallery) && row.gallery.length > 0 ? row.gallery : [resolvedImage])
+        };
+      });
     }
   } catch (e) {
     console.warn('Error fetching products from Supabase DB', e);
   }
-  return [];
+  return DEFAULT_PRODUCTS;
 }
 
 export interface PreorderBuyer {

@@ -19,11 +19,15 @@ import {
   ShieldCheck,
   Check,
   ShoppingBag,
-  Award
+  Award,
+  Calendar,
+  Lock,
+  RotateCcw
 } from 'lucide-react';
 
 import { fetchCoursesFromDb, saveUserPurchaseToDb } from '@/lib/supabaseLms';
 import { getUserPurchases, getUserPurchasesAsync, addPurchaseToUser } from '@/lib/userPurchasesStore';
+import { getCoachingStatusForUser } from '@/lib/coachingStore';
 
 const DEFAULT_THUMBNAIL = 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp';
 
@@ -34,6 +38,7 @@ function EleveDashboardContent() {
   const isJustPurchased = searchParams.get('purchased') === 'true';
 
   const [courses, setCourses] = useState<any[]>([]);
+  const [coachingStatus, setCoachingStatus] = useState<any>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -51,6 +56,9 @@ function EleveDashboardContent() {
         const dbCourses = await fetchCoursesFromDb();
         const savedEmail = typeof window !== 'undefined' && localStorage.getItem('gd_auth_user') ? JSON.parse(localStorage.getItem('gd_auth_user')!).email : '';
         const userEmail = user?.email || savedEmail;
+        if (userEmail) {
+          setCoachingStatus(getCoachingStatusForUser(userEmail));
+        }
         const userPurchases = await getUserPurchasesAsync(userEmail);
         let baseList: any[] = userPurchases || [];
 
@@ -90,10 +98,11 @@ function EleveDashboardContent() {
           const targetTitle = matchedDb?.title || item.title || 'Produit Guides Digitaux';
           const targetId = matchedDb?.id || item.id || `item-${Date.now()}`;
           const isPreorder = !!item.isPreorder || item.slug === 'precommande-fiche-google' || item.id === 'precommande-fiche-google' || (item.slug && item.slug.includes('precommande'));
-          const isPdfItem = !isPreorder && (item.category === 'ebook' || item.category === 'checklist' || item.type === 'ebook' || item.type === 'checklist' || !!item.downloadPdf || (item.slug && item.slug.includes('guide')) || (item.id && item.id.includes('guide')));
-          const targetSlug = item.slug || item.id || (targetTitle.toLowerCase().includes('woocommerce') ? 'formation-woocommerce' : 'creer-sa-vitrine-wordpress');
+          const isCoachingItem = item.category === 'coaching' || item.type === 'coaching' || item.slug === 'coaching-site' || item.id === 'coaching-site' || targetTitle.toLowerCase().includes('coaching') || targetTitle.toLowerCase().includes('accompagnement');
+          const isPdfItem = !isPreorder && !isCoachingItem && (item.category === 'ebook' || item.category === 'checklist' || item.type === 'ebook' || item.type === 'checklist' || !!item.downloadPdf || (item.slug && item.slug.includes('guide')) || (item.id && item.id.includes('guide')));
+          const targetSlug = item.slug || item.id || (targetTitle.toLowerCase().includes('woocommerce') ? 'formation-woocommerce' : (isCoachingItem ? 'coaching-site' : 'creer-sa-vitrine-wordpress'));
           
-          const totalLess = matchedDb?.modules ? matchedDb.modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) : (item.totalLessons || (isPdfItem ? 0 : 4));
+          const totalLess = matchedDb?.modules ? matchedDb.modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) : (item.totalLessons || (isPdfItem || isCoachingItem ? 0 : 4));
 
           const storedBySlug = localStorage.getItem(`gd_completed_lessons_${targetSlug}`);
           const storedById = localStorage.getItem(`gd_completed_lessons_${targetId}`);
@@ -114,17 +123,19 @@ function EleveDashboardContent() {
             id: targetId,
             title: targetTitle,
             slug: targetSlug,
-            type: isPreorder ? 'formation' : (item.type || (isPdfItem ? 'ebook' : 'formation')),
-            typeLabel: isPreorder ? 'Précommande Enregistrée' : (item.typeLabel || (isPdfItem ? '📄 E-Book / Guide PDF' : 'Formation Vidéo')),
+            type: isCoachingItem ? 'coaching' : (isPreorder ? 'formation' : (item.type || (isPdfItem ? 'ebook' : 'formation'))),
+            typeLabel: isCoachingItem ? '🗓️ Coaching & Accompagnement' : (isPreorder ? 'Précommande Enregistrée' : (item.typeLabel || (isPdfItem ? '📄 E-Book / Guide PDF' : 'Formation Vidéo'))),
             thumbnail: item.image || item.thumbnail || DEFAULT_THUMBNAIL,
-            progress: isPdfItem ? 100 : liveProg,
+            progress: (isPdfItem || isCoachingItem) ? 100 : liveProg,
             completedLessons: item.completedLessons || 0,
             totalLessons: totalLess,
-            duration: matchedDb?.duration || item.duration || (isPdfItem ? 'PDF' : '2h15'),
+            duration: matchedDb?.duration || item.duration || (isCoachingItem ? '2 x 45 min' : (isPdfItem ? 'PDF' : '2h15')),
             instructor: 'Stéphanie ROCQ',
             isPreorder: isPreorder,
+            isCoaching: isCoachingItem,
             isPdf: isPdfItem,
-            downloadPdf: isPdfItem ? (item.downloadPdf || '/downloads/support-formation-woocommerce.pdf') : undefined
+            downloadPdf: isPdfItem ? (item.downloadPdf || '/downloads/support-formation-woocommerce.pdf') : undefined,
+            bookingUrl: item.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18'
           };
         });
 
@@ -385,7 +396,38 @@ function EleveDashboardContent() {
                     </div>
 
                     <div className="p-6 pt-0 space-y-2">
-                      {isPreorderItem ? (
+                      {item.isCoaching || item.type === 'coaching' || item.slug === 'coaching-site' ? (
+                        (coachingStatus && coachingStatus.completedSessions >= coachingStatus.maxSessions) ? (
+                          <div className="space-y-2.5">
+                            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-[#332420] font-semibold space-y-1">
+                              <div className="font-extrabold text-amber-800 flex items-center gap-1.5">
+                                <Lock className="w-3.5 h-3.5 text-amber-700" />
+                                Tes 2 rendez-vous ont été honorés !
+                              </div>
+                              <p className="text-[11px] text-[#5e4d46]">
+                                Tes 2 créneaux de coaching sont terminés. Si tu souhaites reprendre des sessions pour continuer à développer ton site, tu peux commander à nouveau ci-dessous.
+                              </p>
+                            </div>
+                            <Link
+                              href="/produit/coaching-site"
+                              className="w-full py-3.5 text-xs font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 uppercase tracking-wider text-center"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                              REPRENDRE UN COACHING (97 €)
+                            </Link>
+                          </div>
+                        ) : (
+                          <a
+                            href={item.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18'}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full py-3.5 text-xs font-black text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-xl shadow-sm transition-transform hover:scale-[1.01] flex items-center justify-center gap-2 uppercase tracking-wider text-center"
+                          >
+                            <Calendar className="w-4 h-4 text-[#332420]" />
+                            RÉSERVER MON CRÉNEAU EN VISIO ({2 - (coachingStatus?.completedSessions || 0)}/2 RESTANTS) →
+                          </a>
+                        )
+                      ) : isPreorderItem ? (
                         <Link
                           href="/precommande"
                           className="w-full py-3.5 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 uppercase tracking-wider cursor-pointer"

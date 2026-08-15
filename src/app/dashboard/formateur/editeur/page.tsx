@@ -7,7 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import WysiwygEditor from '@/components/WysiwygEditor';
 import { useAuth } from '@/context/AuthContext';
-import { fetchCoursesFromDb, saveCourseToDb } from '@/lib/supabaseLms';
+import { fetchCoursesFromDb, saveCourseToDb, toUuid } from '@/lib/supabaseLms';
 import { Course, Module, Lesson, LessonResourceFile, LessonExternalLink, QuizQuestion, ModuleQuiz } from '@/lib/coursesStore';
 import { 
   ArrowLeft, 
@@ -258,7 +258,7 @@ function CourseEditorContent() {
   // Module & Lesson Add/Remove Handlers
   const handleAddModule = () => {
     const newMod: Module = {
-      id: `mod-${Date.now()}`,
+      id: toUuid(`mod-${Date.now()}`),
       title: `Module ${modules.length + 1} : Nouveau Chapitre`,
       lessons: []
     };
@@ -267,7 +267,7 @@ function CourseEditorContent() {
 
   const handleAddLesson = (modId: string) => {
     const newLes: Lesson = {
-      id: `les-${Date.now()}`,
+      id: toUuid(`les-${Date.now()}`),
       title: 'Cours : Nouvelle vidéo & ressources',
       videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
       notes: 'Notes explicatives et consignes...',

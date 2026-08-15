@@ -19,7 +19,12 @@ export default function MonComptePage() {
     e.preventDefault();
     if (!email) return;
     await login(email);
-    router.push('/dashboard/eleve');
+    const normalized = email.toLowerCase().trim();
+    if (['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@stratec-digital.com'].includes(normalized)) {
+      router.push('/dashboard/admin');
+    } else {
+      router.push('/dashboard/eleve');
+    }
   };
 
   return (

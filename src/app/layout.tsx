@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { Suspense } from "react";
 import MetaPixel from "@/components/MetaPixel";
 import { FB_PIXEL_ID_1, FB_PIXEL_ID_2 } from "@/lib/metaPixel";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
 
 const jakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -32,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${jakartaSans.variable} h-full antialiased scroll-smooth`}>
-      <body className="min-h-full flex flex-col bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
+    <html lang="fr" suppressHydrationWarning className={`${jakartaSans.variable} h-full antialiased scroll-smooth`}>
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
         <Script
           id="meta-pixel-script"
           strategy="afterInteractive"
@@ -75,6 +76,7 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             {children}
+            <CookieConsentBanner />
           </CartProvider>
         </AuthProvider>
       </body>

@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+import { Coupon, validateCoupon } from '@/lib/couponsStore';
+
 export interface CartItem {
   id: string;
   title: string;
@@ -19,6 +21,11 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
+  appliedCoupon: Coupon | null;
+  discountAmount: number;
+  finalPrice: number;
+  applyCouponCode: (code: string) => { valid: boolean; message: string };
+  removeCoupon: () => void;
   isCartOpen: boolean;
   setIsCartOpen: (open: boolean) => void;
 }
@@ -29,6 +36,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
 
   // Load cart from localStorage after client hydration
   useEffect(() => {
@@ -96,10 +104,33 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = () => {
     setCart([]);
+    setAppliedCoupon(null);
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  const productIds = cart.map(item => item.id);
+  const couponResult = appliedCoupon 
+    ? validateCoupon(appliedCoupon.code, totalPrice, productIds)
+    : { valid: false, discountAmount: 0, message: '' };
+
+  const discountAmount = couponResult.valid ? couponResult.discountAmount : 0;
+  const finalPrice = Math.max(0, totalPrice - discountAmount);
+
+  const applyCouponCode = (code: string) => {
+    const res = validateCoupon(code, totalPrice, productIds);
+    if (res.valid && res.coupon) {
+      setAppliedCoupon(res.coupon);
+    } else {
+      setAppliedCoupon(null);
+    }
+    return { valid: res.valid, message: res.message };
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+  };
 
   return (
     <CartContext.Provider
@@ -111,6 +142,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearCart,
         totalItems,
         totalPrice,
+        appliedCoupon: couponResult.valid ? appliedCoupon : null,
+        discountAmount,
+        finalPrice,
+        applyCouponCode,
+        removeCoupon,
         isCartOpen,
         setIsCartOpen,
       }}

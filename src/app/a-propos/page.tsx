@@ -230,7 +230,16 @@ export default function AProposPage() {
             </p>
 
             <p className="text-sm text-[#5e4d46] leading-relaxed max-w-2xl mx-auto mb-8">
-              À travers mon entreprise Stratec Digital, j’accompagne ceux qui veulent mieux comprendre le digital pour en tirer un vrai bénéfice — pas juste “faire comme tout le monde”. Avec Guides Digitaux, j’ai voulu créer une bibliothèque de ressources pratiques, que tu peux utiliser en autonomie, selon tes besoins : un e-book pour comprendre les bases, une checklist pour structurer tes actions, une formation pour passer à l’étape suivante. Tout est conçu avec un ton bienveillant, simple et un brin décalé, parce qu’on apprend mieux quand on sourit 😊
+              À travers mon entreprise{' '}
+              <a
+                href="https://stratec-digital.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#18757d] font-bold underline hover:text-[#12595f] transition-colors"
+              >
+                Stratec Digital
+              </a>
+              , j’accompagne ceux qui veulent mieux comprendre le digital pour en tirer un vrai bénéfice — pas juste “faire comme tout le monde”. Avec Guides Digitaux, j’ai voulu créer une bibliothèque de ressources pratiques, que tu peux utiliser en autonomie, selon tes besoins : un e-book pour comprendre les bases, une checklist pour structurer tes actions, une formation pour passer à l’étape suivante. Tout est conçu avec un ton bienveillant, simple et un brin décalé, parce qu’on apprend mieux quand on sourit 😊
             </p>
 
             {/* Social Links */}

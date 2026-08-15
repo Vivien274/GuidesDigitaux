@@ -8,11 +8,33 @@ import { useAuth } from '@/context/AuthContext';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Lock, Sparkles } from 'lucide-react';
 
 export default function CartDrawer() {
-  const { cart, removeFromCart, updateQuantity, totalPrice, isCartOpen, setIsCartOpen, totalItems, clearCart } = useCart();
+  const { 
+    cart, 
+    removeFromCart, 
+    updateQuantity, 
+    totalPrice, 
+    appliedCoupon,
+    discountAmount,
+    finalPrice,
+    applyCouponCode,
+    removeCoupon,
+    isCartOpen, 
+    setIsCartOpen, 
+    totalItems, 
+    clearCart 
+  } = useCart();
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [couponMsg, setCouponMsg] = useState<{ valid: boolean; text: string } | null>(null);
 
   if (!isCartOpen) return null;
+
+  const handleApplyCoupon = () => {
+    if (!couponInput.trim()) return;
+    const res = applyCouponCode(couponInput.trim());
+    setCouponMsg({ valid: res.valid, text: res.message });
+  };
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
@@ -27,7 +49,9 @@ export default function CartDrawer() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: cart,
-          customerEmail: user?.email || ''
+          customerEmail: user?.email || '',
+          discountAmount: discountAmount || 0,
+          couponCode: appliedCoupon?.code || ''
         })
       });
 
@@ -146,18 +170,62 @@ export default function CartDrawer() {
           {/* Footer Checkout Summary */}
           {cart.length > 0 && (
             <div className="p-6 bg-[#faf8f5] border-t border-[#eee7da] space-y-4">
+              
+              {/* CODE PROMO INPUT */}
+              <div className="space-y-1.5 bg-white p-3 rounded-2xl border border-[#eee7da]">
+                <label className="text-[11px] font-extrabold text-[#5e4d46] uppercase flex items-center gap-1">
+                  🎟️ Code Promo / Remise :
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    placeholder="BIENVENUE10"
+                    className="flex-1 p-2 bg-[#faf8f5] border border-[#eee7da] rounded-xl text-xs font-mono font-bold text-[#332420] focus:outline-none uppercase"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Appliquer
+                  </button>
+                </div>
+                {couponMsg && (
+                  <p className={`text-[11px] font-bold ${couponMsg.valid ? 'text-emerald-600' : 'text-rose-500'}`}>
+                    {couponMsg.text}
+                  </p>
+                )}
+                {appliedCoupon && (
+                  <div className="flex items-center justify-between text-[11px] font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg mt-1">
+                    <span>Code {appliedCoupon.code} appliqué !</span>
+                    <button onClick={removeCoupon} className="text-rose-600 underline text-[10px]">Retirer</button>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs text-slate-600">
                   <span>Sous-total TTC :</span>
                   <span className="font-extrabold text-[#332420]">{totalPrice.toFixed(2).replace('.', ',')} €</span>
                 </div>
+
+                {discountAmount > 0 && (
+                  <div className="flex items-center justify-between text-xs text-emerald-600 font-extrabold">
+                    <span>Remise Code Promo :</span>
+                    <span>-{discountAmount.toFixed(2).replace('.', ',')} €</span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between text-xs text-slate-600">
                   <span>Frais de port :</span>
                   <span className="font-bold text-emerald-600">0,00 € (Téléchargement direct)</span>
                 </div>
+
                 <div className="pt-2 border-t border-[#eee7da] flex items-center justify-between text-base font-extrabold text-[#332420]">
-                  <span>Total :</span>
-                  <span className="text-xl text-[#18757d]">{totalPrice.toFixed(2).replace('.', ',')} €</span>
+                  <span>Total final :</span>
+                  <span className="text-xl text-[#18757d]">{finalPrice.toFixed(2).replace('.', ',')} €</span>
                 </div>
               </div>
 
@@ -165,10 +233,10 @@ export default function CartDrawer() {
                 <button
                   onClick={handleCheckout}
                   disabled={isProcessing}
-                  className="w-full py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Lock className="w-4 h-4" />
-                  PASSER LA COMMANDE ({totalPrice.toFixed(2).replace('.', ',')} €)
+                  PASSER LA COMMANDE ({finalPrice.toFixed(2).replace('.', ',')} €)
                 </button>
 
                 <Link

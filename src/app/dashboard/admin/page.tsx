@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuth, UserRole } from '@/context/AuthContext';
+import Link from 'next/link';
 import { 
   Shield, 
   DollarSign, 
@@ -11,7 +12,12 @@ import {
   ShoppingBag, 
   GraduationCap, 
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Rocket,
+  UserCheck,
+  BookOpen,
+  Tag
 } from 'lucide-react';
 
 interface AdminUserItem {
@@ -280,6 +286,129 @@ export default function SuperadminDashboardPage() {
       <section className="py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           
+          {/* Superadmin Full Access Shortcuts Hub */}
+          <div className="bg-gradient-to-br from-[#18757d]/10 via-white to-[#f4ede0] p-6 sm:p-8 rounded-3xl border-2 border-[#18757d]/30 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="px-3 py-1 bg-[#18757d] text-white text-xs font-black rounded-full uppercase tracking-wider">
+                  Accès Intégral Superadmin
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-[#332420] mt-2">
+                  Studio Formations, Catalogue & Espace Élève
+                </h2>
+                <p className="text-xs sm:text-sm text-[#5e4d46] font-medium">
+                  En tant que Superadmin, vous possédez un accès illimité et direct à l'ensemble du LMS sans besoin de créer un compte formateur séparé.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+              <Link
+                href="/dashboard/admin/produits"
+                className="bg-white p-4 rounded-2xl border border-[#eee7da] hover:border-[#e05a47] hover:shadow-md transition-all flex items-center gap-3 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-rose-50 text-[#e05a47] flex items-center justify-center group-hover:bg-[#e05a47] group-hover:text-white transition-colors">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#332420] group-hover:text-[#e05a47]">Fiches Produits & Tarifs</h4>
+                  <p className="text-[11px] text-slate-500">Gérer la boutique, prix et offres</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/dashboard/admin/blog"
+                className="bg-white p-4 rounded-2xl border border-[#eee7da] hover:border-[#18757d] hover:shadow-md transition-all flex items-center gap-3 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center group-hover:bg-[#18757d] group-hover:text-white transition-colors">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#332420] group-hover:text-[#18757d]">Articles de Blog</h4>
+                  <p className="text-[11px] text-slate-500">Rédiger & gérer les articles</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/dashboard/formateur"
+                className="bg-white p-4 rounded-2xl border border-[#eee7da] hover:border-[#18757d] hover:shadow-md transition-all flex items-center gap-3 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center group-hover:bg-[#18757d] group-hover:text-white transition-colors">
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#332420] group-hover:text-[#18757d]">Studio Formations LMS</h4>
+                  <p className="text-[11px] text-slate-500">Gérer tous les cours vidéo</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/dashboard/admin/marketing"
+                className="bg-white p-4 rounded-2xl border border-[#eee7da] hover:border-amber-500 hover:shadow-md transition-all flex items-center gap-3 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#332420] group-hover:text-amber-600">Marketing & Codes Promo</h4>
+                  <p className="text-[11px] text-slate-500">Créer des remises % ou €</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/dashboard/admin/coaching"
+                className="bg-white p-4 rounded-2xl border border-[#eee7da] hover:border-emerald-600 hover:shadow-md transition-all flex items-center gap-3 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#332420] group-hover:text-emerald-600">Suivi Coaching (2 RDV)</h4>
+                  <p className="text-[11px] text-slate-500">Valider les RDV & verrouiller agenda</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/dashboard/admin/produits/editeur"
+                className="bg-white p-4 rounded-2xl border border-[#eee7da] hover:border-[#e05a47] hover:shadow-md transition-all flex items-center gap-3 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-rose-50 text-[#e05a47] flex items-center justify-center group-hover:bg-[#e05a47] group-hover:text-white transition-colors">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#332420] group-hover:text-[#e05a47]">Créer un Produit</h4>
+                  <p className="text-[11px] text-slate-500">Ajouter une fiche produit</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/dashboard/admin/blog/editeur"
+                className="bg-white p-4 rounded-2xl border border-[#eee7da] hover:border-[#18757d] hover:shadow-md transition-all flex items-center gap-3 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center group-hover:bg-[#18757d] group-hover:text-white transition-colors">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#332420] group-hover:text-[#18757d]">Rédiger un Article</h4>
+                  <p className="text-[11px] text-slate-500">Publier sur le blog</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/dashboard/eleve"
+                className="bg-white p-4 rounded-2xl border border-[#eee7da] hover:border-[#18757d] hover:shadow-md transition-all flex items-center gap-3 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center group-hover:bg-[#18757d] group-hover:text-white transition-colors">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#332420] group-hover:text-[#18757d]">Espace Élève / Achats</h4>
+                  <p className="text-[11px] text-slate-500">Tester la vue apprenant</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+
           {/* Revenue & Sales KPI Overview */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-3xl border border-[#eee7da] shadow-2xs flex items-center gap-4">

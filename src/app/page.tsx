@@ -49,99 +49,22 @@ interface ProductItem {
   image?: string;
 }
 
-const PRODUCTS: ProductItem[] = [
-  {
-    id: 'prod-seo-artisan',
-    slug: 'guide-seo-artisans-createurs',
-    title: 'Guide SEO : Être premier sur Google quand on est artisan ou créateur',
-    category: 'seo',
-    badge: 'LE PLUS VENDU',
-    badgeBg: 'bg-[#e05a47] text-white',
-    price: 39,
-    originalPrice: 69,
-    description: 'La méthode pas-à-pas pour positionner ton atelier ou ta boutique sur Google Maps et la recherche locale sans budget publicitaire.',
-    features: [
-      'Ebook PDF de 48 pages concrètes et illustrées',
-      'Checklist d’optimisation Google Business Profile',
-      'Modèle de rédaction de fiches produits SEO',
-      'Liste de 50 mots-clés gratuits spécial création'
-    ],
-    pagesOrDuration: 'PDF 48 Pages + Checklist Excel'
-  },
-  {
-    id: 'prod-instagram-createur',
-    slug: 'guide-instagram-vente-createurs',
-    title: 'Guide Instagram : Transformer ses abonnés en clients fidèles',
-    category: 'social',
-    badge: 'POPULAIRE',
-    badgeBg: 'bg-[#18757d] text-white',
-    price: 29,
-    originalPrice: 49,
-    description: 'Découvre comment mettre en valeur tes créations, rédiger des légendes captivantes et vendre en story sans forcer.',
-    features: [
-      'Guide PDF de 35 pages prêt à l’emploi',
-      '30 idées de posts & réels pour artisans',
-      'Modèle de calendrier éditorial Notion',
-      'Guide des hashtags et stories interactives'
-    ],
-    pagesOrDuration: 'PDF 35 Pages + Template Notion'
-  },
-  {
-    id: 'prod-gestion-independant',
-    slug: 'kit-organisation-gestion-independants',
-    title: 'Kit d’Organisation & Gestion pour Indépendants',
-    category: 'gestion',
-    badge: 'INDISPENSABLE',
-    badgeBg: 'bg-[#f5d76e] text-[#332420]',
-    price: 35,
-    description: 'Ne laisse plus l’administratif te déborder. Modèles de devis, factures, suivi de trésorerie et relance des impayés.',
-    features: [
-      'Matrice Excel de calcul de rentabilité',
-      'Modèles de devis et CGV conformes 2026',
-      'Méthode d’organisation du temps par blocs',
-      'Checklist administrative mensuelle'
-    ],
-    pagesOrDuration: 'Kit PDF + Fichiers Excel'
-  },
-  {
-    id: 'prod-formation-site-web',
-    slug: 'formation-creer-son-site-vitrine',
-    title: 'Formation Vidéo : Créer son site vitrine professionnel de A à Z',
-    category: 'course',
-    badge: 'FORMATION EN LIGNE',
-    badgeBg: 'bg-[#18757d] text-white',
-    price: 149,
-    originalPrice: 249,
-    description: 'Construis toi-même un site moderne, rapide et responsive pour présenter tes prestations sans faire appel à une agence.',
-    features: [
-      '3h30 de tutoriels vidéo pas-à-pas HD',
-      'Accès aux fichiers sources et modèles prêts',
-      'Support par email pendant 30 jours',
-      'Accès illimité et à vie dans ton espace client'
-    ],
-    pagesOrDuration: '3h30 Vidéo HD (8 Modules)'
-  },
-  {
-    id: 'prod-preorder-v2-ia',
-    slug: 'precommande-ia-productivite-artisans',
-    title: 'Guide V2 : L’IA au service des Artisans & Créateurs (Précommande)',
-    category: 'gestion',
-    badge: 'PRÉCOMMANDE (-50%)',
-    badgeBg: 'bg-[#e05a47] text-white',
-    price: 24,
-    originalPrice: 49,
-    isPreorder: true,
-    releaseDate: '15 Septembre 2026',
-    description: 'Utilise ChatGPT pour rédiger tes fiches produits, tes emails clients et tes publications en 5 minutes par jour.',
-    features: [
-      'Tarif précommande (-50% de réduction)',
-      '100+ prompts ChatGPT testés pour créateurs',
-      'Livraison automatique le jour du lancement',
-      'Mises à jour gratuites incluses'
-    ],
-    pagesOrDuration: 'Livraison sous 30j (PDF HD)'
-  }
-];
+import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
+
+const PRODUCTS: ProductItem[] = DEFAULT_PRODUCTS.map(p => ({
+  id: p.id,
+  slug: p.slug,
+  title: p.title,
+  category: p.category === 'formation' ? 'course' : (p.category === 'checklist' ? 'gestion' : 'seo'),
+  badge: p.badge || 'PRODUIT DIGITAL',
+  badgeBg: 'bg-[#18757d] text-white',
+  price: p.price,
+  originalPrice: p.originalPrice,
+  description: p.description,
+  features: p.features,
+  pagesOrDuration: p.category === 'formation' ? 'Formation Vidéo' : (p.category === 'checklist' ? 'Checklist PDF Interractive' : 'E-Book PDF HD'),
+  image: p.image
+}));
 
 import { fetchCoursesFromDb } from '@/lib/supabaseLms';
 
@@ -171,25 +94,33 @@ export default function HomePage() {
         const nonFormations = PRODUCTS.filter(p => p.category !== 'course' && (p.category as string) !== 'formation');
         
         const dynamicFormations: ProductItem[] = publishedDbCourses.map(c => {
-          const staticMatch = PRODUCTS.find(p => p.id === c.id || (p.title && c.title.toLowerCase().includes(p.title.toLowerCase().slice(0, 10))));
+          const staticMatch = PRODUCTS.find(p => {
+            if (p.id === c.id) return true;
+            const cT = c.title.toLowerCase();
+            const pT = p.title.toLowerCase();
+            if (cT.includes('woocommerce') && pT.includes('woocommerce')) return true;
+            if ((cT.includes('vitrine') || cT.includes('wordpress')) && (pT.includes('vitrine') && !pT.includes('combo'))) return true;
+            if (cT.includes('coaching') && pT.includes('coaching')) return true;
+            return false;
+          });
           return {
             id: c.id,
             slug: c.title.toLowerCase().includes('woocommerce') ? 'formation-woocommerce' : 'creer-sa-vitrine-wordpress',
             title: c.title,
             category: 'formation',
-            badge: c.isPreorder ? 'PRÉCOMMANDE' : 'FORMATION VIDÉO',
+            badge: c.isPreorder ? 'PRÉCOMMANDE' : (staticMatch?.badge || (c.title.toLowerCase().includes('coaching') ? 'COACHING EN VISIO' : 'FORMATION VIDÉO')),
             badgeBg: 'bg-[#18757d] text-white',
             price: c.price || 99,
             originalPrice: c.originalPrice,
-            image: c.image || staticMatch?.image,
-            description: c.description || 'Formation vidéo pas-à-pas.',
-            features: [
+            image: staticMatch?.image || c.image || '/images/products/formation-wordpress.webp',
+            description: c.description || staticMatch?.description || 'Formation vidéo pas-à-pas.',
+            features: staticMatch?.features || [
               'Accès illimité 24/7',
               `${c.modules?.length || 0} Modules vidéo pas-à-pas`,
               'Exercices pratiques & support',
               'Mises à jour incluses'
             ],
-            pagesOrDuration: c.duration || '2h15'
+            pagesOrDuration: staticMatch?.category === 'formation' && staticMatch?.id === 'coaching-site' ? '2 sessions' : (c.duration || '2h15')
           };
         });
 
@@ -491,6 +422,18 @@ export default function HomePage() {
                 className="bg-white rounded-3xl p-7 border border-[#eee7da] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
               >
                 <div>
+                  {/* Product Cover Image */}
+                  {product.image && (
+                    <Link href={`/produit/${product.slug || product.id}`} className="block relative w-full h-48 sm:h-52 mb-5 rounded-2xl overflow-hidden bg-[#f4ede0] border border-[#eee7da] shadow-xs">
+                      <Image
+                        src={product.image}
+                        alt={product.title}
+                        fill
+                        className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </Link>
+                  )}
+
                   <div className="flex items-center justify-between mb-4">
                     <span className={`px-3 py-1 rounded-full text-[11px] font-extrabold uppercase ${product.badgeBg}`}>
                       {product.badge}
@@ -501,7 +444,9 @@ export default function HomePage() {
                   </div>
 
                   <h3 className="text-lg font-bold text-[#332420] group-hover:text-[#18757d] transition-colors mb-3 leading-snug">
-                    {product.title}
+                    <Link href={`/produit/${product.slug || product.id}`}>
+                      {product.title}
+                    </Link>
                   </h3>
 
                   <p className="text-xs text-[#5e4d46] mb-6 leading-relaxed">
@@ -531,12 +476,12 @@ export default function HomePage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setActiveModalProduct(product)}
-                      className="w-full py-3 px-3 text-xs font-extrabold text-[#332420] bg-[#f4ede0] hover:bg-[#e8ded0] rounded-xl transition-colors"
+                    <Link
+                      href={`/produit/${product.slug || product.id}`}
+                      className="w-full py-3 px-3 text-xs font-extrabold text-[#332420] bg-[#f4ede0] hover:bg-[#e8ded0] rounded-xl transition-colors text-center flex items-center justify-center"
                     >
                       Détails
-                    </button>
+                    </Link>
                     <button
                       onClick={() => handleCheckout(product.id)}
                       disabled={loadingCheckoutId === product.id}
@@ -989,26 +934,7 @@ export default function HomePage() {
       </section>
 
       {/* FOOTER */}
-      <footer id="contact" className="bg-[#332420] text-white py-12 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#18757d] flex items-center justify-center font-bold text-white">
-              GD
-            </div>
-            <span className="text-base font-bold">Guides Digitaux</span>
-          </div>
-
-          <p className="text-xs text-slate-400 text-center md:text-left">
-            © 2026 Guides Digitaux. Tous droits réservés. Plateforme sécurisée Supabase & Stripe.
-          </p>
-
-          <div className="flex items-center gap-6 text-xs text-slate-300">
-            <a href="#" className="hover:text-[#f5d76e] transition-colors">Mentions Légales</a>
-            <a href="#" className="hover:text-[#f5d76e] transition-colors">CGV / CGU</a>
-            <a href="#" className="hover:text-[#f5d76e] transition-colors">Contact</a>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       {/* MODAL DETAILED PRODUCT PREVIEW */}
       {activeModalProduct && (
@@ -1027,6 +953,18 @@ export default function HomePage() {
               </span>
               <span className="text-xs text-slate-500">{activeModalProduct.pagesOrDuration}</span>
             </div>
+
+            {/* Product Cover Image in Modal */}
+            {activeModalProduct.image && (
+              <div className="relative w-full h-56 sm:h-64 mb-5 rounded-2xl overflow-hidden bg-[#f4ede0] border border-[#eee7da] shadow-xs">
+                <Image
+                  src={activeModalProduct.image}
+                  alt={activeModalProduct.title}
+                  fill
+                  className="object-cover object-center"
+                />
+              </div>
+            )}
 
             <h3 className="text-xl font-extrabold text-[#332420] mb-3">{activeModalProduct.title}</h3>
             <p className="text-xs sm:text-sm text-[#5e4d46] mb-6 leading-relaxed">{activeModalProduct.description}</p>

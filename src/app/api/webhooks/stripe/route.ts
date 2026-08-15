@@ -116,22 +116,40 @@ export async function POST(request: Request) {
         ? product.release_date
         : new Date().toISOString();
 
-      // 5. Attribution des droits d'accès dans `user_access`
-      const { error: accessError } = await supabaseAdmin
-        .from('user_access')
-        .upsert({
-          user_id: userId,
-          product_id: productId,
-          order_id: order?.id,
-          available_from: availableFrom,
-        });
+      // 5. Attribution des droits d'accès dans `user_access` et `enrollments`
+      const productsToGrant = productId.includes('bundle') 
+        ? [productId, 'formation-wordpress', 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce']
+        : [productId];
 
-      if (accessError) {
-        console.error('Erreur attribution accès:', accessError);
-        return NextResponse.json({ error: 'Erreur lors de l’attribution de l’accès' }, { status: 500 });
+      for (const pId of productsToGrant) {
+        try {
+          await supabaseAdmin.from('enrollments').insert({
+            user_id: userId,
+            user_email: customerEmail,
+            product_id: pId,
+            course_id: pId,
+            item_title: pId,
+            item_type: 'formation',
+            price: amountEur,
+            stripe_session_id: session.id
+          });
+        } catch (e) {}
+
+        const { error: accessError } = await supabaseAdmin
+          .from('user_access')
+          .upsert({
+            user_id: userId,
+            product_id: pId,
+            order_id: order?.id,
+            available_from: availableFrom,
+          });
+
+        if (accessError) {
+          console.error(`Erreur attribution accès pour ${pId}:`, accessError);
+        }
       }
 
-      console.log(`[Stripe Webhook] Accès attribué à l'utilisateur ${userId} pour le produit ${productId}`);
+      console.log(`[Stripe Webhook] Accès attribués à l'utilisateur ${userId} pour les produits: ${productsToGrant.join(', ')}`);
 
         // 7. Envoi de l'événement d'achat serveur (Meta CAPI) non-bloquant
         try {

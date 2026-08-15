@@ -395,9 +395,10 @@ export default function FormationViewerPage() {
                     </h3>
                   </div>
 
-                  <p className="text-sm text-[#5e4d46] leading-relaxed whitespace-pre-wrap">
-                    {activeLesson?.notes || 'Descriptif et notes d\'accompagnement de la leçon.'}
-                  </p>
+                  <div 
+                    className="text-sm text-[#5e4d46] leading-relaxed prose max-w-none prose-headings:text-[#18757d] prose-headings:font-extrabold prose-strong:text-[#332420] prose-strong:font-black prose-a:text-[#18757d] prose-a:font-bold hover:prose-a:underline prose-li:text-[#5e4d46]"
+                    dangerouslySetInnerHTML={{ __html: activeLesson?.notes || 'Descriptif et notes d\'accompagnement de la leçon.' }}
+                  />
 
                   {/* Multiple PDF & Resource Files Download Boxes */}
                   {activeLesson?.files && activeLesson.files.length > 0 ? (

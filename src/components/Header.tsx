@@ -102,23 +102,38 @@ export default function Header() {
             </Link>
 
             {isLoggedIn && user ? (
-              <Link 
-                href={getDashboardLink()} 
-                className={`transition-colors flex items-center gap-1.5 pb-1 ${
-                  isActive('/dashboard') || isActive('/mon-compte')
-                    ? 'text-[#18757d] font-bold border-b-2 border-[#18757d]' 
-                    : 'hover:text-[#18757d]'
-                }`}
-              >
-                {role === 'superadmin' ? (
-                  <Shield className="w-3.5 h-3.5 text-[#e05a47]" />
-                ) : role === 'formateur' ? (
-                  <GraduationCap className="w-3.5 h-3.5 text-[#18757d]" />
-                ) : (
-                  <UserCheck className="w-3.5 h-3.5 text-[#18757d]" />
+              <>
+                {role === 'superadmin' && (
+                  <Link 
+                    href="/dashboard/formateur" 
+                    className={`transition-colors flex items-center gap-1.5 pb-1 ${
+                      isActive('/dashboard/formateur')
+                        ? 'text-[#18757d] font-bold border-b-2 border-[#18757d]' 
+                        : 'hover:text-[#18757d]'
+                    }`}
+                  >
+                    <GraduationCap className="w-3.5 h-3.5 text-[#18757d]" />
+                    <span>Studio Formations</span>
+                  </Link>
                 )}
-                <span>Mon Espace ({role === 'superadmin' ? 'Admin' : role === 'formateur' ? 'Formateur' : 'Élève'})</span>
-              </Link>
+                <Link 
+                  href={getDashboardLink()} 
+                  className={`transition-colors flex items-center gap-1.5 pb-1 ${
+                    isActive('/dashboard/admin') || (role !== 'superadmin' && isActive('/dashboard'))
+                      ? 'text-[#e05a47] font-bold border-b-2 border-[#e05a47]' 
+                      : 'hover:text-[#18757d]'
+                  }`}
+                >
+                  {role === 'superadmin' ? (
+                    <Shield className="w-3.5 h-3.5 text-[#e05a47]" />
+                  ) : role === 'formateur' ? (
+                    <GraduationCap className="w-3.5 h-3.5 text-[#18757d]" />
+                  ) : (
+                    <UserCheck className="w-3.5 h-3.5 text-[#18757d]" />
+                  )}
+                  <span>{role === 'superadmin' ? 'Back-Office Admin' : role === 'formateur' ? 'Mon Espace Formateur' : 'Mon Espace Élève'}</span>
+                </Link>
+              </>
             ) : (
               <Link 
                 href="/mon-compte" 

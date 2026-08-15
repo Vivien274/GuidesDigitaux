@@ -31,7 +31,8 @@ import { Rocket, Target, Calendar, Gift } from 'lucide-react';
 interface Product {
   id: string;
   title: string;
-  category: 'ebook' | 'checklist' | 'formation';
+  slug?: string;
+  category: 'ebook' | 'checklist' | 'formation' | 'coaching';
   categoryLabel: string;
   price: number;
   originalPrice?: number;
@@ -39,12 +40,14 @@ interface Product {
   reviewsCount: number;
   badge?: string;
   image: string;
+  imageAlt?: string;
   description: string;
   features: string[];
+  bookingUrl?: string;
 }
 
 export default function BoutiquePage() {
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'ebook' | 'checklist' | 'formation'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'ebook' | 'checklist' | 'formation' | 'coaching'>('all');
   const [activeModalProduct, setActiveModalProduct] = useState<Product | null>(null);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [preorders, setPreorders] = useState<PreorderCampaign[]>([]);
@@ -70,27 +73,51 @@ export default function BoutiquePage() {
         return true;
       });
 
-      const dynamicFormations: Product[] = publishedDbCourses.map(c => ({
-        id: c.id,
-        title: c.title,
-        category: 'formation',
-        categoryLabel: 'Formation Vidéo',
-        price: c.price || 99,
-        originalPrice: c.originalPrice,
-        rating: 5,
-        reviewsCount: 0,
-        badge: c.isPreorder ? 'PRÉCOMMANDE' : undefined,
-        image: c.image || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp',
-        description: c.description || 'Formation vidéo complète pas-à-pas avec exercices pratiques.',
-        features: [
-          'Accès illimité 24/7',
-          `${c.modules?.length || 0} Modules vidéo pas-à-pas`,
-          'Support et exercices pratiques',
-          'Mises à jour gratuites incluses'
-        ]
-      }));
+      const combined: Product[] = [...(dbProducts || [])];
 
-      setProductsList([...(dbProducts || []), ...dynamicFormations]);
+      publishedDbCourses.forEach(c => {
+        const exists = combined.some(p => 
+          p.id === c.id || 
+          p.slug === c.id || 
+          p.title.toLowerCase().trim() === c.title.toLowerCase().trim()
+        );
+        if (!exists) {
+          combined.push({
+            id: c.id,
+            title: c.title,
+            category: 'formation',
+            categoryLabel: 'Formation Vidéo',
+            price: c.price || 99,
+            originalPrice: c.originalPrice,
+            rating: 5,
+            reviewsCount: 0,
+            badge: c.isPreorder ? 'PRÉCOMMANDE' : undefined,
+            image: c.image || '/images/products/coaching-site.webp',
+            description: c.description || 'Formation vidéo complète pas-à-pas avec exercices pratiques.',
+            features: [
+              'Accès illimité 24/7',
+              `${c.modules?.length || 0} Modules vidéo pas-à-pas`,
+              'Support et exercices pratiques',
+              'Mises à jour gratuites incluses'
+            ]
+          });
+        }
+      });
+
+      // Deduplicate entire catalog array strictly by title or id
+      const uniqueCatalog: Product[] = [];
+      const seenKeys = new Set<string>();
+
+      combined.forEach(p => {
+        const key = p.title.toLowerCase().trim();
+        if (!seenKeys.has(key) && !seenKeys.has(p.id)) {
+          seenKeys.add(key);
+          seenKeys.add(p.id);
+          uniqueCatalog.push(p);
+        }
+      });
+
+      setProductsList(uniqueCatalog);
     }
     syncDynamicCatalog();
   }, []);
@@ -224,6 +251,18 @@ export default function BoutiquePage() {
             <GraduationCap className="w-3.5 h-3.5" />
             Nos formations en ligne ({productsList.filter(p => p.category === 'formation').length})
           </button>
+
+          <button
+            onClick={() => setSelectedCategory('coaching')}
+            className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
+              selectedCategory === 'coaching'
+                ? 'bg-[#18757d] text-white shadow-sm'
+                : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#e8ded0]'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            Coaching & Visio ({productsList.filter(p => p.category === 'coaching').length})
+          </button>
         </div>
       </section>
 
@@ -334,7 +373,7 @@ export default function BoutiquePage() {
                 <div className="relative h-60 w-full overflow-hidden bg-[#f5f1e8]">
                   <Image
                     src={product.image}
-                    alt={product.title}
+                    alt={product.imageAlt || `${product.title} - Guides digitaux - Métropole lilloise`}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -450,17 +489,17 @@ export default function BoutiquePage() {
               <div key={product.id} className="bg-white rounded-3xl p-6 border border-[#e8ded0] shadow-sm flex flex-col justify-between">
                 <div>
                   <div className="relative h-48 w-full rounded-2xl overflow-hidden mb-4">
-                    <Image src={product.image} alt={product.title} fill className="object-cover" />
+                    <Image src={product.image} alt={product.imageAlt || `${product.title} - Guides digitaux - Nord de la France`} fill className="object-cover" />
                   </div>
                   <span className="text-xs font-extrabold text-[#18757d] block mb-1">{product.price.toFixed(2)} €</span>
                   <h3 className="text-sm font-extrabold text-[#332420] mb-2">{product.title}</h3>
                 </div>
-                <button
-                  onClick={() => handleBuyNow(product)}
-                  className="w-full mt-4 py-2.5 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl transition-colors"
+                <Link
+                  href={`/produit/${product.slug || product.id}`}
+                  className="block w-full mt-4 py-2.5 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl transition-colors text-center"
                 >
-                  COMMANDER L'EBOOK
-                </button>
+                  DÉCOUVRIR L'EBOOK
+                </Link>
               </div>
             ))}
           </div>
@@ -506,17 +545,17 @@ export default function BoutiquePage() {
               <div key={product.id} className="bg-white rounded-3xl p-6 border border-[#eee7da] shadow-sm flex flex-col justify-between">
                 <div>
                   <div className="relative h-48 w-full rounded-2xl overflow-hidden mb-4">
-                    <Image src={product.image} alt={product.title} fill className="object-cover" />
+                    <Image src={product.image} alt={product.imageAlt || `${product.title} - Guides digitaux - Comines`} fill className="object-cover" />
                   </div>
                   <span className="text-xs font-extrabold text-[#18757d] block mb-1">{product.price.toFixed(2)} €</span>
                   <h3 className="text-sm font-extrabold text-[#332420] mb-2">{product.title}</h3>
                 </div>
-                <button
-                  onClick={() => handleBuyNow(product)}
-                  className="w-full mt-4 py-2.5 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl transition-colors"
+                <Link
+                  href={`/produit/${product.slug || product.id}`}
+                  className="block w-full mt-4 py-2.5 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl transition-colors text-center"
                 >
-                  TÉLÉCHARGER LA CHECKLIST
-                </button>
+                  VOIR LA CHECKLIST
+                </Link>
               </div>
             ))}
           </div>
@@ -547,7 +586,7 @@ export default function BoutiquePage() {
               <div key={formation.id} className="bg-white rounded-3xl overflow-hidden border border-[#e8ded0] shadow-md flex flex-col justify-between">
                 <div>
                   <div className="relative h-64 w-full">
-                    <Image src={formation.image} alt={formation.title} fill className="object-cover" />
+                    <Image src={formation.image} alt={formation.imageAlt || `${formation.title} - Guides digitaux - Hauts-de-France`} fill className="object-cover" />
                     {formation.badge && (
                       <span className="absolute top-4 left-4 bg-[#e05a47] text-white text-xs font-extrabold px-3 py-1 rounded-full uppercase">
                         {formation.badge}
@@ -572,12 +611,12 @@ export default function BoutiquePage() {
                 </div>
 
                 <div className="p-8 pt-0">
-                  <button
-                    onClick={() => handleBuyNow(formation)}
-                    className="w-full py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-colors"
+                  <Link
+                    href={`/produit/${formation.slug || formation.id}`}
+                    className="block w-full py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-colors text-center"
                   >
                     VOIR LA FORMATION
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))}
