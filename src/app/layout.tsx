@@ -8,6 +8,7 @@ import { Suspense } from "react";
 import MetaPixel from "@/components/MetaPixel";
 import { FB_PIXEL_ID_1, FB_PIXEL_ID_2 } from "@/lib/metaPixel";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 
 const jakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -75,6 +76,9 @@ export default function RootLayout({
         </Suspense>
         <AuthProvider>
           <CartProvider>
+            <Suspense fallback={null}>
+              <AnalyticsTracker />
+            </Suspense>
             {children}
             <CookieConsentBanner />
           </CartProvider>
