@@ -50,6 +50,8 @@ interface Product {
   bundleCustomItems?: { title: string; pdfUrl?: string }[];
 }
 
+import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -72,6 +74,25 @@ export default function ProductDetailPage() {
       setAllProducts(dbProducts || []);
       let match = (dbProducts || []).find(p => p.id === productId || p.slug === productId);
       
+      const defaultMatch = DEFAULT_PRODUCTS.find(p => 
+        p.id === productId || 
+        p.slug === productId || 
+        (match && (p.id === match.id || p.slug === match.slug || p.title.toLowerCase().trim() === match.title.toLowerCase().trim()))
+      );
+
+      if (match) {
+        if (defaultMatch) {
+          if (defaultMatch.longDescription && defaultMatch.longDescription.length >= (match.longDescription || '').length) {
+            match.longDescription = defaultMatch.longDescription;
+          }
+          if (defaultMatch.description) {
+            match.description = defaultMatch.description;
+          }
+        }
+      } else if (defaultMatch) {
+        match = defaultMatch as any;
+      }
+
       if (!match) {
         const courseMatch = (dbCourses || []).find(c => c.id === productId);
         if (courseMatch) {
