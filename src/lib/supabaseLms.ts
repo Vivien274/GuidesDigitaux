@@ -707,9 +707,9 @@ export async function fetchProductsFromDb(): Promise<any[]> {
         );
         const resolvedImage = localMatch?.image || row.image || row.image_url || 'https://www.guides-digitaux.com/wp-content/uploads/2025/10/GD-LogoFondTransparent.webp';
         
-        const effectiveLongDescription = (localMatch && localMatch.longDescription && localMatch.longDescription.length >= (row.long_description || '').length)
+        const effectiveLongDescription = (localMatch && localMatch.longDescription)
           ? localMatch.longDescription
-          : (row.long_description || localMatch?.longDescription || row.description || '');
+          : (row.long_description || row.description || '');
 
         const effectiveDescription = (localMatch && localMatch.description)
           ? localMatch.description

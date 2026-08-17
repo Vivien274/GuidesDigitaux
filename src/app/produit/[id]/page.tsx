@@ -82,12 +82,10 @@ export default function ProductDetailPage() {
 
       if (match) {
         if (defaultMatch) {
-          if (defaultMatch.longDescription && defaultMatch.longDescription.length >= (match.longDescription || '').length) {
-            match.longDescription = defaultMatch.longDescription;
-          }
-          if (defaultMatch.description) {
-            match.description = defaultMatch.description;
-          }
+          match.longDescription = defaultMatch.longDescription || match.longDescription;
+          match.description = defaultMatch.description || match.description;
+          match.image = defaultMatch.image || match.image;
+          match.imageAlt = defaultMatch.imageAlt || match.imageAlt;
         }
       } else if (defaultMatch) {
         match = defaultMatch as any;
