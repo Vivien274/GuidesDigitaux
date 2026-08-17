@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { fetchCoursesFromDb } from '@/lib/supabaseLms';
-import { getRealCourseStats, Course } from '@/lib/coursesStore';
+import { getRealCourseStats, fetchRealCourseStatsFromDb, Course } from '@/lib/coursesStore';
 import { 
   GraduationCap, 
   Plus, 
@@ -55,10 +55,7 @@ export default function FormateurDashboardPage() {
       setCoursesList(list);
 
       // Compute real student stats per course from DB / localStorage
-      const map: Record<string, { enrolledCount: number; completedCount: number; completionPercentage: number }> = {};
-      list.forEach(c => {
-        map[c.id] = getRealCourseStats(c.id, c.title);
-      });
+      const map = await fetchRealCourseStatsFromDb(list);
       setStatsMap(map);
       setIsLoading(false);
     }

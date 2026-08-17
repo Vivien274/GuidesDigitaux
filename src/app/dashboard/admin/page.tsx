@@ -48,11 +48,94 @@ interface AdminUserItem {
   purchasesDetails: UserPurchaseDetail[];
 }
 
-import { purgeAllCoursesData } from '@/lib/coursesStore';
+import { purgeAllCoursesData, getStoredCourses } from '@/lib/coursesStore';
 import { purgeAllPreorders } from '@/lib/preordersStore';
 import { purgeAllUserPurchases, getUserPurchases } from '@/lib/userPurchasesStore';
 import { getEncryptedDownloadUrl } from '@/lib/downloadSecurity';
 import { supabase } from '@/lib/supabaseLms';
+import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
+
+function resolveProductInfo(rawTitle?: string, productId?: string, slug?: string, rawDownloadPdf?: string, price?: number) {
+  const isGeneric = !rawTitle || 
+    rawTitle.trim().length === 0 ||
+    rawTitle.toLowerCase() === 'produit digital' || 
+    rawTitle.toLowerCase() === 'achat boutique' || 
+    rawTitle.toLowerCase() === 'commande produit digital' ||
+    rawTitle.toLowerCase() === 'commande digital' ||
+    rawTitle.toLowerCase() === 'formation lms' ||
+    rawTitle.toLowerCase() === 'guide digital' ||
+    rawTitle.toLowerCase() === 'mini-guide / produit digital';
+
+  const lookupKey = productId || slug || (isGeneric ? '' : rawTitle) || '';
+
+  let finalTitle = rawTitle;
+  let finalDownloadPdf = rawDownloadPdf;
+  let finalSlug = slug || productId;
+
+  // 1. Match in DEFAULT_PRODUCTS by id, slug, or title
+  const prodMatch = DEFAULT_PRODUCTS.find(p => 
+    p.id === lookupKey || 
+    p.slug === lookupKey || 
+    (productId && p.id === productId) || 
+    (slug && p.slug === slug) ||
+    (rawTitle && p.title.toLowerCase() === rawTitle.toLowerCase())
+  );
+
+  if (prodMatch) {
+    finalTitle = prodMatch.title;
+    if (!finalDownloadPdf && prodMatch.downloadPdf) {
+      finalDownloadPdf = prodMatch.downloadPdf;
+    }
+    if (!finalSlug && prodMatch.slug) {
+      finalSlug = prodMatch.slug;
+    }
+  } else {
+    // 2. Match in Courses Store
+    try {
+      const coursesList = getStoredCourses();
+      const courseMatch = coursesList.find(c => 
+        c.id === lookupKey || 
+        (productId && c.id === productId) ||
+        (rawTitle && c.title.toLowerCase() === rawTitle.toLowerCase())
+      );
+
+      if (courseMatch) {
+        finalTitle = courseMatch.title;
+      }
+    } catch (e) {}
+  }
+
+  // 3. Fallback: match by price if title is generic or missing
+  if (isGeneric || !finalTitle || finalTitle.toLowerCase() === 'guide digital') {
+    if (lookupKey && lookupKey.length > 2 && lookupKey !== 'guide digital') {
+      finalTitle = lookupKey
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, char => char.toUpperCase());
+    } else if (price) {
+      if (price === 5) {
+        finalTitle = "Mini-guide : Écrire pour le web quand on est artisan";
+      } else if (price === 3) {
+        finalTitle = "Mini-Guide : Comprendre ses stats sans être data scientist";
+      } else if (price === 15) {
+        finalTitle = "Checklist : Sécurité & Anti-Spam WordPress";
+      } else if (price === 29) {
+        finalTitle = "Ebook : Doubler sa visibilité locale";
+      } else if (price === 199 || price === 99) {
+        finalTitle = "Formation : Créer sa vitrine en ligne avec WordPress";
+      } else {
+        finalTitle = "Guide Digital & Ressource Pro";
+      }
+    } else {
+      finalTitle = "Guide Digital & Ressource Pro";
+    }
+  }
+
+  return {
+    title: finalTitle,
+    downloadPdf: finalDownloadPdf,
+    slug: finalSlug
+  };
+}
 
 import { useRouter } from 'next/navigation';
 
@@ -88,7 +171,7 @@ export default function SuperadminDashboardPage() {
     }
   }, [user, role, router]);
 
-  // Load real accounts & purchases directly from Supabase DB tables (profiles, orders, enrollments) & localStorage
+  // Load real accounts & purchases directly from Supabase DB tables (profiles, orders, enrollments, preorder_buyers) & localStorage
   const loadDashboardData = async () => {
     try {
       const accountsMap = new Map<string, AdminUserItem>();
@@ -97,7 +180,7 @@ export default function SuperadminDashboardPage() {
       const { data: profiles } = await supabase.from('profiles').select('*');
       if (profiles && Array.isArray(profiles)) {
         profiles.forEach((p: any) => {
-          const em = p.email?.toLowerCase().trim();
+          const em = (p.email || '').toLowerCase().trim();
           if (em) {
             accountsMap.set(em, {
               id: p.id || `sp-${Date.now()}`,
@@ -119,19 +202,27 @@ export default function SuperadminDashboardPage() {
       const { data: orders } = await supabase.from('orders').select('*');
       if (orders && Array.isArray(orders)) {
         orders.forEach((ord: any) => {
-          const em = ord.customer_email?.toLowerCase().trim();
-          const amount = ord.amount ? Number(ord.amount) : (ord.total_amount_cents ? ord.total_amount_cents / 100 : 29);
+          const em = (ord.customer_email || ord.user_email || ord.email || '').toLowerCase().trim();
+          const amount = ord.amount ? Number(ord.amount) : (ord.total_amount_cents ? ord.total_amount_cents / 100 : (ord.price ? Number(ord.price) : 29));
           totalOrdersCount += 1;
           totalRev += amount;
 
+          const info = resolveProductInfo(
+            ord.product_title || ord.title || ord.product_name,
+            ord.product_id,
+            ord.slug,
+            ord.download_pdf || ord.pdf_url,
+            amount
+          );
+
           const detailItem: UserPurchaseDetail = {
             id: ord.id || `ord-${Math.random().toString(36).substring(2, 7)}`,
-            title: ord.product_title || ord.title || 'Produit Digital',
+            title: info.title,
             price: amount,
             date: ord.created_at || ord.purchase_date || new Date().toISOString(),
             type: ord.category || ord.type || 'Achat Boutique',
-            slug: ord.product_id || ord.slug,
-            downloadPdf: ord.download_pdf || ord.pdf_url
+            slug: info.slug,
+            downloadPdf: info.downloadPdf
           };
 
           if (em) {
@@ -139,7 +230,7 @@ export default function SuperadminDashboardPage() {
             if (!userObj) {
               userObj = {
                 id: ord.id || `o-${Date.now()}`,
-                name: em.split('@')[0],
+                name: ord.customer_name || em.split('@')[0],
                 email: em,
                 role: 'eleve',
                 purchasesCount: 0,
@@ -148,9 +239,11 @@ export default function SuperadminDashboardPage() {
               };
               accountsMap.set(em, userObj);
             }
-            userObj.purchasesCount += 1;
-            userObj.totalSpent += amount;
-            userObj.purchasesDetails.push(detailItem);
+            if (!userObj.purchasesDetails.some(d => d.title === detailItem.title || d.id === detailItem.id)) {
+              userObj.purchasesCount += 1;
+              userObj.totalSpent += amount;
+              userObj.purchasesDetails.push(detailItem);
+            }
           }
         });
       }
@@ -159,17 +252,25 @@ export default function SuperadminDashboardPage() {
       const { data: enrollments } = await supabase.from('enrollments').select('*');
       if (enrollments && Array.isArray(enrollments)) {
         enrollments.forEach((enr: any) => {
-          const em = enr.user_email?.toLowerCase().trim();
-          const amount = enr.price ? Number(enr.price) : 29;
+          const em = (enr.user_email || enr.customer_email || enr.email || '').toLowerCase().trim();
+          const amount = enr.price ? Number(enr.price) : (enr.amount ? Number(enr.amount) : 29);
+
+          const info = resolveProductInfo(
+            enr.course_title || enr.title || enr.item_title,
+            enr.course_id || enr.product_id,
+            enr.course_slug || enr.slug,
+            enr.download_pdf,
+            amount
+          );
 
           const detailItem: UserPurchaseDetail = {
             id: enr.id || `enr-${Math.random().toString(36).substring(2, 7)}`,
-            title: enr.course_title || enr.title || 'Formation LMS',
+            title: info.title,
             price: amount,
-            date: enr.enrolled_at || new Date().toISOString(),
-            type: enr.category || 'Formation LMS',
-            slug: enr.course_slug || enr.slug,
-            downloadPdf: enr.download_pdf
+            date: enr.enrolled_at || enr.created_at || new Date().toISOString(),
+            type: enr.category || enr.item_type || 'Formation LMS',
+            slug: info.slug,
+            downloadPdf: info.downloadPdf
           };
 
           if (em) {
@@ -177,7 +278,7 @@ export default function SuperadminDashboardPage() {
             if (!userObj) {
               userObj = {
                 id: enr.id || `e-${Date.now()}`,
-                name: em.split('@')[0],
+                name: enr.user_name || em.split('@')[0],
                 email: em,
                 role: 'eleve',
                 purchasesCount: 0,
@@ -197,28 +298,141 @@ export default function SuperadminDashboardPage() {
         });
       }
 
-      // 4. Merge local storage purchases for client-side test accounts
-      accountsMap.forEach((userObj, em) => {
-        const localItems = getUserPurchases(em);
-        if (localItems && localItems.length > 0) {
-          localItems.forEach(item => {
-            if (!userObj.purchasesDetails.some(d => d.title === item.title || d.id === item.id)) {
-              const price = item.price || 29;
+      // 4. Fetch preorder_buyers table from Supabase
+      const { data: prebuyers } = await supabase.from('preorder_buyers').select('*');
+      if (prebuyers && Array.isArray(prebuyers)) {
+        prebuyers.forEach((pb: any) => {
+          const em = (pb.customer_email || pb.email || pb.user_email || '').toLowerCase().trim();
+          const amount = pb.amount ? Number(pb.amount) : 29;
+
+          const info = resolveProductInfo(
+            pb.campaign_title || pb.title || 'Précommande Formation',
+            pb.campaign_id || pb.product_id,
+            pb.slug,
+            undefined,
+            amount
+          );
+
+          const detailItem: UserPurchaseDetail = {
+            id: pb.id || `pb-${Math.random().toString(36).substring(2, 7)}`,
+            title: info.title,
+            price: amount,
+            date: pb.created_at || new Date().toISOString(),
+            type: 'Précommande',
+            slug: info.slug
+          };
+
+          if (em) {
+            let userObj = accountsMap.get(em);
+            if (!userObj) {
+              userObj = {
+                id: pb.id || `pb-${Date.now()}`,
+                name: pb.customer_name || em.split('@')[0],
+                email: em,
+                role: 'eleve',
+                purchasesCount: 0,
+                totalSpent: 0,
+                purchasesDetails: []
+              };
+              accountsMap.set(em, userObj);
+            }
+            if (!userObj.purchasesDetails.some(d => d.title === detailItem.title || d.id === detailItem.id)) {
               userObj.purchasesCount += 1;
-              userObj.totalSpent += price;
-              userObj.purchasesDetails.push({
-                id: item.id || `loc-${Date.now()}`,
-                title: item.title,
-                price: price,
-                date: item.purchaseDate || new Date().toISOString(),
-                type: item.typeLabel || item.type || 'Guide Digital',
-                slug: item.slug,
-                downloadPdf: item.downloadPdf
+              userObj.totalSpent += amount;
+              userObj.purchasesDetails.push(detailItem);
+              totalOrdersCount += 1;
+              totalRev += amount;
+            }
+          }
+        });
+      }
+
+      // 5. Merge localStorage purchases and gd_enrolled_courses across all client sessions
+      if (typeof window !== 'undefined') {
+        try {
+          const enrolledRaw = localStorage.getItem('gd_enrolled_courses');
+          if (enrolledRaw) {
+            const list = JSON.parse(enrolledRaw);
+            if (Array.isArray(list)) {
+              list.forEach((item: any) => {
+                const em = (item.email || item.customerEmail || (localStorage.getItem('gd_auth_user') ? JSON.parse(localStorage.getItem('gd_auth_user')!).email : '')).toLowerCase().trim();
+                if (em) {
+                  const price = item.price || 29;
+                  const info = resolveProductInfo(item.title, item.id, item.slug, item.downloadPdf, price);
+                  let userObj = accountsMap.get(em);
+                  if (!userObj) {
+                    userObj = {
+                      id: `loc-${Date.now()}`,
+                      name: em.split('@')[0],
+                      email: em,
+                      role: 'eleve',
+                      purchasesCount: 0,
+                      totalSpent: 0,
+                      purchasesDetails: []
+                    };
+                    accountsMap.set(em, userObj);
+                  }
+                  if (!userObj.purchasesDetails.some(d => d.title === info.title || d.id === item.id)) {
+                    userObj.purchasesCount += 1;
+                    userObj.totalSpent += price;
+                    userObj.purchasesDetails.push({
+                      id: item.id || `loc-${Date.now()}`,
+                      title: info.title,
+                      price: price,
+                      date: item.purchaseDate || new Date().toISOString(),
+                      type: item.typeLabel || item.type || 'Formation / Guide',
+                      slug: info.slug,
+                      downloadPdf: info.downloadPdf
+                    });
+                  }
+                }
               });
             }
-          });
+          }
+        } catch (e) {}
+
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('gd_user_purchases_')) {
+            const em = key.replace('gd_user_purchases_', '').toLowerCase().trim();
+            if (em && em !== 'anonymous') {
+              const localItems = getUserPurchases(em);
+              if (localItems && localItems.length > 0) {
+                let userObj = accountsMap.get(em);
+                if (!userObj) {
+                  userObj = {
+                    id: `loc-${Date.now()}`,
+                    name: em.split('@')[0],
+                    email: em,
+                    role: 'eleve',
+                    purchasesCount: 0,
+                    totalSpent: 0,
+                    purchasesDetails: []
+                  };
+                  accountsMap.set(em, userObj);
+                }
+                localItems.forEach(item => {
+                  const price = item.price || 29;
+                  const info = resolveProductInfo(item.title, item.id, item.slug, item.downloadPdf, price);
+                  if (!userObj!.purchasesDetails.some(d => d.title === info.title || d.id === item.id)) {
+                    userObj!.purchasesCount += 1;
+                    userObj!.totalSpent += price;
+                    userObj!.purchasesDetails.push({
+                      id: item.id || `loc-${Date.now()}`,
+                      title: info.title,
+                      price: price,
+                      date: item.purchaseDate || new Date().toISOString(),
+                      type: item.typeLabel || item.type || 'Guide Digital',
+                      slug: info.slug,
+                      downloadPdf: info.downloadPdf
+                    });
+                  }
+                });
+              }
+            }
+          }
         }
-      });
+      }
 
       const uniqueList = Array.from(accountsMap.values());
 
@@ -738,18 +952,6 @@ export default function SuperadminDashboardPage() {
                         </span>
 
                         <div className="flex items-center gap-1.5">
-                          {item.downloadPdf && (
-                            <a
-                              href={getEncryptedDownloadUrl(item.downloadPdf, item.id)}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-3 py-1.5 bg-[#18757d] text-white hover:bg-[#12595f] rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs"
-                              title="Télécharger le PDF sécurisé"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              PDF
-                            </a>
-                          )}
                           <Link
                             href={item.slug ? `/produit/${item.slug}` : '/boutique'}
                             target="_blank"

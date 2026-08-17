@@ -48,6 +48,7 @@ export interface Module {
 
 export interface Course {
   id: string;
+  slug?: string;
   title: string;
   description: string;
   duration: string;
@@ -584,6 +585,8 @@ export interface RealCourseStats {
 /**
  * Calculate REAL student stats based on actual enrolments in localStorage
  */
+import { supabase } from '@/lib/supabaseLms';
+
 export function getRealCourseStats(courseId: string, courseTitle?: string): RealCourseStats {
   if (typeof window === 'undefined') {
     return { enrolledCount: 0, completedCount: 0, completionPercentage: 0 };
@@ -621,4 +624,152 @@ export function getRealCourseStats(courseId: string, courseTitle?: string): Real
   }
 
   return { enrolledCount: 0, completedCount: 0, completionPercentage: 0 };
+}
+
+/**
+ * Async computation of REAL student stats per course querying Supabase tables (enrollments, orders, preorder_buyers) & localStorage
+ */
+export async function fetchRealCourseStatsFromDb(coursesList: Course[]): Promise<Record<string, RealCourseStats>> {
+  const statsMap: Record<string, RealCourseStats> = {};
+
+  coursesList.forEach(c => {
+    statsMap[c.id] = { enrolledCount: 0, completedCount: 0, completionPercentage: 0 };
+  });
+
+  try {
+    const uniqueStudentsPerCourse = new Map<string, Set<string>>();
+    const completedStudentsPerCourse = new Map<string, Set<string>>();
+
+    coursesList.forEach(c => {
+      uniqueStudentsPerCourse.set(c.id, new Set());
+      completedStudentsPerCourse.set(c.id, new Set());
+    });
+
+    // 1. Fetch from enrollments table
+    const { data: dbEnrollments } = await supabase.from('enrollments').select('*');
+    if (dbEnrollments && Array.isArray(dbEnrollments)) {
+      dbEnrollments.forEach((row: any) => {
+        const email = (row.user_email || row.customer_email || row.email || '').toLowerCase().trim();
+        if (!email) return;
+
+        const targetCourse = coursesList.find(c => 
+          c.id === row.course_id || 
+          c.id === row.product_id ||
+          (c.slug && (c.slug === row.course_slug || c.slug === row.product_id)) ||
+          (row.item_title && c.title.toLowerCase().includes(row.item_title.toLowerCase())) ||
+          (c.id === 'c1' && (row.product_id?.includes('wordpress') || row.course_id?.includes('wordpress'))) ||
+          (c.id === 'c2' && (row.product_id?.includes('woocommerce') || row.course_id?.includes('woocommerce')))
+        );
+
+        if (targetCourse) {
+          const studentSet = uniqueStudentsPerCourse.get(targetCourse.id) || new Set();
+          studentSet.add(email);
+          uniqueStudentsPerCourse.set(targetCourse.id, studentSet);
+
+          if (row.progress >= 100 || row.status === 'completed') {
+            const completedSet = completedStudentsPerCourse.get(targetCourse.id) || new Set();
+            completedSet.add(email);
+            completedStudentsPerCourse.set(targetCourse.id, completedSet);
+          }
+        }
+      });
+    }
+
+    // 2. Fetch from orders table
+    const { data: dbOrders } = await supabase.from('orders').select('*');
+    if (dbOrders && Array.isArray(dbOrders)) {
+      dbOrders.forEach((row: any) => {
+        const email = (row.customer_email || row.user_email || row.email || '').toLowerCase().trim();
+        if (!email) return;
+
+        const targetCourse = coursesList.find(c => 
+          c.id === row.product_id || 
+          (c.slug && c.slug === row.product_id) ||
+          (row.product_title && c.title.toLowerCase().includes(row.product_title.toLowerCase())) ||
+          (c.id === 'c1' && row.product_id?.includes('wordpress')) ||
+          (c.id === 'c2' && row.product_id?.includes('woocommerce'))
+        );
+
+        if (targetCourse) {
+          const studentSet = uniqueStudentsPerCourse.get(targetCourse.id) || new Set();
+          studentSet.add(email);
+          uniqueStudentsPerCourse.set(targetCourse.id, studentSet);
+        }
+      });
+    }
+
+    // 3. Fetch from preorder_buyers table
+    const { data: dbPreorderBuyers } = await supabase.from('preorder_buyers').select('*');
+    if (dbPreorderBuyers && Array.isArray(dbPreorderBuyers)) {
+      dbPreorderBuyers.forEach((row: any) => {
+        const email = (row.customer_email || row.email || '').toLowerCase().trim();
+        if (!email) return;
+
+        const targetCourse = coursesList.find(c => 
+          c.id === row.campaign_id || 
+          c.id === row.product_id ||
+          (c.slug && c.slug === row.campaign_id) ||
+          (row.campaign_title && c.title.toLowerCase().includes(row.campaign_title.toLowerCase()))
+        );
+
+        if (targetCourse) {
+          const studentSet = uniqueStudentsPerCourse.get(targetCourse.id) || new Set();
+          studentSet.add(email);
+          uniqueStudentsPerCourse.set(targetCourse.id, studentSet);
+        }
+      });
+    }
+
+    // 4. Merge from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const rawEnrolled = localStorage.getItem('gd_enrolled_courses');
+        const enrolledList = rawEnrolled ? JSON.parse(rawEnrolled) : [];
+        if (Array.isArray(enrolledList)) {
+          enrolledList.forEach((item: any) => {
+            const email = (item.email || item.customerEmail || 'anon@student.local').toLowerCase().trim();
+            const targetCourse = coursesList.find(c => 
+              c.id === item.id || 
+              (c.slug && c.slug === item.slug) ||
+              (item.title && c.title.toLowerCase().includes(item.title.toLowerCase())) ||
+              (c.id === 'c1' && (item.id?.includes('wordpress') || item.title?.toLowerCase().includes('wordpress'))) ||
+              (c.id === 'c2' && (item.id?.includes('woocommerce') || item.title?.toLowerCase().includes('woocommerce')))
+            );
+
+            if (targetCourse) {
+              const studentSet = uniqueStudentsPerCourse.get(targetCourse.id) || new Set();
+              studentSet.add(email);
+              uniqueStudentsPerCourse.set(targetCourse.id, studentSet);
+
+              if (item.progress >= 100) {
+                const completedSet = completedStudentsPerCourse.get(targetCourse.id) || new Set();
+                completedSet.add(email);
+                completedStudentsPerCourse.set(targetCourse.id, completedSet);
+              }
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
+    // Compile final stats per course
+    coursesList.forEach(c => {
+      const studentSet = uniqueStudentsPerCourse.get(c.id) || new Set();
+      const completedSet = completedStudentsPerCourse.get(c.id) || new Set();
+      const enrolledCount = studentSet.size;
+      const completedCount = completedSet.size;
+      const completionPercentage = enrolledCount > 0 ? Math.round((completedCount / enrolledCount) * 100) : 0;
+
+      statsMap[c.id] = {
+        enrolledCount,
+        completedCount,
+        completionPercentage
+      };
+    });
+
+  } catch (err) {
+    console.error('Failed to fetch real course stats from DB:', err);
+  }
+
+  return statsMap;
 }
