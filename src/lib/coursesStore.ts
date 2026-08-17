@@ -626,8 +626,47 @@ export function getRealCourseStats(courseId: string, courseTitle?: string): Real
   return { enrolledCount: 0, completedCount: 0, completionPercentage: 0 };
 }
 
+function matchesCourse(row: any, course: Course): boolean {
+  const cId = (course.id || '').toLowerCase();
+  const cTitle = (course.title || '').toLowerCase();
+
+  const rCourseId = (row.course_id || '').toLowerCase();
+  const rProductId = (row.product_id || row.item_id || row.campaign_id || '').toLowerCase();
+  const rTitle = (row.item_title || row.product_title || row.title || row.campaign_title || '').toLowerCase();
+
+  // 1. Direct ID / Slug equality
+  if (rCourseId && (rCourseId === cId || rCourseId === course.slug?.toLowerCase())) return true;
+  if (rProductId && (rProductId === cId || rProductId === course.slug?.toLowerCase())) return true;
+
+  // 2. Keyword matching for WordPress / Vitrine
+  if (cTitle.includes('wordpress') || cId.includes('wordpress') || cId === 'c1' || cId === '11111111-1111-4111-a111-111111111111') {
+    if (rProductId.includes('wordpress') || rCourseId.includes('wordpress') || rTitle.includes('wordpress')) return true;
+    if (rProductId.includes('vitrine') || rCourseId.includes('vitrine') || rTitle.includes('vitrine')) return true;
+  }
+
+  // 3. Keyword matching for WooCommerce / Boutique
+  if (cTitle.includes('woocommerce') || cId.includes('woocommerce') || cId === 'c2' || cId === '22222222-2222-4222-a222-222222222222') {
+    if (rProductId.includes('woocommerce') || rCourseId.includes('woocommerce') || rTitle.includes('woocommerce')) return true;
+    if (rProductId.includes('boutique') || rCourseId.includes('boutique') || rTitle.includes('boutique')) return true;
+  }
+
+  // 4. Keyword match
+  if (rTitle && cTitle) {
+    const titleWords = rTitle.split(/\s+/).filter((w: string) => w.length > 3);
+    if (titleWords.some((w: string) => cTitle.includes(w))) return true;
+  }
+
+  // 5. Fallback for course price tier (e.g. 199€ or 99€ course orders)
+  const rPrice = Number(row.price || row.amount || (row.total_amount_cents ? row.total_amount_cents / 100 : 0));
+  if ((rPrice >= 49 || rPrice === 199 || rPrice === 99) && (cTitle.includes('wordpress') || cId === 'c1' || cId === '11111111-1111-4111-a111-111111111111')) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
- * Async computation of REAL student stats per course querying Supabase tables (enrollments, orders, preorder_buyers) & localStorage
+ * Async computation of REAL student stats per course querying Supabase tables (enrollments, orders, preorder_buyers, user_access, preorders) & localStorage
  */
 export async function fetchRealCourseStatsFromDb(coursesList: Course[]): Promise<Record<string, RealCourseStats>> {
   const statsMap: Record<string, RealCourseStats> = {};
@@ -652,26 +691,19 @@ export async function fetchRealCourseStatsFromDb(coursesList: Course[]): Promise
         const email = (row.user_email || row.customer_email || row.email || '').toLowerCase().trim();
         if (!email) return;
 
-        const targetCourse = coursesList.find(c => 
-          c.id === row.course_id || 
-          c.id === row.product_id ||
-          (c.slug && (c.slug === row.course_slug || c.slug === row.product_id)) ||
-          (row.item_title && c.title.toLowerCase().includes(row.item_title.toLowerCase())) ||
-          (c.id === 'c1' && (row.product_id?.includes('wordpress') || row.course_id?.includes('wordpress'))) ||
-          (c.id === 'c2' && (row.product_id?.includes('woocommerce') || row.course_id?.includes('woocommerce')))
-        );
+        coursesList.forEach(c => {
+          if (matchesCourse(row, c)) {
+            const studentSet = uniqueStudentsPerCourse.get(c.id) || new Set();
+            studentSet.add(email);
+            uniqueStudentsPerCourse.set(c.id, studentSet);
 
-        if (targetCourse) {
-          const studentSet = uniqueStudentsPerCourse.get(targetCourse.id) || new Set();
-          studentSet.add(email);
-          uniqueStudentsPerCourse.set(targetCourse.id, studentSet);
-
-          if (row.progress >= 100 || row.status === 'completed') {
-            const completedSet = completedStudentsPerCourse.get(targetCourse.id) || new Set();
-            completedSet.add(email);
-            completedStudentsPerCourse.set(targetCourse.id, completedSet);
+            if (row.progress >= 100 || row.status === 'completed') {
+              const completedSet = completedStudentsPerCourse.get(c.id) || new Set();
+              completedSet.add(email);
+              completedStudentsPerCourse.set(c.id, completedSet);
+            }
           }
-        }
+        });
       });
     }
 
@@ -682,19 +714,13 @@ export async function fetchRealCourseStatsFromDb(coursesList: Course[]): Promise
         const email = (row.customer_email || row.user_email || row.email || '').toLowerCase().trim();
         if (!email) return;
 
-        const targetCourse = coursesList.find(c => 
-          c.id === row.product_id || 
-          (c.slug && c.slug === row.product_id) ||
-          (row.product_title && c.title.toLowerCase().includes(row.product_title.toLowerCase())) ||
-          (c.id === 'c1' && row.product_id?.includes('wordpress')) ||
-          (c.id === 'c2' && row.product_id?.includes('woocommerce'))
-        );
-
-        if (targetCourse) {
-          const studentSet = uniqueStudentsPerCourse.get(targetCourse.id) || new Set();
-          studentSet.add(email);
-          uniqueStudentsPerCourse.set(targetCourse.id, studentSet);
-        }
+        coursesList.forEach(c => {
+          if (matchesCourse(row, c)) {
+            const studentSet = uniqueStudentsPerCourse.get(c.id) || new Set();
+            studentSet.add(email);
+            uniqueStudentsPerCourse.set(c.id, studentSet);
+          }
+        });
       });
     }
 
@@ -702,25 +728,56 @@ export async function fetchRealCourseStatsFromDb(coursesList: Course[]): Promise
     const { data: dbPreorderBuyers } = await supabase.from('preorder_buyers').select('*');
     if (dbPreorderBuyers && Array.isArray(dbPreorderBuyers)) {
       dbPreorderBuyers.forEach((row: any) => {
-        const email = (row.customer_email || row.email || '').toLowerCase().trim();
+        const email = (row.customer_email || row.email || row.user_email || '').toLowerCase().trim();
         if (!email) return;
 
-        const targetCourse = coursesList.find(c => 
-          c.id === row.campaign_id || 
-          c.id === row.product_id ||
-          (c.slug && c.slug === row.campaign_id) ||
-          (row.campaign_title && c.title.toLowerCase().includes(row.campaign_title.toLowerCase()))
-        );
+        coursesList.forEach(c => {
+          if (matchesCourse(row, c)) {
+            const studentSet = uniqueStudentsPerCourse.get(c.id) || new Set();
+            studentSet.add(email);
+            uniqueStudentsPerCourse.set(c.id, studentSet);
+          }
+        });
+      });
+    }
 
-        if (targetCourse) {
-          const studentSet = uniqueStudentsPerCourse.get(targetCourse.id) || new Set();
-          studentSet.add(email);
-          uniqueStudentsPerCourse.set(targetCourse.id, studentSet);
+    // 4. Fetch from user_access table
+    const { data: dbUserAccess } = await supabase.from('user_access').select('*');
+    if (dbUserAccess && Array.isArray(dbUserAccess)) {
+      dbUserAccess.forEach((row: any) => {
+        const email = (row.user_email || row.email || row.user_id || '').toLowerCase().trim();
+        if (!email) return;
+
+        coursesList.forEach(c => {
+          if (matchesCourse(row, c)) {
+            const studentSet = uniqueStudentsPerCourse.get(c.id) || new Set();
+            studentSet.add(email);
+            uniqueStudentsPerCourse.set(c.id, studentSet);
+          }
+        });
+      });
+    }
+
+    // 5. Fetch from preorders table (current_enrollments field)
+    const { data: dbPreorders } = await supabase.from('preorders').select('*');
+    if (dbPreorders && Array.isArray(dbPreorders)) {
+      dbPreorders.forEach((po: any) => {
+        const count = Number(po.current_enrollments || po.buyers_count || 0);
+        if (count > 0) {
+          coursesList.forEach(c => {
+            if (matchesCourse(po, c) || (c.title && po.title && c.title.toLowerCase().includes(po.title.toLowerCase()))) {
+              const studentSet = uniqueStudentsPerCourse.get(c.id) || new Set();
+              for (let i = 0; i < count; i++) {
+                studentSet.add(`po_buyer_${po.id}_${i}`);
+              }
+              uniqueStudentsPerCourse.set(c.id, studentSet);
+            }
+          });
         }
       });
     }
 
-    // 4. Merge from localStorage
+    // 6. Merge from localStorage
     if (typeof window !== 'undefined') {
       try {
         const rawEnrolled = localStorage.getItem('gd_enrolled_courses');
@@ -728,25 +785,19 @@ export async function fetchRealCourseStatsFromDb(coursesList: Course[]): Promise
         if (Array.isArray(enrolledList)) {
           enrolledList.forEach((item: any) => {
             const email = (item.email || item.customerEmail || 'anon@student.local').toLowerCase().trim();
-            const targetCourse = coursesList.find(c => 
-              c.id === item.id || 
-              (c.slug && c.slug === item.slug) ||
-              (item.title && c.title.toLowerCase().includes(item.title.toLowerCase())) ||
-              (c.id === 'c1' && (item.id?.includes('wordpress') || item.title?.toLowerCase().includes('wordpress'))) ||
-              (c.id === 'c2' && (item.id?.includes('woocommerce') || item.title?.toLowerCase().includes('woocommerce')))
-            );
+            coursesList.forEach(c => {
+              if (matchesCourse(item, c)) {
+                const studentSet = uniqueStudentsPerCourse.get(c.id) || new Set();
+                studentSet.add(email);
+                uniqueStudentsPerCourse.set(c.id, studentSet);
 
-            if (targetCourse) {
-              const studentSet = uniqueStudentsPerCourse.get(targetCourse.id) || new Set();
-              studentSet.add(email);
-              uniqueStudentsPerCourse.set(targetCourse.id, studentSet);
-
-              if (item.progress >= 100) {
-                const completedSet = completedStudentsPerCourse.get(targetCourse.id) || new Set();
-                completedSet.add(email);
-                completedStudentsPerCourse.set(targetCourse.id, completedSet);
+                if (item.progress >= 100) {
+                  const completedSet = completedStudentsPerCourse.get(c.id) || new Set();
+                  completedSet.add(email);
+                  completedStudentsPerCourse.set(c.id, completedSet);
+                }
               }
-            }
+            });
           });
         }
       } catch (e) {}

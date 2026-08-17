@@ -26,8 +26,28 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [role, setRoleState] = useState<UserRole>('eleve');
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('gd_auth_user');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return null;
+  });
+
+  const [role, setRoleState] = useState<UserRole>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('gd_auth_user');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return parsed.role || 'eleve';
+        }
+      } catch (e) {}
+    }
+    return 'eleve';
+  });
 
   // Load user session from server cookie on mount
   useEffect(() => {
