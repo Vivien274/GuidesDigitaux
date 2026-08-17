@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import WysiwygEditor from '@/components/WysiwygEditor';
-import { Product } from '@/data/defaultProducts';
+import { Product, DEFAULT_PRODUCTS } from '@/data/defaultProducts';
 import { getStoredProducts, saveProduct } from '@/lib/productsStore';
 import { 
   ArrowLeft, 
@@ -91,25 +91,37 @@ function ProductEditorContent() {
 
     if (productId) {
       const found = all.find(p => p.id === productId || p.slug === productId);
-      if (found) {
-        setId(found.id);
-        setTitle(found.title);
-        setSlug(found.slug);
-        setCategory(found.category);
-        setCategoryLabel(found.categoryLabel || 'Formation Vidéo');
-        setBadge(found.badge || '');
-        setPrice(String(found.price));
-        setOriginalPrice(found.originalPrice ? String(found.originalPrice) : '');
-        setBookingUrl(found.bookingUrl || '');
-        setDownloadPdf(found.downloadPdf || '');
-        setImage(found.image || '');
-        setGallery(found.gallery || [found.image]);
-        setDescription(found.description || '');
-        setLongDescription(found.longDescription || found.description || '');
-        setFeatures(found.features && found.features.length > 0 ? found.features : ['Accès immédiat par e-mail']);
-        setProductType(found.productType || (found.category === 'ebook' && found.categoryLabel?.toLowerCase().includes('pack') ? 'bundle' : 'simple'));
-        setBundleProductIds(found.bundleProductIds || []);
-        setBundleCustomItems(found.bundleCustomItems || []);
+      const defMatch = DEFAULT_PRODUCTS.find(p => 
+        p.id === productId || 
+        p.slug === productId || 
+        (found && (p.id === found.id || p.slug === found.slug))
+      );
+
+      if (found || defMatch) {
+        const item = found || (defMatch as any);
+        setId(item.id);
+        setTitle(defMatch?.title || item.title);
+        setSlug(item.slug);
+        setCategory(item.category);
+        setCategoryLabel(item.categoryLabel || 'Formation Vidéo');
+        setBadge(item.badge || '');
+        setPrice(String(item.price));
+        setOriginalPrice(item.originalPrice ? String(item.originalPrice) : '');
+        setBookingUrl(item.bookingUrl || '');
+        setDownloadPdf(item.downloadPdf || '');
+        setImage(defMatch?.image || item.image || '');
+        setGallery(item.gallery || [item.image]);
+        setDescription(defMatch?.description || item.description || '');
+        
+        const effectiveLongDesc = (defMatch?.longDescription) 
+          ? defMatch.longDescription 
+          : (item.longDescription || item.description || '');
+        setLongDescription(effectiveLongDesc);
+
+        setFeatures(item.features && item.features.length > 0 ? item.features : ['Accès immédiat par e-mail']);
+        setProductType(item.productType || (item.category === 'ebook' && item.categoryLabel?.toLowerCase().includes('pack') ? 'bundle' : 'simple'));
+        setBundleProductIds(item.bundleProductIds || []);
+        setBundleCustomItems(item.bundleCustomItems || []);
       }
     } else {
       setId(`prod-${Date.now()}`);

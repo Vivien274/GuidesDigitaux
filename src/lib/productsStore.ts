@@ -6,12 +6,55 @@ export function getStoredProducts(): Product[] {
   if (typeof window === 'undefined') return DEFAULT_PRODUCTS;
   try {
     const data = localStorage.getItem('gd_custom_products');
+    let list: Product[] = DEFAULT_PRODUCTS;
     if (data) {
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        list = parsed;
       }
     }
+
+    const defaultMap = new Map(DEFAULT_PRODUCTS.map(p => [p.id, p]));
+
+    const merged = list.map(item => {
+      const def = defaultMap.get(item.id) || DEFAULT_PRODUCTS.find(p => p.slug === item.slug || p.title.toLowerCase().trim() === item.title.toLowerCase().trim());
+      if (def) {
+        const defHasHtml = def.longDescription && def.longDescription.includes('<h3');
+        const itemHasHtml = item.longDescription && item.longDescription.includes('<h3');
+
+        const effectiveLongDesc = (defHasHtml || !itemHasHtml || (def.longDescription?.length || 0) >= (item.longDescription || '').length)
+          ? def.longDescription
+          : item.longDescription;
+
+        return {
+          ...def,
+          ...item,
+          title: item.title || def.title,
+          slug: item.slug || def.slug,
+          category: item.category || def.category,
+          categoryLabel: item.categoryLabel || def.categoryLabel,
+          price: item.price ?? def.price,
+          originalPrice: item.originalPrice ?? def.originalPrice,
+          badge: item.badge || def.badge,
+          image: def.image || item.image,
+          imageAlt: def.imageAlt || item.imageAlt,
+          description: def.description || item.description,
+          longDescription: effectiveLongDesc || def.longDescription || item.description || '',
+          downloadPdf: item.downloadPdf || def.downloadPdf,
+          features: (item.features && item.features.length > 0) ? item.features : def.features,
+          productType: item.productType || def.productType,
+          bundleProductIds: item.bundleProductIds || def.bundleProductIds,
+          bundleCustomItems: item.bundleCustomItems || def.bundleCustomItems
+        };
+      }
+      return item;
+    });
+
+    const mergedIds = new Set(merged.map(p => p.id));
+    const mergedSlugs = new Set(merged.map(p => p.slug));
+    const missingDefaults = DEFAULT_PRODUCTS.filter(dp => !mergedIds.has(dp.id) && !mergedSlugs.has(dp.slug));
+
+    return [...merged, ...missingDefaults];
   } catch (e) {
     console.error('Failed to parse gd_custom_products', e);
   }
