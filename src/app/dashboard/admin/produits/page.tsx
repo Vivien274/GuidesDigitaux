@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { Product } from '@/data/defaultProducts';
 import { getStoredProducts, deleteProduct } from '@/lib/productsStore';
+import { fetchProductsFromDb } from '@/lib/supabaseLms';
 import { 
   ShoppingBag, 
   Plus, 
@@ -28,7 +29,28 @@ export default function AdminProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   useEffect(() => {
-    setProducts(getStoredProducts());
+    const loadData = async () => {
+      const dbProds = await fetchProductsFromDb();
+      const storedProds = getStoredProducts();
+
+      const map = new Map<string, Product>();
+      storedProds.forEach(p => map.set(p.id, p));
+
+      if (Array.isArray(dbProds)) {
+        dbProds.forEach(p => {
+          const match = map.get(p.id) || map.get(p.slug);
+          map.set(p.id, {
+            ...(match || p),
+            ...p,
+            longDescription: p.longDescription || match?.longDescription || '',
+            description: p.description || match?.description || ''
+          });
+        });
+      }
+
+      setProducts(Array.from(map.values()));
+    };
+    loadData();
   }, []);
 
   const handleDelete = (id: string, title: string) => {

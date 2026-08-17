@@ -6,55 +6,49 @@ export function getStoredProducts(): Product[] {
   if (typeof window === 'undefined') return DEFAULT_PRODUCTS;
   try {
     const data = localStorage.getItem('gd_custom_products');
-    let list: Product[] = DEFAULT_PRODUCTS;
+    let list: Product[] = [];
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         list = parsed;
       }
     }
 
-    const defaultMap = new Map(DEFAULT_PRODUCTS.map(p => [p.id, p]));
+    const defaultIds = new Set(DEFAULT_PRODUCTS.map(p => p.id));
+    const defaultSlugs = new Set(DEFAULT_PRODUCTS.map(p => p.slug));
 
-    const merged = list.map(item => {
-      const def = defaultMap.get(item.id) || DEFAULT_PRODUCTS.find(p => p.slug === item.slug || p.title.toLowerCase().trim() === item.title.toLowerCase().trim());
-      if (def) {
-        const defHasHtml = def.longDescription && def.longDescription.includes('<h3');
-        const itemHasHtml = item.longDescription && item.longDescription.includes('<h3');
+    // Map each DEFAULT_PRODUCT with potential custom overrides from localStorage
+    const mergedDefaults: Product[] = DEFAULT_PRODUCTS.map(def => {
+      const stored = list.find(item => item.id === def.id || item.slug === def.slug || item.title.toLowerCase().trim() === def.title.toLowerCase().trim());
+      if (!stored) return def;
 
-        const effectiveLongDesc = (defHasHtml || !itemHasHtml || (def.longDescription?.length || 0) >= (item.longDescription || '').length)
-          ? def.longDescription
-          : item.longDescription;
+      const defHasHtml = Boolean(def.longDescription && (def.longDescription.includes('<h3') || def.longDescription.includes('<p>')));
+      const storedHasHtml = Boolean(stored.longDescription && (stored.longDescription.includes('<h3') || stored.longDescription.includes('<p>')));
 
-        return {
-          ...def,
-          ...item,
-          title: item.title || def.title,
-          slug: item.slug || def.slug,
-          category: item.category || def.category,
-          categoryLabel: item.categoryLabel || def.categoryLabel,
-          price: item.price ?? def.price,
-          originalPrice: item.originalPrice ?? def.originalPrice,
-          badge: item.badge || def.badge,
-          image: def.image || item.image,
-          imageAlt: def.imageAlt || item.imageAlt,
-          description: def.description || item.description,
-          longDescription: effectiveLongDesc || def.longDescription || item.description || '',
-          downloadPdf: item.downloadPdf || def.downloadPdf,
-          features: (item.features && item.features.length > 0) ? item.features : def.features,
-          productType: item.productType || def.productType,
-          bundleProductIds: item.bundleProductIds || def.bundleProductIds,
-          bundleCustomItems: item.bundleCustomItems || def.bundleCustomItems
-        };
-      }
-      return item;
+      // Always pick the rich HTML description from def unless stored has custom rich HTML that is longer
+      const effectiveLongDesc = (defHasHtml && (!storedHasHtml || def.longDescription!.length >= (stored.longDescription || '').length))
+        ? def.longDescription!
+        : (stored.longDescription || def.longDescription || stored.description || '');
+
+      return {
+        ...def,
+        ...stored,
+        title: stored.title || def.title,
+        slug: stored.slug || def.slug,
+        image: def.image || stored.image,
+        imageAlt: def.imageAlt || stored.imageAlt,
+        description: def.description || stored.description,
+        longDescription: effectiveLongDesc,
+        features: (def.features && def.features.length > 0) ? def.features : stored.features,
+        downloadPdf: stored.downloadPdf || def.downloadPdf
+      };
     });
 
-    const mergedIds = new Set(merged.map(p => p.id));
-    const mergedSlugs = new Set(merged.map(p => p.slug));
-    const missingDefaults = DEFAULT_PRODUCTS.filter(dp => !mergedIds.has(dp.id) && !mergedSlugs.has(dp.slug));
+    // Custom created products in localStorage that are not part of defaults
+    const customCreated = list.filter(item => !defaultIds.has(item.id) && !defaultSlugs.has(item.slug));
+    const fullList = [...mergedDefaults, ...customCreated];
 
-    return [...merged, ...missingDefaults];
+    return fullList;
   } catch (e) {
     console.error('Failed to parse gd_custom_products', e);
   }
