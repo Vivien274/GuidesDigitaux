@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import DigitalizationQuiz from '@/components/DigitalizationQuiz';
 import { 
   PhoneCall, 
   ArrowRight, 
@@ -387,6 +388,26 @@ export default function HomePage() {
 
           </div>
 
+        </div>
+      </section>
+
+      {/* 2.5. STRATEGIC NEUROMARKETING QUIZ SECTION */}
+      <section id="quiz" className="py-14 md:py-20 bg-gradient-to-b from-[#faf8f5] via-[#f7f3eb] to-[#faf8f5] border-y border-[#eee7da]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="text-center space-y-3 mb-6">
+            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-extrabold bg-[#e6f4f3] text-[#18757d] uppercase tracking-wider border border-[#18757d]/20 shadow-2xs">
+              <Sparkles className="w-4 h-4 text-[#F2542D]" />
+              DIAGNOSTIC DIGITAL EXPRESS (2 MIN)
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-[#332420] tracking-tight">
+              Tu hésites encore ? Découvre la formule <span className="text-[#18757d]">idéale pour toi !</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-[#5e4d46] font-semibold max-w-xl mx-auto">
+              Réponds à 6 questions simples et obtiens immédiatement ton profil personnalisé et ta recommandation sur-mesure.
+            </p>
+          </div>
+
+          <DigitalizationQuiz />
         </div>
       </section>
 

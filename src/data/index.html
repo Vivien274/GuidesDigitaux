@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon site web, c'est pour moi ? — Guides Digitaux</title>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --brown:        #562C2C;
+  --orange:       #F2542D;
+  --orange-light: #FDE8E3;
+  --beige:        #F5DFBB;
+  --beige-dark:   #E8CC97;
+  --teal:         #0E9594;
+  --teal-dark:    #127475;
+  --teal-light:   #D0ECEC;
+  --cream:        #FDF6EA;
+  --text:         #562C2C;
+  --muted:        #8A6A5A;
+  --white:        #FFFCF5;
+  --progress-h:   4px;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Poppins', sans-serif;
+  background: var(--beige);
+  color: var(--text);
+  overflow: hidden;
+  font-size: 15px;
+}
+
+#quiz-app { position: relative; height: 100vh; overflow: hidden; }
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 2rem;
+  background: var(--beige);
+  opacity: 0; pointer-events: none;
+  transition: opacity .45s ease, transform .45s ease;
+  transform: translateY(28px);
+}
+.slide.active { opacity: 1; pointer-events: all; transform: translateY(0); }
+.slide.exit   { opacity: 0; transform: translateY(-28px); transition: opacity .3s ease, transform .3s ease; }
+
+#progress-bar-wrap {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--progress-h); background: var(--beige-dark); z-index: 100;
+}
+#progress-bar { height: 100%; background: var(--orange); transition: width .5s ease; width: 0%; }
+
+#logo-bar {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 99; font-family: 'Antonio', sans-serif;
+  font-size: .85rem; font-weight: 700; color: var(--brown);
+  letter-spacing: .14em; text-transform: uppercase;
+}
+#step-label {
+  position: fixed; top: 18px; right: 24px; z-index: 99;
+  font-size: .73rem; color: var(--muted); font-weight: 500; letter-spacing: .06em;
+}
+
+.deco { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; }
+.deco-1 { width: 420px; height: 420px; background: var(--orange); opacity: .09; top: -130px; right: -90px; }
+.deco-2 { width: 300px; height: 300px; background: var(--teal);   opacity: .10; bottom: -70px; left: -70px; }
+
+/* INTRO */
+.intro-content { text-align: center; max-width: 560px; position: relative; z-index: 1; }
+.intro-tag {
+  display: inline-block; background: var(--teal); color: var(--white);
+  font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  padding: .38rem 1rem; border-radius: 20px; margin-bottom: 1.6rem;
+}
+.intro-content h1 {
+  font-family: 'Antonio', sans-serif; font-size: clamp(2.2rem, 5.5vw, 3.4rem);
+  font-weight: 700; line-height: 1.15; color: var(--brown); margin-bottom: 1rem;
+}
+.intro-content h1 em { color: var(--teal); }
+.intro-content p { font-size: 1rem; color: var(--muted); line-height: 1.7; margin-bottom: 2.2rem; }
+.intro-meta { font-size: .8rem; color: var(--muted); margin-top: 1rem; }
+.intro-meta span { color: var(--orange); font-weight: 600; }
+
+/* QUESTIONS */
+.q-wrap { max-width: 580px; width: 100%; position: relative; z-index: 1; }
+.q-number { font-size: .75rem; font-weight: 600; color: var(--teal); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .7rem; }
+.q-title {
+  font-family: 'Antonio', sans-serif; font-weight: 700;
+  font-size: clamp(1.5rem, 3.8vw, 2.1rem); line-height: 1.25; color: var(--brown); margin-bottom: 1.8rem;
+}
+.options { display: flex; flex-direction: column; gap: .7rem; }
+.option {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .95rem 1.2rem; background: var(--white);
+  border: 1.5px solid var(--beige-dark); border-radius: 10px;
+  cursor: pointer; transition: all .2s ease;
+  font-size: .95rem; color: var(--text); text-align: left; font-family: 'Poppins', sans-serif;
+}
+.option:hover { border-color: var(--orange); background: var(--orange-light); transform: translateX(5px); }
+.option.selected { border-color: var(--orange); background: var(--orange-light); color: var(--brown); font-weight: 500; }
+.option-key {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 5px;
+  background: var(--beige); color: var(--orange);
+  font-size: .74rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s; font-family: 'Antonio', sans-serif;
+}
+.option.selected .option-key { background: var(--orange); color: white; }
+
+.nav-hint { margin-top: 1.5rem; font-size: .78rem; color: var(--muted); text-align: center; }
+.nav-hint kbd {
+  display: inline-block; padding: .15rem .45rem;
+  border: 1px solid var(--beige-dark); border-radius: 4px; font-size: .73rem; background: var(--white);
+}
+
+/* EMAIL */
+.email-wrap { max-width: 500px; width: 100%; text-align: center; position: relative; z-index: 1; }
+.email-wrap h2 {
+  font-family: 'Antonio', sans-serif; font-weight: 700;
+  font-size: clamp(1.7rem, 4vw, 2.3rem); color: var(--brown); margin-bottom: .8rem; line-height: 1.2;
+}
+.email-wrap h2 em { color: var(--teal); font-style: italic; }
+.email-wrap > p { color: var(--muted); font-size: .95rem; line-height: 1.65; margin-bottom: 1.8rem; }
+.email-input-group { margin-bottom: 1rem; }
+.email-input-group input {
+  width: 100%; padding: 1rem 1.3rem;
+  font-size: .97rem; font-family: 'Poppins', sans-serif;
+  border: 2px solid var(--beige-dark); border-radius: 10px;
+  background: var(--white); color: var(--text); outline: none; transition: border-color .2s;
+}
+.email-input-group input:focus { border-color: var(--orange); }
+.email-input-group input::placeholder { color: #C0A890; }
+.legal { font-size: .72rem; color: var(--muted); margin-top: .8rem; line-height: 1.5; }
+
+/* CONFIRMATION */
+.confirm-wrap { max-width: 480px; width: 100%; text-align: center; position: relative; z-index: 1; }
+.confirm-icon { font-size: 3.5rem; margin-bottom: 1.4rem; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.confirm-wrap h2 {
+  font-family: 'Antonio', sans-serif; font-size: clamp(2rem, 5vw, 2.8rem);
+  font-weight: 700; color: var(--brown); line-height: 1.2; margin-bottom: 1rem;
+}
+.confirm-wrap h2 em { color: var(--teal); font-style: italic; }
+.confirm-wrap > p { font-size: 1rem; color: var(--muted); line-height: 1.7; margin-bottom: 1.8rem; }
+.confirm-tip {
+  display: flex; align-items: flex-start; gap: .8rem;
+  background: var(--white); border: 1.5px solid var(--beige-dark); border-radius: 10px;
+  padding: 1rem 1.2rem; margin-bottom: 2rem;
+  text-align: left; font-size: .88rem; color: var(--muted); line-height: 1.5;
+}
+.tip-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+/* BOUTONS */
+.btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .95rem 2rem; font-size: .95rem; font-family: 'Poppins', sans-serif;
+  font-weight: 600; border-radius: 8px; cursor: pointer; transition: all .2s ease; border: none; text-decoration: none;
+}
+.btn-primary { background: var(--orange); color: white; box-shadow: 0 4px 20px rgba(242,84,45,.3); }
+.btn-primary:hover { background: #D4451E; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(242,84,45,.4); }
+.btn-ghost { background: transparent; color: var(--teal); border: 2px solid var(--teal); }
+.btn-ghost:hover { background: var(--teal-light); }
+.btn-arrow::after { content: ' \2192'; }
+
+#back-btn {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: .8rem; font-family: 'Poppins', sans-serif;
+  display: flex; align-items: center; gap: .4rem; transition: color .2s; z-index: 50;
+}
+#back-btn:hover { color: var(--orange); }
+#back-btn.hidden { display: none; }
+
+#toast {
+  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(60px);
+  background: var(--brown); color: white; padding: .8rem 1.5rem; border-radius: 8px;
+  font-size: .85rem; font-weight: 500; transition: transform .4s ease, opacity .4s ease;
+  opacity: 0; z-index: 200; white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ADMIN */
+#admin-panel { display: none; height: 100vh; overflow-y: auto; background: var(--cream); font-family: 'Poppins', sans-serif; color: var(--text); }
+.admin-header { background: var(--brown); color: white; padding: 1.2rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+.admin-header h1 { font-family: 'Antonio', sans-serif; font-size: 1.4rem; font-weight: 700; letter-spacing: .04em; }
+.admin-header .badge { background: rgba(255,255,255,.2); padding: .3rem .8rem; border-radius: 20px; font-size: .8rem; font-weight: 500; }
+.admin-body { padding: 2rem; max-width: 1100px; margin: 0 auto; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-card { background: var(--white); border-radius: 14px; padding: 1.3rem 1.5rem; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+.stat-card .label { font-size: .73rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+.stat-card .value { font-size: 2.2rem; font-weight: 700; color: var(--orange); font-family: 'Antonio', sans-serif; margin: .3rem 0; }
+.stat-card .sub { font-size: .78rem; color: var(--muted); }
+.section-title { font-family: 'Antonio', sans-serif; font-weight: 700; font-size: 1.25rem; margin-bottom: 1rem; color: var(--brown); display: flex; align-items: center; gap: .6rem; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--beige-dark); }
+.profiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+@media(max-width:720px) { .profiles-grid { grid-template-columns: 1fr; } }
+.profile-card { background: var(--white); border-radius: 14px; padding: 1.3rem; box-shadow: 0 2px 12px rgba(0,0,0,.06); border-top: 4px solid var(--orange); }
+.profile-card.b { border-top-color: var(--teal); }
+.profile-card.c { border-top-color: var(--brown); }
+.profile-card h3 { font-size: .92rem; font-weight: 600; margin-bottom: .3rem; }
+.profile-card .count { font-size: 2rem; font-weight: 700; color: var(--orange); font-family: 'Antonio', sans-serif; }
+.profile-card.b .count { color: var(--teal); }
+.profile-card.c .count { color: var(--brown); }
+.profile-card .pct { font-size: .82rem; color: var(--muted); }
+.pct-bar { height: 6px; background: var(--beige); border-radius: 3px; margin-top: .8rem; overflow: hidden; }
+.pct-bar-fill { height: 100%; background: var(--orange); border-radius: 3px; transition: width .6s ease; }
+.profile-card.b .pct-bar-fill { background: var(--teal); }
+.profile-card.c .pct-bar-fill { background: var(--brown); }
+.table-wrap { background: var(--white); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 2rem; }
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--beige); }
+th { padding: .8rem 1rem; font-size: .73rem; font-weight: 700; text-align: left; color: var(--brown); text-transform: uppercase; letter-spacing: .1em; }
+td { padding: .85rem 1rem; font-size: .87rem; border-bottom: 1px solid var(--beige); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--cream); }
+.profile-pill { display: inline-block; padding: .25rem .7rem; border-radius: 20px; font-size: .74rem; font-weight: 600; }
+.pill-a { background: var(--orange-light); color: var(--orange); }
+.pill-b { background: var(--teal-light); color: var(--teal-dark); }
+.pill-c { background: #F0E4E4; color: var(--brown); }
+.export-btn { display: inline-flex; align-items: center; gap: .5rem; padding: .6rem 1.2rem; background: var(--orange); color: white; border: none; border-radius: 8px; font-size: .85rem; font-family: 'Poppins', sans-serif; font-weight: 600; cursor: pointer; transition: background .2s; }
+.export-btn:hover { background: #D4451E; }
+.empty-state { text-align: center; padding: 3rem; color: var(--muted); font-size: .95rem; }
+.empty-state .emoji { font-size: 2.5rem; display: block; margin-bottom: .8rem; }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div id="quiz-app">
+  <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+  <div id="logo-bar">Guides Digitaux</div>
+  <div id="step-label"></div>
+  <div class="deco deco-1"></div>
+  <div class="deco deco-2"></div>
+
+  <!-- INTRO -->
+  <div class="slide active" id="slide-intro">
+    <div class="intro-content">
+      <span class="intro-tag">&#10024; Quiz gratuit</span>
+      <h1>Mon site web,<br>c&rsquo;est pour moi&nbsp;?</h1>
+      <p>D&eacute;couvre en 2 minutes si tu es pr&ecirc;t(e) &agrave; te lancer &mdash; et ce dont tu as vraiment besoin pour avancer sereinement.</p>
+      <button class="btn btn-primary btn-arrow" onclick="startQuiz()">Je fais le quiz</button>
+      <p class="intro-meta"><span>6 questions</span> &middot; r&eacute;sultat personnalis&eacute; &middot; 100&nbsp;% gratuit</p>
+    </div>
+  </div>
+
+  <!-- Q1 -->
+  <div class="slide" id="slide-1">
+    <div class="q-wrap">
+      <div class="q-number">Question 1 / 6</div>
+      <h2 class="q-title">Aujourd&rsquo;hui, comment tes clients te trouvent&nbsp;?</h2>
+      <div class="options">
+        <div class="option" data-q="1" data-v="A" onclick="selectOpt(this)"><span class="option-key">A</span>Principalement le bouche-&agrave;-oreille</div>
+        <div class="option" data-q="1" data-v="B" onclick="selectOpt(this)"><span class="option-key">B</span>J&rsquo;ai une page Facebook ou Instagram</div>
+        <div class="option" data-q="1" data-v="C" onclick="selectOpt(this)"><span class="option-key">C</span>J&rsquo;ai une fiche Google mais pas de site</div>
+        <div class="option" data-q="1" data-v="D" onclick="selectOpt(this)"><span class="option-key">D</span>J&rsquo;ai d&eacute;j&agrave; un site mais il est vieillot</div>
+      </div>
+      <div class="nav-hint">Appuie sur <kbd>Entr&eacute;e</kbd> pour continuer</div>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="slide" id="slide-2">
+    <div class="q-wrap">
+      <div class="q-number">Question 2 / 6</div>
+      <h2 class="q-title">Qu&rsquo;est-ce qui te manque le plus en ce moment&nbsp;?</h2>
+      <div class="options">
+        <div class="option" data-q="2" data-v="A" onclick="selectOpt(this)"><span class="option-key">A</span>Des clients qui me contactent spontan&eacute;ment</div>
+        <div class="option" data-q="2" data-v="B" onclick="selectOpt(this)"><span class="option-key">B</span>Une image pro qui inspire confiance</div>
+        <div class="option" data-q="2" data-v="C" onclick="selectOpt(this)"><span class="option-key">C</span>&Ecirc;tre trouv&eacute;(e) sur Google</div>
+        <div class="option" data-q="2" data-v="D" onclick="selectOpt(this)"><span class="option-key">D</span>Un endroit pour pr&eacute;senter mes tarifs et services</div>
+      </div>
+      <div class="nav-hint">Appuie sur <kbd>Entr&eacute;e</kbd> pour continuer</div>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="slide" id="slide-3">
+    <div class="q-wrap">
+      <div class="q-number">Question 3 / 6</div>
+      <h2 class="q-title">Face &agrave; la technologie, tu es plut&ocirc;t&hellip;</h2>
+      <div class="options">
+        <div class="option" data-q="3" data-v="A" onclick="selectOpt(this)"><span class="option-key">A</span>J&rsquo;&eacute;vite, &ccedil;a me stresse</div>
+        <div class="option" data-q="3" data-v="B" onclick="selectOpt(this)"><span class="option-key">B</span>Je me d&eacute;brouille mais sans plus</div>
+        <div class="option" data-q="3" data-v="C" onclick="selectOpt(this)"><span class="option-key">C</span>Je suis curieux/se et j&rsquo;apprends vite</div>
+        <div class="option" data-q="3" data-v="D" onclick="selectOpt(this)"><span class="option-key">D</span>&Agrave; l&rsquo;aise, j&rsquo;aime bidouiller</div>
+      </div>
+      <div class="nav-hint">Appuie sur <kbd>Entr&eacute;e</kbd> pour continuer</div>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="slide" id="slide-4">
+    <div class="q-wrap">
+      <div class="q-number">Question 4 / 6</div>
+      <h2 class="q-title">Tu peux consacrer combien de temps par semaine &agrave; cr&eacute;er ton site&nbsp;?</h2>
+      <div class="options">
+        <div class="option" data-q="4" data-v="A" onclick="selectOpt(this)"><span class="option-key">A</span>Moins d&rsquo;1 heure</div>
+        <div class="option" data-q="4" data-v="B" onclick="selectOpt(this)"><span class="option-key">B</span>1 &agrave; 3 heures</div>
+        <div class="option" data-q="4" data-v="C" onclick="selectOpt(this)"><span class="option-key">C</span>3 &agrave; 5 heures</div>
+        <div class="option" data-q="4" data-v="D" onclick="selectOpt(this)"><span class="option-key">D</span>Plus de 5 heures</div>
+      </div>
+      <div class="nav-hint">Appuie sur <kbd>Entr&eacute;e</kbd> pour continuer</div>
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="slide" id="slide-5">
+    <div class="q-wrap">
+      <div class="q-number">Question 5 / 6</div>
+      <h2 class="q-title">Ce qui t&rsquo;a emp&ecirc;ch&eacute;(e) de cr&eacute;er ton site jusqu&rsquo;ici&nbsp;?</h2>
+      <div class="options">
+        <div class="option" data-q="5" data-v="A" onclick="selectOpt(this)"><span class="option-key">A</span>Je ne sais pas par o&ugrave; commencer</div>
+        <div class="option" data-q="5" data-v="B" onclick="selectOpt(this)"><span class="option-key">B</span>J&rsquo;ai peur de faire des erreurs</div>
+        <div class="option" data-q="5" data-v="C" onclick="selectOpt(this)"><span class="option-key">C</span>Je pensais que c&rsquo;&eacute;tait trop cher</div>
+        <div class="option" data-q="5" data-v="D" onclick="selectOpt(this)"><span class="option-key">D</span>Je manque de temps</div>
+      </div>
+      <div class="nav-hint">Appuie sur <kbd>Entr&eacute;e</kbd> pour continuer</div>
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="slide" id="slide-6">
+    <div class="q-wrap">
+      <div class="q-number">Question 6 / 6</div>
+      <h2 class="q-title">Dans 3 mois, ton site id&eacute;al ressemble &agrave; quoi&nbsp;?</h2>
+      <div class="options">
+        <div class="option" data-q="6" data-v="A" onclick="selectOpt(this)"><span class="option-key">A</span>Un site simple qui pr&eacute;sente mon activit&eacute;</div>
+        <div class="option" data-q="6" data-v="B" onclick="selectOpt(this)"><span class="option-key">B</span>Un site avec mes tarifs et un formulaire de contact</div>
+        <div class="option" data-q="6" data-v="C" onclick="selectOpt(this)"><span class="option-key">C</span>Un site pro avec blog et r&eacute;f&eacute;rencement Google</div>
+        <div class="option" data-q="6" data-v="D" onclick="selectOpt(this)"><span class="option-key">D</span>Une vraie boutique en ligne</div>
+      </div>
+      <div class="nav-hint">Appuie sur <kbd>Entr&eacute;e</kbd> pour continuer</div>
+    </div>
+  </div>
+
+  <!-- EMAIL -->
+  <div class="slide" id="slide-email">
+    <div class="email-wrap">
+      <span class="intro-tag">&#127919; Tu y es presque !</span>
+      <h2>O&ugrave; envoyer<br>ton <em>r&eacute;sultat&nbsp;?</em></h2>
+      <p>Laisse ton adresse email &mdash; tu recevras ton profil personnalis&eacute; directement dans ta bo&icirc;te mail.</p>
+      <div class="email-input-group">
+        <input type="email" id="email-field" placeholder="ton@email.com" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="submitEmail()">
+        Recevoir mon r&eacute;sultat &#8594;
+      </button>
+      <p class="legal">&#128274; Donn&eacute;es confidentielles. D&eacute;sinscription possible &agrave; tout moment.<br>En continuant, tu rejoins la newsletter de Guides Digitaux.</p>
+    </div>
+  </div>
+
+  <!-- CONFIRMATION A -->
+  <div class="slide" id="slide-result-A">
+    <div class="confirm-wrap">
+      <div class="confirm-icon">&#128140;</div>
+      <h2>Ton r&eacute;sultat<br>est <em>en route&nbsp;!</em></h2>
+      <p>V&eacute;rifie ta bo&icirc;te mail &mdash; tu vas recevoir ton profil personnalis&eacute; ainsi que nos conseils adapt&eacute;s &agrave; ta situation.</p>
+      <div class="confirm-tip">
+        <span class="tip-icon">&#128161;</span>
+        Pense &agrave; v&eacute;rifier tes spams si tu ne re&ccedil;ois rien d&rsquo;ici 2 minutes.
+      </div>
+      <a href="https://guides-digitaux.com" class="btn btn-ghost" target="_blank">Retour sur Guides Digitaux</a>
+    </div>
+  </div>
+
+  <!-- CONFIRMATION B -->
+  <div class="slide" id="slide-result-B">
+    <div class="confirm-wrap">
+      <div class="confirm-icon">&#128140;</div>
+      <h2>Ton r&eacute;sultat<br>est <em>en route&nbsp;!</em></h2>
+      <p>V&eacute;rifie ta bo&icirc;te mail &mdash; tu vas recevoir ton profil personnalis&eacute; ainsi que nos conseils adapt&eacute;s &agrave; ta situation.</p>
+      <div class="confirm-tip">
+        <span class="tip-icon">&#128161;</span>
+        Pense &agrave; v&eacute;rifier tes spams si tu ne re&ccedil;ois rien d&rsquo;ici 2 minutes.
+      </div>
+      <a href="https://guides-digitaux.com" class="btn btn-ghost" target="_blank">Retour sur Guides Digitaux</a>
+    </div>
+  </div>
+
+  <!-- CONFIRMATION C -->
+  <div class="slide" id="slide-result-C">
+    <div class="confirm-wrap">
+      <div class="confirm-icon">&#128140;</div>
+      <h2>Ton r&eacute;sultat<br>est <em>en route&nbsp;!</em></h2>
+      <p>V&eacute;rifie ta bo&icirc;te mail &mdash; tu vas recevoir ton profil personnalis&eacute; ainsi que nos conseils adapt&eacute;s &agrave; ta situation.</p>
+      <div class="confirm-tip">
+        <span class="tip-icon">&#128161;</span>
+        Pense &agrave; v&eacute;rifier tes spams si tu ne re&ccedil;ois rien d&rsquo;ici 2 minutes.
+      </div>
+      <a href="https://guides-digitaux.com" class="btn btn-ghost" target="_blank">Retour sur Guides Digitaux</a>
+    </div>
+  </div>
+
+  <button id="back-btn" class="hidden" onclick="goBack()">&larr; Question pr&eacute;c&eacute;dente</button>
+</div>
+
+<!-- ADMIN  /?admin=guidesdigitaux2025 -->
+<div id="admin-panel">
+  <div class="admin-header">
+    <h1>&#128202; Tableau de bord &mdash; Quiz</h1>
+    <div style="display:flex;gap:1rem;align-items:center">
+      <span class="badge" id="admin-total-badge">0 participation</span>
+      <button class="export-btn" onclick="exportCSV()">&#8595; Exporter CSV</button>
+    </div>
+  </div>
+  <div class="admin-body">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Total participations</div><div class="value" id="stat-total">0</div><div class="sub">depuis le lancement</div></div>
+      <div class="stat-card"><div class="label">Emails collect&eacute;s</div><div class="value" id="stat-emails">0</div><div class="sub">inscrits newsletter</div></div>
+      <div class="stat-card"><div class="label">Taux de compl&eacute;tion</div><div class="value" id="stat-rate">&mdash;</div><div class="sub">email / d&eacute;marrage quiz</div></div>
+    </div>
+    <div class="section-title">R&eacute;partition des profils</div>
+    <div class="profiles-grid">
+      <div class="profile-card a"><h3>&#128640; Profil A &mdash; Pr&ecirc;t &agrave; d&eacute;coller</h3><div class="count" id="count-a">0</div><div class="pct" id="pct-a">&mdash;</div><div class="pct-bar"><div class="pct-bar-fill" id="bar-a" style="width:0%"></div></div></div>
+      <div class="profile-card b"><h3>&#128170; Profil B &mdash; Motiv&eacute; qui h&eacute;site</h3><div class="count" id="count-b">0</div><div class="pct" id="pct-b">&mdash;</div><div class="pct-bar"><div class="pct-bar-fill" id="bar-b" style="width:0%"></div></div></div>
+      <div class="profile-card c"><h3>&#127807; Profil C &mdash; Avance doucement</h3><div class="count" id="count-c">0</div><div class="pct" id="pct-c">&mdash;</div><div class="pct-bar"><div class="pct-bar-fill" id="bar-c" style="width:0%"></div></div></div>
+    </div>
+    <div class="section-title" style="margin-top:1rem">Participants</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Date</th><th>Email</th><th>Profil</th><th>Q3 (tech)</th><th>Q4 (temps)</th></tr></thead>
+        <tbody id="participants-tbody">
+          <tr><td colspan="6"><div class="empty-state"><span class="emoji">&#128202;</span>Aucune participation pour l&rsquo;instant.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:.72rem;color:var(--muted);text-align:center">Donn&eacute;es stock&eacute;es localement (localStorage) dans ce navigateur.</p>
+  </div>
+</div>
+
+<script>
+const ADMIN_KEY   = 'guidesdigitaux2025';
+const STORAGE_KEY = 'gd_quiz_participants';
+let currentSlide  = 'intro';
+let answers       = {};
+let slideHistory  = ['intro'];
+
+function init() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.get('admin') === ADMIN_KEY) {
+    document.getElementById('quiz-app').style.display   = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    renderAdmin(); return;
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') handleEnter(); });
+}
+
+function startQuiz() { goToSlide('1'); }
+
+function goToSlide(id) {
+  const prev = document.getElementById('slide-' + currentSlide);
+  if (prev) { prev.classList.remove('active'); prev.classList.add('exit'); setTimeout(() => prev.classList.remove('exit'), 350); }
+  currentSlide = id; slideHistory.push(id);
+  const next = document.getElementById('slide-' + id);
+  if (next) next.classList.add('active');
+  updateProgress(); updateBack();
+}
+
+function goBack() {
+  slideHistory.pop();
+  const prev = slideHistory[slideHistory.length - 1] || 'intro';
+  document.getElementById('slide-' + currentSlide).classList.remove('active');
+  currentSlide = prev;
+  document.getElementById('slide-' + prev).classList.add('active');
+  updateProgress(); updateBack();
+}
+
+function updateProgress() {
+  const steps = ['1','2','3','4','5','6','email'];
+  const idx = steps.indexOf(currentSlide);
+  document.getElementById('progress-bar').style.width = (idx === -1 ? 0 : (idx + 1) / steps.length * 100) + '%';
+  const lbl = document.getElementById('step-label');
+  if (/^[1-6]$/.test(currentSlide)) lbl.textContent = currentSlide + ' / 6';
+  else if (currentSlide === 'email') lbl.textContent = 'Derni\u00e8re \u00e9tape';
+  else lbl.textContent = '';
+}
+
+function updateBack() {
+  document.getElementById('back-btn').classList.toggle('hidden',
+    ['intro','1','result-A','result-B','result-C'].includes(currentSlide));
+}
+
+function handleEnter() {
+  if (currentSlide === 'intro') { startQuiz(); return; }
+  if (/^[1-6]$/.test(currentSlide)) { answers[currentSlide] ? advanceFromQuestion(currentSlide) : showToast('S\u00e9lectionne une r\u00e9ponse \u2728'); return; }
+  if (currentSlide === 'email') submitEmail();
+}
+
+function selectOpt(el) {
+  const q = el.dataset.q;
+  document.querySelectorAll('[data-q="' + q + '"]').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  answers[q] = el.dataset.v;
+  setTimeout(() => advanceFromQuestion(q), 400);
+}
+
+function advanceFromQuestion(q) { goToSlide(parseInt(q) < 6 ? String(parseInt(q) + 1) : 'email'); }
+
+function computeProfile() {
+  const q3 = answers['3'], q4 = answers['4'];
+  if ((q3 === 'C' || q3 === 'D') && (q4 === 'C' || q4 === 'D')) return 'A';
+  if (q3 === 'A' && q4 === 'A') return 'C';
+  return 'B';
+}
+
+function submitEmail() {
+  const email = document.getElementById('email-field').value.trim();
+  if (!email || !email.includes('@')) { showToast('Entre une adresse email valide \uD83D\uDCEC'); return; }
+  const profile = computeProfile();
+  saveParticipant(email, profile);
+  sendToMailchimp(email, profile);
+  goToSlide('result-' + profile);
+}
+
+function saveParticipant(email, profile) {
+  const list = getParticipants();
+  list.push({ id: Date.now(), date: new Date().toLocaleDateString('fr-FR'), email, profile, q3: answers['3']||'-', q4: answers['4']||'-', answers: Object.assign({}, answers) });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+function getParticipants() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
+
+function sendToMailchimp(email, profile) {
+  fetch('./mailchimp-subscribe.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, profile })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      console.log('[Quiz email]', data.message || 'Email et inscription OK');
+      return;
+    }
+    console.warn('[Quiz email] Erreur:', data.error || 'Erreur inconnue');
+    if (data.message) console.warn('[Quiz email] Détail:', data.message);
+  })
+  .catch(err => console.warn('[Quiz email] Erreur:', err));
+}
+
+function renderAdmin() {
+  const list = getParticipants(), total = list.length;
+  const aC = list.filter(p => p.profile === 'A').length;
+  const bC = list.filter(p => p.profile === 'B').length;
+  const cC = list.filter(p => p.profile === 'C').length;
+  const pct = n => total > 0 ? Math.round(n / total * 100) : 0;
+  document.getElementById('admin-total-badge').textContent = total + ' participation' + (total !== 1 ? 's' : '');
+  document.getElementById('stat-total').textContent  = total;
+  document.getElementById('stat-emails').textContent = list.filter(p => p.email).length;
+  document.getElementById('stat-rate').textContent   = total > 0 ? Math.round(list.filter(p => p.email).length / total * 100) + '%' : '\u2014';
+  ['a','b','c'].forEach((l, i) => {
+    const n = [aC, bC, cC][i];
+    document.getElementById('count-' + l).textContent = n;
+    document.getElementById('pct-' + l).textContent   = pct(n) + '% des participants';
+    document.getElementById('bar-' + l).style.width   = pct(n) + '%';
+  });
+  const tbody = document.getElementById('participants-tbody');
+  if (!total) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><span class="emoji">&#128202;</span>Aucune participation pour l\'instant.</div></td></tr>'; return; }
+  const q3L = { A:'\u00c7a me stresse', B:'Je me d\u00e9brouille', C:'Curieux/se', D:'\u00c0 l\'aise' };
+  const q4L = { A:'< 1h', B:'1-3h', C:'3-5h', D:'> 5h' };
+  const pC  = { A:'pill-a', B:'pill-b', C:'pill-c' };
+  const pL  = { A:'&#128640; Profil A', B:'&#128170; Profil B', C:'&#127807; Profil C' };
+  tbody.innerHTML = [...list].reverse().map((p, i) =>
+    '<tr><td style="color:var(--muted);font-weight:600">' + (list.length-i) + '</td>'
+    + '<td>' + p.date + '</td>'
+    + '<td><a href="mailto:' + p.email + '" style="color:var(--teal);text-decoration:none">' + p.email + '</a></td>'
+    + '<td><span class="profile-pill ' + pC[p.profile] + '">' + pL[p.profile] + '</span></td>'
+    + '<td>' + (q3L[p.q3] || p.q3) + '</td>'
+    + '<td>' + (q4L[p.q4] || p.q4) + '</td></tr>'
+  ).join('');
+}
+
+function exportCSV() {
+  const list = getParticipants();
+  if (!list.length) { showToast('Aucune donn\u00e9e \u00e0 exporter'); return; }
+  const h = ['N\u00b0','Date','Email','Profil','Q1','Q2','Q3','Q4','Q5','Q6'];
+  const r = list.map((p, i) => [i+1, p.date, p.email, p.profile, p.answers['1']||'', p.answers['2']||'', p.answers['3']||'', p.answers['4']||'', p.answers['5']||'', p.answers['6']||'']);
+  const csv = [h, ...r].map(row => row.map(v => '"' + v + '"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = 'quiz-guides-digitaux-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+init();
+</script>
+</body>
+</html>

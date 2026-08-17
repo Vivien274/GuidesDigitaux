@@ -20,8 +20,12 @@ import {
   Upload,
   Calendar,
   Eye,
-  Bot
+  Bot,
+  HardDrive
 } from 'lucide-react';
+import GoogleDriveModal from '@/components/GoogleDriveModal';
+import DragAndDropUploader from '@/components/DragAndDropUploader';
+import { convertToGoogleDriveImageUrl } from '@/lib/googleDriveHelper';
 
 const PREDEFINED_CATEGORIES = [
   'Vendre en ligne',
@@ -50,6 +54,7 @@ function BlogEditorContent() {
   const [status, setStatus] = useState<'published' | 'draft' | 'scheduled'>('published');
   const [scheduledAt, setScheduledAt] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const [driveModalOpen, setDriveModalOpen] = useState(false);
 
   // Gemini AI modal state
   const [isGeminiOpen, setIsGeminiOpen] = useState(false);
@@ -349,7 +354,7 @@ function BlogEditorContent() {
                 />
               </div>
 
-              {/* COVER IMAGE WITH FILE UPLOAD */}
+              {/* COVER IMAGE WITH FILE UPLOAD AND DRAG AND DROP */}
               <div className="space-y-3 md:col-span-2">
                 <label className="text-xs font-extrabold text-[#5e4d46] uppercase">Image de Couverture :</label>
                 
@@ -359,10 +364,20 @@ function BlogEditorContent() {
                   </div>
                 )}
 
+                <DragAndDropUploader
+                  type="image"
+                  accept="image/*"
+                  label="Glisse-dépose l'image de l'article ici"
+                  sublabel="Glisse une image PNG, WebP ou JPG"
+                  onUploadSuccess={(urls) => {
+                    if (urls[0]) setImage(urls[0]);
+                  }}
+                />
+
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                   <label className="px-4 py-3 bg-[#18757d] hover:bg-[#12595f] text-white text-xs font-extrabold rounded-xl transition-colors cursor-pointer flex items-center gap-2">
                     <Upload className="w-4 h-4" />
-                    <span>Téléverser une Image depuis mon Ordinateur</span>
+                    <span>Téléverser depuis mon Ordinateur</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -371,13 +386,22 @@ function BlogEditorContent() {
                     />
                   </label>
 
-                  <span className="text-xs text-slate-400 font-bold">ou par URL :</span>
+                  <button
+                    type="button"
+                    onClick={() => setDriveModalOpen(true)}
+                    className="px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <HardDrive className="w-4 h-4" />
+                    <span>📁 Importer via Google Drive</span>
+                  </button>
+
+                  <span className="text-xs text-slate-400 font-bold">ou URL :</span>
 
                   <input
                     type="text"
                     value={image}
-                    onChange={(e) => setImage(e.target.value)}
-                    placeholder="https://... ou /images/..."
+                    onChange={(e) => setImage(convertToGoogleDriveImageUrl(e.target.value))}
+                    placeholder="https://... ou lien Google Drive..."
                     className="flex-1 p-3 bg-[#faf8f5] border border-[#eee7da] rounded-xl text-xs font-mono text-[#332420] focus:outline-none"
                   />
                 </div>
@@ -455,6 +479,15 @@ function BlogEditorContent() {
           </div>
         </div>
       )}
+
+      {/* GOOGLE DRIVE ASSISTANT MODAL */}
+      <GoogleDriveModal
+        isOpen={driveModalOpen}
+        onClose={() => setDriveModalOpen(false)}
+        onSelectUrl={(convertedUrl) => setImage(convertedUrl)}
+        type="image"
+        title="Importer l'Image de Couverture depuis Google Drive"
+      />
 
       <Footer />
     </div>

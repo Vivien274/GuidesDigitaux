@@ -153,6 +153,20 @@ export default function AdminProductsPage() {
                               🏷️ {product.badge}
                             </span>
                           )}
+                          {product.downloadPdf ? (
+                            <a 
+                              href={product.downloadPdf} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full hover:underline"
+                            >
+                              <span>📄 PDF Associé ✓</span>
+                            </a>
+                          ) : (product.category === 'ebook' || product.category === 'checklist') ? (
+                            <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                              ⚠️ Pas de PDF téléversé
+                            </span>
+                          ) : null}
                         </div>
                       </td>
 

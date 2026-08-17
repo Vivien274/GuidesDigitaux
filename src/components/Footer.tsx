@@ -175,9 +175,9 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/blog/choisir-reseau-social-pme" className="text-teal-100 hover:text-white transition-colors flex items-center gap-1.5 group">
+                <Link href="/quiz" className="text-teal-100 hover:text-white transition-colors flex items-center gap-1.5 group">
                   <ArrowRight className="w-3.5 h-3.5 text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <span>Guide Réseaux pour PME</span>
+                  <span>🎯 Quiz : Mon site web c'est pour moi ?</span>
                 </Link>
               </li>
               <li>

@@ -45,6 +45,9 @@ interface Product {
   longDescription?: string;
   features: string[];
   bookingUrl?: string;
+  productType?: 'simple' | 'bundle';
+  bundleProductIds?: string[];
+  bundleCustomItems?: { title: string; pdfUrl?: string }[];
 }
 
 export default function ProductDetailPage() {
@@ -470,6 +473,79 @@ export default function ProductDetailPage() {
               ))}
             </div>
           </div>
+
+          {/* BAS - BLOC 2.B : SI PRODUIT EST UN BUNDLE / PACK COMBO */}
+          {(product.productType === 'bundle' || (product.bundleProductIds && product.bundleProductIds.length > 0)) && (
+            <div className="bg-gradient-to-br from-amber-50 to-[#fdf8f0] rounded-3xl p-8 sm:p-12 border-2 border-amber-200 shadow-sm space-y-6">
+              <div className="border-b border-amber-200 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="inline-block px-3 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200 text-amber-900 uppercase tracking-wider mb-2">
+                    Pack Multi-Ressources
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-[#332420]">
+                    📦 Détail du contenu inclus dans ce Pack Combo
+                  </h2>
+                </div>
+                {product.bundleProductIds && product.bundleProductIds.length > 0 && (
+                  <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-4 py-2 rounded-xl">
+                    Valeur cumulée : {
+                      allProducts
+                        .filter(p => product.bundleProductIds?.includes(p.id))
+                        .reduce((sum, p) => sum + p.price, 0)
+                    } € ➔ Inclus pour {product.price} € !
+                  </span>
+                )}
+              </div>
+
+              {/* GRID OF BUNDLED CATALOG PRODUCTS */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {allProducts
+                  .filter(p => product.bundleProductIds?.includes(p.id))
+                  .map((bundledProd) => (
+                    <div key={bundledProd.id} className="bg-white p-5 rounded-2xl border border-amber-200 shadow-2xs flex items-center gap-4 hover:border-[#18757d] transition-colors">
+                      <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                        <Image src={bundledProd.image} alt={bundledProd.title} fill className="object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-extrabold text-[#18757d] bg-[#e6f4f3] px-2 py-0.5 rounded-full uppercase">
+                            {bundledProd.categoryLabel || bundledProd.category}
+                          </span>
+                          <span className="text-xs text-slate-400 font-bold line-through">
+                            {bundledProd.price} €
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-extrabold text-[#332420] line-clamp-1">{bundledProd.title}</h4>
+                        <p className="text-[11px] text-[#5e4d46] line-clamp-1 mt-0.5">{bundledProd.description}</p>
+                      </div>
+                      <Link
+                        href={`/produit/${bundledProd.slug || bundledProd.id}`}
+                        target="_blank"
+                        className="p-2 text-slate-400 hover:text-[#18757d] rounded-lg hover:bg-slate-100 transition-colors"
+                        title="Voir la fiche individuelle ↗"
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  ))}
+
+                {/* CUSTOM BUNDLE ITEMS */}
+                {product.bundleCustomItems?.map((customItem: { title: string; pdfUrl?: string }, cIdx: number) => (
+                  <div key={cIdx} className="bg-white p-5 rounded-2xl border border-amber-200 shadow-2xs flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 font-extrabold flex items-center justify-center shrink-0 text-sm">
+                      🎁
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full uppercase mb-1 inline-block">
+                        Bonus Exclusif Pack
+                      </span>
+                      <h4 className="text-xs font-extrabold text-[#332420]">{customItem.title}</h4>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* BAS - BLOC 3 : Produits Liés */}
           <div className="pt-8">

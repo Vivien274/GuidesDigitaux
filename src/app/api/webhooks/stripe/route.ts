@@ -4,6 +4,8 @@ import { stripe } from '@/lib/stripe/client';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { subscribeOrUpdateMailchimpMember } from '@/lib/mailchimp';
 import { sendServerPurchaseEvent } from '@/lib/metaCapi';
+import { processOrderEmails } from '@/lib/orderEmailService';
+import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -117,9 +119,12 @@ export async function POST(request: Request) {
         : new Date().toISOString();
 
       // 5. Attribution des droits d'accès dans `user_access` et `enrollments`
-      const productsToGrant = productId.includes('bundle') 
-        ? [productId, 'formation-wordpress', 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce']
-        : [productId];
+      const targetProduct = DEFAULT_PRODUCTS.find(p => p.id === productId || p.slug === productId);
+      const productsToGrant = targetProduct?.bundleProductIds && targetProduct.bundleProductIds.length > 0
+        ? Array.from(new Set([productId, ...targetProduct.bundleProductIds]))
+        : (productId.includes('bundle') 
+            ? [productId, 'formation-wordpress', 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce']
+            : [productId]);
 
       for (const pId of productsToGrant) {
         try {
@@ -161,6 +166,22 @@ export async function POST(request: Request) {
           });
         } catch (capiErr) {
           console.error('[Stripe Webhook] Erreur Meta CAPI non-bloquante:', capiErr);
+        }
+
+        // 8. Envoi des emails (Notification Admin contact@guides-digitaux.com + Confirmation client avec liens PDF/formation/visio)
+        try {
+          const itemTitle = (session as unknown as { description?: string }).description || productId;
+          await processOrderEmails({
+            orderId: order?.id || session.id,
+            customerEmail: customerEmail,
+            customerName: session.customer_details?.name,
+            productTitle: itemTitle,
+            productId: productId,
+            amount: amountEur,
+            currency: session.currency || 'EUR'
+          });
+        } catch (emailErr) {
+          console.error('[Stripe Webhook] Erreur envoi email non-bloquante:', emailErr);
         }
       } catch (err: unknown) {
       console.error('Erreur traitement Webhook:', err);
