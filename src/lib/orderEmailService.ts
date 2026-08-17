@@ -311,22 +311,47 @@ async function sendSingleEmail(to: string, subject: string, html: string): Promi
   // 1. Try Resend API if API Key is configured
   if (resendApiKey) {
     try {
-      const res = await fetch('https://api.resend.com/emails', {
+      const fromAddress = process.env.RESEND_FROM_EMAIL || 'Guides Digitaux <contact@guides-digitaux.com>';
+      let res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${resendApiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: 'Guides Digitaux <contact@guides-digitaux.com>',
+          from: fromAddress,
           to: [to],
           subject: subject,
           html: html
         })
       });
+
+      let resData = await res.json().catch(() => ({}));
+
+      // Fallback for unverified domain in Resend test environment
+      if (!res.ok && resData?.message?.includes('domain')) {
+        console.warn(`[Email Service] Resend domain '${fromAddress}' not verified yet. Retrying with onboarding@resend.dev...`);
+        res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: 'Guides Digitaux <onboarding@resend.dev>',
+            to: [to],
+            subject: subject,
+            html: html
+          })
+        });
+        resData = await res.json().catch(() => ({}));
+      }
+
       if (res.ok) {
-        console.log(`[Email Service] Sent email to ${to} via Resend`);
+        console.log(`[Email Service] Sent email to ${to} via Resend (ID: ${resData?.id || 'ok'})`);
         return true;
+      } else {
+        console.error(`[Email Service] Resend API Error for ${to}:`, resData);
       }
     } catch (e) {
       console.warn(`[Email Service] Resend attempt failed for ${to}`, e);

@@ -18,7 +18,7 @@ interface AuthContextType {
   user: UserProfile | null;
   role: UserRole;
   setRole: (role: UserRole) => void;
-  login: (email: string, role?: UserRole) => Promise<void>;
+  login: (email: string, password?: string, targetRole?: UserRole) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isLoggedIn: boolean;
 }
@@ -29,38 +29,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [role, setRoleState] = useState<UserRole>('eleve');
 
-  // Load user session from localStorage on mount & sync with Supabase profiles table
+  // Load user session from server cookie on mount
   useEffect(() => {
     async function syncAuthSession() {
       try {
-        if (typeof window !== 'undefined') {
-          const savedUser = localStorage.getItem('gd_auth_user');
-          if (savedUser) {
-            const parsed = JSON.parse(savedUser);
-            if (parsed?.email) {
-              const normalizedEmail = parsed.email.toLowerCase().trim();
-              const knownRole = getKnownRoleForEmail(normalizedEmail);
-              const dbProfile = await fetchUserProfileFromDb(normalizedEmail);
-              const effectiveRole: UserRole = (dbProfile?.role && dbProfile.role !== 'eleve')
-                ? (dbProfile.role as UserRole)
-                : (knownRole !== 'eleve' ? knownRole : (parsed.role || 'eleve'));
-              const updatedProfile: UserProfile = {
-                id: dbProfile?.id || parsed.id || `usr_${Date.now()}`,
-                email: normalizedEmail,
-                fullName: dbProfile?.full_name || parsed.fullName || normalizedEmail.split('@')[0],
-                role: effectiveRole
-              };
-              setUser(updatedProfile);
-              setRoleState(effectiveRole);
-              localStorage.setItem('gd_auth_user', JSON.stringify(updatedProfile));
-              return;
-            }
+        const res = await fetch('/api/auth/session');
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+          const userObj: UserProfile = {
+            id: data.user.id,
+            email: data.user.email,
+            fullName: data.user.fullName || data.user.email.split('@')[0],
+            role: data.user.role || 'eleve'
+          };
+          setUser(userObj);
+          setRoleState(userObj.role);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('gd_auth_user', JSON.stringify(userObj));
           }
-          setUser(null);
-          setRoleState('eleve');
+          return;
+        }
+
+        // If no server session, clear state
+        setUser(null);
+        setRoleState('eleve');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('gd_auth_user');
         }
       } catch (e) {
-        console.error('Failed to load auth session', e);
+        console.error('Failed to load auth session from server', e);
       }
     }
     syncAuthSession();
@@ -71,40 +68,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) {
       const updated = { ...user, role: newRole };
       setUser(updated);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('gd_auth_user', JSON.stringify(updated));
-      }
       upsertUserProfileToDb(user.email, newRole, user.fullName);
     }
   };
 
-  const login = async (email: string, targetRole: UserRole = 'eleve') => {
+  const login = async (email: string, password?: string, targetRole: UserRole = 'eleve'): Promise<{ success: boolean; error?: string }> => {
     const normalizedEmail = email.toLowerCase().trim();
-    const knownRole = getKnownRoleForEmail(normalizedEmail);
-    const dbProfile = await fetchUserProfileFromDb(normalizedEmail);
-    const effectiveRole: UserRole = (dbProfile?.role && dbProfile.role !== 'eleve')
-      ? (dbProfile.role as UserRole)
-      : (knownRole !== 'eleve' ? knownRole : targetRole);
-    
-    const newUser: UserProfile = {
-      id: dbProfile?.id || `user-${Date.now()}`,
-      email: normalizedEmail,
-      fullName: dbProfile?.full_name || normalizedEmail.split('@')[0].replace('.', ' '),
-      role: effectiveRole
-    };
-    
-    setUser(newUser);
-    setRoleState(effectiveRole);
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('gd_auth_user', JSON.stringify(newUser));
+    const providedPassword = (password || '').trim();
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password: providedPassword,
+          role: targetRole
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Erreur lors de la connexion' };
+      }
+
+      const loggedUser: UserProfile = {
+        id: data.user.id,
+        email: data.user.email,
+        fullName: data.user.fullName,
+        role: data.user.role
+      };
+
+      setUser(loggedUser);
+      setRoleState(loggedUser.role);
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('gd_auth_user', JSON.stringify(loggedUser));
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur réseau lors de la connexion' };
     }
-    
-    await upsertUserProfileToDb(normalizedEmail, effectiveRole, newUser.fullName);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {}
+
     setUser(null);
+    setRoleState('eleve');
+
     if (typeof window !== 'undefined') {
       localStorage.removeItem('gd_auth_user');
     }

@@ -42,57 +42,39 @@ export function getUserPurchases(email?: string | null): EnrolledCourseItem[] {
 export async function getUserPurchasesAsync(email?: string | null): Promise<EnrolledCourseItem[]> {
   if (!email) return [];
   const normalized = email.toLowerCase().trim();
-  const dbList = await fetchUserPurchasesFromDb(normalized);
-  
-  if (typeof window !== 'undefined' && dbList && dbList.length > 0) {
-    try {
-      localStorage.setItem(getUserPurchasesKey(normalized), JSON.stringify(dbList));
-    } catch (e) {}
+
+  let dbList: EnrolledCourseItem[] = [];
+  try {
+    dbList = await fetchUserPurchasesFromDb(normalized);
+  } catch (e) {
+    console.warn('Error fetching DB purchases', e);
   }
-  
-  return dbList || getUserPurchases(normalized);
+
+  // If DB returns purchases, it is the absolute source of truth
+  if (Array.isArray(dbList) && dbList.length > 0) {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(getUserPurchasesKey(normalized), JSON.stringify(dbList));
+      } catch (e) {}
+    }
+    return dbList;
+  }
+
+  return getUserPurchases(normalized);
 }
 
 export function addPurchaseToUser(email: string | null | undefined, item: EnrolledCourseItem): EnrolledCourseItem[] {
   const normalized = (email || '').toLowerCase().trim();
   if (normalized) {
     const existing = getUserPurchases(normalized);
-    let itemsToAdd: EnrolledCourseItem[] = [item];
-
-    if (item.id.includes('bundle') || item.slug.includes('bundle')) {
-      itemsToAdd = [
-        item,
-        {
-          id: 'formation-wordpress',
-          title: 'Formation : créer sa vitrine en ligne avec WordPress',
-          slug: 'formation-wordpress',
-          price: 199,
-          type: 'formation',
-          typeLabel: 'Formation Vidéo',
-          thumbnail: '/images/products/formation-wordpress.webp'
-        },
-        {
-          id: 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
-          title: 'Formation ajouter une boutique en ligne avec WooCommerce',
-          slug: 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
-          price: 99,
-          type: 'formation',
-          typeLabel: 'Formation Vidéo',
-          thumbnail: '/images/products/formation-woocommerce.jpg'
-        }
-      ];
-    }
-
-    const updated = [...itemsToAdd, ...existing.filter(i => !itemsToAdd.some(ta => ta.id === i.id || ta.slug === i.slug))];
+    const updated = [item, ...existing.filter(i => i.id !== item.id && i.slug !== item.slug)];
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(getUserPurchasesKey(normalized), JSON.stringify(updated));
       } catch (e) {}
     }
-    itemsToAdd.forEach(it => {
-      saveUserPurchaseToDb(normalized, it);
-      saveOrderToDb(normalized, it.id || it.slug || 'product', 'paid');
-    });
+    saveUserPurchaseToDb(normalized, item);
+    saveOrderToDb(normalized, item.id || item.slug || 'product', 'paid', item.price || 0);
     return updated;
   }
   return [item];

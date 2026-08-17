@@ -20,11 +20,21 @@ export async function GET(request: Request) {
     const email = session.customer_details?.email || session.customer_email || null;
     const courseId = session.metadata?.courseId || 'precommande-fiche-google';
 
+    let cartItems: any[] = [];
+    if (session.metadata?.cartItemsJson) {
+      try {
+        cartItems = JSON.parse(session.metadata.cartItemsJson);
+      } catch (e) {}
+    }
+
     return NextResponse.json({
       sessionId: session.id,
       customerEmail: email,
+      customerName: session.customer_details?.name || null,
       courseId,
-      amountTotal: session.amount_total ? session.amount_total / 100 : 29,
+      productId: session.metadata?.productId || courseId,
+      cartItems,
+      amountTotal: (session.amount_total !== null && session.amount_total !== undefined) ? session.amount_total / 100 : 0,
       paymentStatus: session.payment_status
     });
   } catch (e: any) {

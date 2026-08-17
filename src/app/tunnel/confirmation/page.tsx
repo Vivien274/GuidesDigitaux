@@ -28,6 +28,8 @@ import { saveOrderToDb, saveUserPurchaseToDb } from '@/lib/supabaseLms';
 import { recordPreorderPurchaseInDb } from '@/lib/supabaseLms';
 import { trackPurchase } from '@/lib/metaPixel';
 
+import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
+
 function ConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -40,55 +42,160 @@ function ConfirmationContent() {
   }, []);
 
   const courseId = searchParams.get('id') || 'precommande-fiche-google';
-  const price = searchParams.get('price') || '29';
   const sessionId = searchParams.get('session_id') || searchParams.get('sessionId') || '';
+  const isCartCheckout = searchParams.get('cart_checkout') === 'true' || searchParams.get('cart') === 'true' || courseId === 'cart_items';
+
+  // Dynamic Product & Price Resolution (Strict DB / Stripe Session data, zero hardcoding)
+  const targetProduct = DEFAULT_PRODUCTS.find(p => p.id === courseId || p.slug === courseId);
+  const isPreorder = courseId.includes('precommande') || courseId.includes('preorder') || (targetProduct && 'isPreorder' in targetProduct && Boolean((targetProduct as any).isPreorder));
+  const isPdf = targetProduct?.category === 'ebook' || targetProduct?.category === 'checklist' || !!targetProduct?.downloadPdf || courseId.includes('guide') || courseId.includes('checklist');
+
+  const resolvedTitle = targetProduct?.title || (isPreorder ? 'Fais décoller ton activité locale grâce à une Fiche Google parfaite' : 'Produit Digital Guides Digitaux');
+  const resolvedType = isPdf ? 'ebook' : (isPreorder ? 'formation' : (targetProduct?.category || 'formation'));
+  const resolvedTypeLabel = isPreorder 
+    ? '🚀 PRÉCOMMANDE (Sortie 15 sept)' 
+    : (isPdf ? '📄 E-Book / Guide PDF' : 'Formation Vidéo');
+
+  const resolvedPrice = searchParams.get('price') 
+    ? Number(searchParams.get('price')) 
+    : (targetProduct?.price ?? 0);
 
   const [customerEmail, setCustomerEmail] = useState<string>(
     searchParams.get('email') || ''
   );
 
-  const savedUserEmail = typeof window !== 'undefined' && localStorage.getItem('gd_auth_user')
-    ? JSON.parse(localStorage.getItem('gd_auth_user')!).email
-    : '';
-  
-  // Explicit priority: customerEmail from Stripe > searchParams email > savedUserEmail > user.email
-  const activeEmail = customerEmail || searchParams.get('email') || savedUserEmail || user?.email || '';
+  const [savedUserEmail, setSavedUserEmail] = useState<string>('');
 
   useEffect(() => {
-    // 1. Check if this is a cart checkout purchase
-    const isCartCheckout = searchParams.get('cart_checkout') === 'true' || searchParams.get('id') === 'cart_items';
+    setIsMounted(true);
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('gd_auth_user');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed?.email) setSavedUserEmail(parsed.email);
+        } catch (e) {}
+      }
+    }
+  }, []);
 
-    // 2. Fetch real customer email entered on Stripe Checkout if available
+  // Explicit priority: customerEmail from Stripe > searchParams email > savedUserEmail > user.email
+  // Fallback to client-side localStorage/context only after mount (isMounted === true) to prevent SSR hydration mismatch
+  const activeEmail = customerEmail || searchParams.get('email') || (isMounted ? (savedUserEmail || user?.email) : '') || '';
+
+  // Helper to process single or multi-item cart purchases
+  const processPurchasesForEmail = (emailToUse: string, stripeAmount?: number, customerName?: string, stripeCartItems?: any[]) => {
+    if (!emailToUse) return;
+
+    if (isCartCheckout) {
+      if (typeof window !== 'undefined') {
+        let cartItems: any[] = [];
+        if (Array.isArray(stripeCartItems) && stripeCartItems.length > 0) {
+          cartItems = stripeCartItems;
+        } else {
+          let rawCart = localStorage.getItem('gd_cart');
+          if (rawCart) {
+            try {
+              sessionStorage.setItem('gd_cart_backup', rawCart);
+            } catch (e) {}
+          } else {
+            rawCart = sessionStorage.getItem('gd_cart_backup');
+          }
+          if (rawCart) {
+            try {
+              cartItems = JSON.parse(rawCart);
+            } catch (e) {}
+          }
+        }
+
+        if (Array.isArray(cartItems) && cartItems.length > 0) {
+          cartItems.forEach((item: any) => {
+            const matchedProd = DEFAULT_PRODUCTS.find(p => p.id === item.id || p.slug === item.id);
+            const isPdfItem = item.categoryLabel?.toLowerCase().includes('pdf') || matchedProd?.category === 'ebook' || matchedProd?.category === 'checklist' || !!matchedProd?.downloadPdf;
+
+            const purchaseObj = {
+              id: item.id,
+              title: item.title,
+              slug: matchedProd?.slug || item.id,
+              type: matchedProd?.category || (isPdfItem ? 'ebook' : 'formation'),
+              typeLabel: item.categoryLabel || (isPdfItem ? '📄 E-Book / Guide PDF' : 'Formation Vidéo'),
+              downloadPdf: matchedProd?.downloadPdf,
+              progress: 0,
+              completedLessons: 0,
+              totalLessons: 4,
+              duration: '2h00',
+              instructor: 'Stéphanie ROCQ',
+              price: Number(item.price) || 0,
+              purchaseDate: new Date().toLocaleDateString('fr-FR')
+            };
+
+            addPurchaseToUser(emailToUse, purchaseObj);
+            saveOrderToDb(emailToUse, item.id, 'paid', Number(item.price) || 0, sessionId);
+            saveUserPurchaseToDb(emailToUse, purchaseObj);
+          });
+        }
+      }
+    } else {
+      const amountToSave = stripeAmount !== undefined ? stripeAmount : resolvedPrice;
+      addPurchaseToUser(emailToUse, {
+        id: courseId,
+        title: resolvedTitle,
+        slug: targetProduct?.slug || courseId,
+        type: resolvedType,
+        typeLabel: resolvedTypeLabel,
+        downloadPdf: targetProduct?.downloadPdf,
+        progress: 0,
+        completedLessons: 0,
+        totalLessons: 4,
+        duration: '2h00',
+        instructor: 'Stéphanie ROCQ',
+        isPreorder: isPreorder,
+        releaseDate: isPreorder ? '2026-09-15' : undefined,
+        price: amountToSave,
+        purchaseDate: new Date().toLocaleDateString('fr-FR')
+      });
+      saveOrderToDb(emailToUse, courseId, 'paid', amountToSave, sessionId);
+      saveUserPurchaseToDb(emailToUse, targetProduct || { id: courseId, title: resolvedTitle, price: amountToSave });
+      if (isPreorder) {
+        recordPreorderPurchaseInDb(courseId, emailToUse, customerName || emailToUse.split('@')[0], amountToSave);
+      }
+    }
+  };
+
+  useEffect(() => {
+    // 2. Fetch real customer email & amount entered on Stripe Checkout if available
     async function fetchStripeCustomerEmail() {
       if (sessionId && !sessionId.startsWith('test_cs_')) {
         try {
           const res = await fetch(`/api/stripe/session?session_id=${sessionId}`);
           const data = await res.json();
+          const stripeAmount = (data?.amountTotal !== undefined && data?.amountTotal !== null) 
+            ? Number(data.amountTotal) 
+            : resolvedPrice;
+
           if (data?.customerEmail) {
             const stripeEmail = data.customerEmail.toLowerCase().trim();
             setCustomerEmail(stripeEmail);
-            
-            // Switch session to buyer's email
-            login(stripeEmail, 'eleve');
+            processPurchasesForEmail(stripeEmail, stripeAmount, data.customerName, data.cartItems);
 
-            if (!isCartCheckout) {
-              addPurchaseToUser(stripeEmail, {
-                id: courseId || 'precommande-fiche-google',
-                title: 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
-                slug: 'precommande-fiche-google',
-                type: 'formation',
-                typeLabel: '🚀 PRÉCOMMANDE (Sortie 15 sept)',
-                progress: 0,
-                completedLessons: 0,
-                totalLessons: 4,
-                duration: '2h00',
-                instructor: 'Stéphanie ROCQ',
-                isPreorder: true,
-                releaseDate: '2026-09-15',
-                price: Number(price) || 29,
-                purchaseDate: new Date().toLocaleDateString('fr-FR')
-              });
-              recordPreorderPurchaseInDb(courseId || 'precommande-fiche-google', stripeEmail, data.customerName, Number(price) || 29);
+            // Send confirmation & admin email once per session
+            if (typeof window !== 'undefined') {
+              const emailSentKey = `gd_email_sent_${sessionId}`;
+              if (!sessionStorage.getItem(emailSentKey)) {
+                sessionStorage.setItem(emailSentKey, 'true');
+                fetch('/api/orders/send-email', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    orderId: sessionId,
+                    customerEmail: stripeEmail,
+                    customerName: data.customerName,
+                    productId: data.productId || courseId,
+                    amount: stripeAmount,
+                    cartItems: data.cartItems
+                  })
+                }).catch(e => console.error('Order email trigger failed', e));
+              }
             }
           }
         } catch (e) {
@@ -98,25 +205,9 @@ function ConfirmationContent() {
     }
     fetchStripeCustomerEmail();
 
-    // 3. Add single item purchase to user account if not cart checkout
-    if (activeEmail && !isCartCheckout) {
-      addPurchaseToUser(activeEmail, {
-        id: courseId || 'precommande-fiche-google',
-        title: 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
-        slug: 'precommande-fiche-google',
-        type: 'formation',
-        typeLabel: '🚀 PRÉCOMMANDE (Sortie 15 sept)',
-        progress: 0,
-        completedLessons: 0,
-        totalLessons: 4,
-        duration: '2h00',
-        instructor: 'Stéphanie ROCQ',
-        isPreorder: true,
-        releaseDate: '2026-09-15',
-        price: Number(price) || 29,
-        purchaseDate: new Date().toLocaleDateString('fr-FR')
-      });
-      recordPreorderPurchaseInDb(courseId || 'precommande-fiche-google', activeEmail, activeEmail.split('@')[0], Number(price) || 29);
+    // 3. Add purchase to user account if activeEmail is present
+    if (activeEmail) {
+      processPurchasesForEmail(activeEmail, resolvedPrice);
     }
 
     // 4. Safely increment preorder counter once per checkout session
@@ -137,9 +228,9 @@ function ConfirmationContent() {
     if (typeof window !== 'undefined') {
       try {
         const trackedPixel = JSON.parse(localStorage.getItem('gd_meta_pixel_tracked') || '[]');
-        const currentOrderKey = sessionId || `order_${courseId}_${price}`;
+        const currentOrderKey = sessionId || `order_${courseId}_${resolvedPrice}`;
         if (!trackedPixel.includes(currentOrderKey)) {
-          trackPurchase(Number(price) || 0, 'EUR', {
+          trackPurchase(Number(resolvedPrice) || 0, 'EUR', {
             content_name: courseId || 'Commande Guides Digitaux',
             content_ids: [courseId || 'precommande-fiche-google'],
             content_type: 'product',
@@ -151,26 +242,30 @@ function ConfirmationContent() {
         console.error('Erreur lors du suivi Meta Pixel Purchase:', e);
       }
     }
-  }, [sessionId, courseId, activeEmail, price]);
+  }, [sessionId, courseId, activeEmail, resolvedPrice]);
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isAccountActivated, setIsAccountActivated] = useState(false);
   const [addedUpsells, setAddedUpsells] = useState<Record<string, boolean>>({});
 
-  const handleCreateAccount = (e: React.FormEvent) => {
+  const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 4) {
-      alert('Veuillez entrer un mot de passe d\'au moins 4 caractères.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      alert('Les mots de passe ne correspondent pas.');
+    if (!password || password.length < 3) {
+      alert('Veuillez entrer votre mot de passe.');
       return;
     }
 
-    // Activate Élève account with chosen password
-    login(activeEmail, 'eleve');
+    // Authenticate account with chosen password
+    const res = await login(activeEmail, password, 'eleve');
+    if (!res.success) {
+      alert(res.error || 'Mot de passe incorrect pour ce compte.');
+      return;
+    }
+
+    // Guarantee that all purchases (single or multi-item cart) are bound to activeEmail
+    processPurchasesForEmail(activeEmail, resolvedPrice);
+
     setIsAccountActivated(true);
 
     setTimeout(() => {
@@ -225,8 +320,11 @@ function ConfirmationContent() {
           </span>
 
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#332420]">
-            🎉 Félicitations ! Ta précommande est enregistrée avec succès !
+            {isPreorder 
+              ? '🎉 Félicitations ! Ta précommande est enregistrée avec succès !' 
+              : `🎉 Félicitations ! Ta commande est enregistrée avec succès !`}
           </h1>
+
 
           <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl text-xs text-emerald-950 flex items-center justify-center gap-2 max-w-lg mx-auto">
             <Mail className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -273,8 +371,8 @@ function ConfirmationContent() {
             );
           })()}
 
-          {/* USER ALREADY LOGGED IN OR NEW ACCOUNT CREATION */}
-          {isLoggedIn || user?.email ? (
+          {/* USER ALREADY LOGGED IN TO THIS SPECIFIC BUYER ACCOUNT */}
+          {isMounted && isLoggedIn && user?.email?.toLowerCase().trim() === activeEmail.toLowerCase().trim() ? (
             <div className="p-6 bg-[#e6f4f3]/60 rounded-2xl border border-[#bce3e0] text-center space-y-4 max-w-md mx-auto shadow-xs">
               <div className="w-12 h-12 rounded-full bg-[#18757d] text-white flex items-center justify-center mx-auto font-bold shadow-xs">
                 <CheckCircle2 className="w-6 h-6" />
@@ -282,7 +380,7 @@ function ConfirmationContent() {
               <div className="space-y-1">
                 <h3 className="text-sm font-extrabold text-[#332420]">Produit ajouté à votre compte !</h3>
                 <p className="text-xs text-slate-600">
-                  Bonjour <strong className="text-[#18757d]">{activeEmail || user?.email}</strong>, vos accès sont prêts et enregistrés dans votre espace.
+                  Bonjour <strong className="text-[#18757d]">{user?.fullName || activeEmail}</strong>, vos accès sont débloqués et enregistrés dans votre espace.
                 </p>
               </div>
               <Link
@@ -294,14 +392,14 @@ function ConfirmationContent() {
               </Link>
             </div>
           ) : !isAccountActivated ? (
-            <form onSubmit={handleCreateAccount} className="p-6 bg-[#faf8f5] rounded-2xl border border-[#eee7da] text-left space-y-4 max-w-md mx-auto shadow-xs">
+            <form onSubmit={handleCreateAccount} className="p-6 bg-white rounded-3xl border-2 border-[#18757d]/30 shadow-md text-left space-y-4 max-w-md mx-auto">
               <div className="space-y-1">
                 <h3 className="text-xs font-extrabold text-[#18757d] uppercase tracking-wider flex items-center gap-1.5">
                   <Key className="w-4 h-4" />
-                  Choisir mon mot de passe personnalisé
+                  Créer mon mot de passe pour accéder à mes cours
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Définissez dès maintenant le mot de passe de votre compte pour accéder à votre Espace Élève :
+                  Définissez votre mot de passe pour vous connecter à votre Espace Élève (compte <strong className="text-[#332420]">{activeEmail}</strong>) :
                 </p>
               </div>
 
@@ -317,25 +415,13 @@ function ConfirmationContent() {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-[#332420] block mb-1">Nouveau mot de passe :</label>
+                  <label className="text-[11px] font-bold text-[#332420] block mb-1">Votre mot de passe :</label>
                   <input
                     type="password"
                     required
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white border border-[#eee7da] rounded-xl px-3 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-[#332420] block mb-1">Confirmer le mot de passe :</label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full bg-white border border-[#eee7da] rounded-xl px-3 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
                   />
                 </div>
@@ -346,15 +432,25 @@ function ConfirmationContent() {
                 className="w-full py-3.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer mt-2"
               >
                 <Lock className="w-4 h-4" />
-                Enregistrer mon mot de passe
+                Activer mon compte & Accéder à mes cours
               </button>
+
+              <div className="text-center pt-2 border-t border-slate-100">
+                <Link
+                  href={`/mon-compte?email=${encodeURIComponent(activeEmail)}`}
+                  className="text-[11px] font-bold text-[#18757d] hover:underline"
+                >
+                  Déjà un compte ? Se connecter ici →
+                </Link>
+              </div>
             </form>
           ) : (
             <div className="p-4 bg-emerald-100 text-emerald-900 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 max-w-md mx-auto">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Mot de passe enregistré ! Vos identifiants sont actifs. Redirection...</span>
+              <span>Authentification réussie ! Vos identifiants sont actifs. Redirection...</span>
             </div>
           )}
+
         </div>
 
         {/* POST-PURCHASE UPSELL SECTION */}
@@ -367,8 +463,9 @@ function ConfirmationContent() {
               Complète tes compétences avec nos formations partenaires à tarif réduit (-60%)
             </h2>
             <p className="text-xs text-slate-600">
-              Réservé exclusivement aux nouveaux précommandeurs pendant les 15 prochaines minutes.
+              Réservé exclusivement aux nouveaux clients pendant les 15 prochaines minutes.
             </p>
+
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

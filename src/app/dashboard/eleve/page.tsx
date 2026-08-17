@@ -53,46 +53,14 @@ function EleveDashboardContent() {
 
   useEffect(() => {
     async function syncEnrolledCourses() {
+      if (!user?.email) return;
       try {
         const dbCourses = await fetchCoursesFromDb();
-        const savedEmail = typeof window !== 'undefined' && localStorage.getItem('gd_auth_user') ? JSON.parse(localStorage.getItem('gd_auth_user')!).email : '';
-        const userEmail = user?.email || savedEmail;
-        if (userEmail) {
-          setCoachingStatus(getCoachingStatusForUser(userEmail));
-        }
+        const userEmail = user.email.toLowerCase().trim();
+        setCoachingStatus(getCoachingStatusForUser(userEmail));
+
         const userPurchases = await getUserPurchasesAsync(userEmail);
         let baseList: any[] = userPurchases || [];
-
-        // Fallback check from localStorage keys if BDD list returned empty
-        if (typeof window !== 'undefined' && baseList.length === 0 && userEmail) {
-          const norm = userEmail.toLowerCase().trim();
-          const fallbackKeys = [`gd_user_purchases_${norm}`, 'gd_enrolled_courses', 'gd_user_purchases_anonymous'];
-          const fallbackItems: any[] = [];
-          
-          fallbackKeys.forEach(k => {
-            const raw = localStorage.getItem(k);
-            if (raw) {
-              try {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) {
-                  parsed.forEach(it => {
-                    if (!fallbackItems.some(x => x.id === it.id || x.title === it.title)) {
-                      fallbackItems.push(it);
-                    }
-                  });
-                }
-              } catch (e) {}
-            }
-          });
-
-          if (fallbackItems.length > 0) {
-            baseList = fallbackItems;
-            // Sync back to Supabase DB
-            fallbackItems.forEach(fit => {
-              saveUserPurchaseToDb(norm, fit);
-            });
-          }
-        }
 
         const formattedReal = baseList.map((item: any) => {
           const matchedDb = dbCourses.find(c => c.id === item.id || c.title === item.title);
@@ -127,7 +95,7 @@ function EleveDashboardContent() {
             type: isCoachingItem ? 'coaching' : (isPreorder ? 'formation' : (item.type || (isPdfItem ? 'ebook' : 'formation'))),
             typeLabel: isCoachingItem ? '🗓️ Coaching & Accompagnement' : (isPreorder ? 'Précommande Enregistrée' : (item.typeLabel || (isPdfItem ? '📄 E-Book / Guide PDF' : 'Formation Vidéo'))),
             thumbnail: item.image || item.thumbnail || DEFAULT_THUMBNAIL,
-            progress: (isPdfItem || isCoachingItem) ? 100 : liveProg,
+            progress: (isPdfItem || isCoachingItem) ? 0 : liveProg,
             completedLessons: item.completedLessons || 0,
             totalLessons: totalLess,
             duration: matchedDb?.duration || item.duration || (isCoachingItem ? '2 x 45 min' : (isPdfItem ? 'PDF' : '2h15')),
@@ -148,8 +116,16 @@ function EleveDashboardContent() {
     syncEnrolledCourses();
   }, [user?.email]);
 
-  const activeCourse = courses.length > 0 ? courses[0] : null;
+  // Only real video formations or preorders are eligible for the hero banner
+  const featuredFormation = courses.find(c => !c.isPdf && !c.isCoaching && !c.isPreorder);
+  const featuredPreorder = courses.find(c => c.isPreorder);
+  const heroBannerItem = featuredFormation || featuredPreorder;
+
+  const formationCourses = courses.filter(c => !c.isPdf && !c.isCoaching && !c.isPreorder);
   const pdfCount = courses.filter(c => c.isPdf && !c.isPreorder).length;
+  const avgFormationProgress = formationCourses.length > 0 
+    ? Math.round(formationCourses.reduce((sum, c) => sum + (c.progress || 0), 0) / formationCourses.length) 
+    : 0;
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans">
@@ -162,17 +138,17 @@ function EleveDashboardContent() {
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-amber-300 shrink-0" />
               <span>
-                {activeCourse && (activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google')
+                {heroBannerItem && heroBannerItem.isPreorder
                   ? '🎉 Félicitations pour votre précommande ! Votre place est réservée au Tarif Pionnier. Sortie officielle le 15 septembre 2026.'
                   : '🎉 Félicitations pour votre achat ! Vos produits et fichiers PDF sont débloqués ci-dessous.'}
               </span>
             </div>
-            {activeCourse && (
+            {heroBannerItem && (
               <Link
-                href={(activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google') ? '/precommande' : `#produits-section`}
+                href={heroBannerItem.isPreorder ? '/precommande' : `#produits-section`}
                 className="underline hover:text-amber-200 whitespace-nowrap"
               >
-                {(activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google')
+                {heroBannerItem.isPreorder
                   ? 'Voir le statut de la précommande →'
                   : 'Accéder aux contenus →'}
               </Link>
@@ -205,9 +181,11 @@ function EleveDashboardContent() {
 
             <div className="bg-[#FAF8F5] p-3.5 rounded-2xl border border-[#eee7da] text-center shadow-2xs">
               <span className="text-xl font-extrabold text-[#e05a47] block">
-                {activeCourse ? `${activeCourse.progress}%` : '0%'}
+                {formationCourses.length > 0 ? `${avgFormationProgress}%` : '-'}
               </span>
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Progression</span>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                {formationCourses.length > 0 ? 'Progression' : 'Formations (0)'}
+              </span>
             </div>
 
             <div className="bg-white p-3.5 rounded-2xl border border-[#eee7da] text-center shadow-2xs">
@@ -219,52 +197,52 @@ function EleveDashboardContent() {
       </section>
 
       {/* MAIN CONTENT GRID */}
-      <section className="py-12 md:py-16">
+      <section className="py-12 md:py-16" id="produits-section">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
 
-          {/* Active Course Banner */}
-          {activeCourse && (
-            <div className={`rounded-3xl p-8 sm:p-10 shadow-xl border flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden ${(activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google')
+          {/* Active Course Banner - ONLY DISPLAYED IF USER PURCHASED A REAL VIDEO FORMATION OR PREORDER */}
+          {heroBannerItem && (
+            <div className={`rounded-3xl p-8 sm:p-10 shadow-xl border flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden ${heroBannerItem.isPreorder
                 ? 'bg-gradient-to-r from-[#18757d] to-[#11555b] text-white border-amber-400/40'
                 : 'bg-[#18757d] text-white border-teal-800'
               }`}>
               <div className="space-y-4 max-w-2xl">
                 <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-extrabold bg-amber-400 text-[#332420] uppercase tracking-wider">
                   <Sparkles className="w-4 h-4 text-[#332420]" />
-                  {(activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google')
+                  {heroBannerItem.isPreorder
                     ? '🚀 Précommande Enregistrée (Sortie le 15 septembre)'
                     : 'Dernière formation achetée'}
                 </span>
 
                 <h2 className="text-2xl sm:text-3xl font-extrabold leading-tight">
-                  {activeCourse.title}
+                  {heroBannerItem.title}
                 </h2>
 
-                {(activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google') ? (
+                {heroBannerItem.isPreorder ? (
                   <p className="text-xs sm:text-sm text-amber-100 leading-relaxed font-medium">
                     Ta place est réservée au Tarif Pionnier ! Les modules vidéo seront débloqués automatiquement dans ton espace dès le <strong>15 septembre 2026</strong>.
                   </p>
                 ) : (
                   <>
                     <p className="text-xs sm:text-sm text-teal-100 leading-relaxed">
-                      Progression actuelle : {activeCourse.progress}% complétés.
+                      Progression actuelle : {heroBannerItem.progress}% complétés.
                     </p>
 
                     {/* Progress Bar */}
                     <div className="space-y-1.5 pt-2">
                       <div className="flex items-center justify-between text-xs font-bold text-teal-100">
                         <span>Progression globale :</span>
-                        <span>{activeCourse.progress}%</span>
+                        <span>{heroBannerItem.progress}%</span>
                       </div>
                       <div className="w-full bg-teal-900/60 rounded-full h-3 overflow-hidden p-0.5 border border-white/20">
-                        <div className="bg-amber-400 h-full rounded-full transition-all duration-500" style={{ width: `${activeCourse.progress}%` }} />
+                        <div className="bg-amber-400 h-full rounded-full transition-all duration-500" style={{ width: `${heroBannerItem.progress}%` }} />
                       </div>
                     </div>
                   </>
                 )}
               </div>
 
-              {(activeCourse.isPreorder || activeCourse.slug?.includes('precommande') || activeCourse.id === 'precommande-fiche-google') ? (
+              {heroBannerItem.isPreorder ? (
                 <Link
                   href="/precommande"
                   className="w-full lg:w-auto px-8 py-4 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shrink-0"
@@ -272,10 +250,10 @@ function EleveDashboardContent() {
                   <Clock className="w-5 h-5 text-[#332420]" />
                   Voir les projets en précommande →
                 </Link>
-              ) : activeCourse.progress >= 100 ? (
+              ) : heroBannerItem.progress >= 100 ? (
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0">
                   <a
-                    href={activeCourse.downloadPdf || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp'}
+                    href={heroBannerItem.downloadPdf || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp'}
                     target="_blank"
                     rel="noreferrer"
                     className="w-full sm:w-auto px-6 py-4 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
@@ -285,7 +263,7 @@ function EleveDashboardContent() {
                   </a>
 
                   <Link
-                    href={`/formation/${activeCourse.slug}`}
+                    href={`/formation/${heroBannerItem.slug}`}
                     className="w-full sm:w-auto px-6 py-4 text-xs font-extrabold text-white bg-white/20 hover:bg-white/30 rounded-2xl border border-white/30 uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
                   >
                     <PlayCircle className="w-5 h-5 text-white" />
@@ -294,7 +272,7 @@ function EleveDashboardContent() {
                 </div>
               ) : (
                 <Link
-                  href={`/formation/${activeCourse.slug}`}
+                  href={`/formation/${heroBannerItem.slug}`}
                   className="w-full lg:w-auto px-8 py-4 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shrink-0"
                 >
                   <PlayCircle className="w-5 h-5 text-[#332420]" />

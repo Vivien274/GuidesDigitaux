@@ -65,23 +65,35 @@ export async function POST(request: Request) {
       ];
     }
 
+    const emailParam = customerEmail ? `&email=${encodeURIComponent(customerEmail.toLowerCase().trim())}` : '';
+
     // 1. If real Stripe test key is configured in env, create real Stripe Checkout Session
     if (hasRealStripeKey) {
       const stripe = new Stripe(secretKey);
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
+        customer_email: customerEmail ? customerEmail.toLowerCase().trim() : undefined,
         line_items: lineItems,
         mode: 'payment',
         success_url: Array.isArray(items) && items.length > 0
-          ? `${siteUrl}/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&cart_checkout=true&price=${totalPriceSum}`
-          : `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id={CHECKOUT_SESSION_ID}&price=${price}`,
+          ? `${siteUrl}/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&cart_checkout=true&price=${totalPriceSum}${emailParam}`
+          : `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id={CHECKOUT_SESSION_ID}&price=${price}${emailParam}`,
         cancel_url: (isPreorder || courseId)
           ? `${siteUrl}/tunnel/${courseId}`
           : `${siteUrl}/boutique?canceled=true`,
         metadata: {
-          courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : courseId,
+          courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
+          productId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
           isPreorder: isPreorder ? 'true' : 'false',
-          releaseDate
+          releaseDate: releaseDate || '',
+          cartItemsJson: Array.isArray(items) && items.length > 0
+            ? JSON.stringify(items.map((it: any) => ({
+                id: it.id,
+                title: it.title,
+                price: Number(it.price || it.originalPrice || 0),
+                quantity: it.quantity || 1
+              })))
+            : ''
         },
       });
 
@@ -91,8 +103,8 @@ export async function POST(request: Request) {
     // 2. Fallback for test environment without key: simulated instant Stripe checkout test flow
     const testSessionId = `test_cs_${Date.now()}`;
     const simulatedUrl = Array.isArray(items) && items.length > 0
-      ? `${siteUrl}/tunnel/confirmation?session_id=${testSessionId}&cart_checkout=true&price=${totalPriceSum}&test_mode=true`
-      : `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id=${testSessionId}&price=${price}&test_mode=true`;
+      ? `${siteUrl}/tunnel/confirmation?session_id=${testSessionId}&cart_checkout=true&price=${totalPriceSum}${emailParam}&test_mode=true`
+      : `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id=${testSessionId}&price=${price}${emailParam}&test_mode=true`;
 
     return NextResponse.json({ 
       url: simulatedUrl, 

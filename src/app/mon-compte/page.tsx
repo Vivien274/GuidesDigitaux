@@ -14,13 +14,21 @@ export default function MonComptePage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
     if (!email) return;
-    await login(email);
+
+    const res = await login(email, password);
+    if (!res.success) {
+      setErrorMsg(res.error || 'Mot de passe ou identifiants incorrects.');
+      return;
+    }
+
     const normalized = email.toLowerCase().trim();
-    if (['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@stratec-digital.com'].includes(normalized)) {
+    if (['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@guides-digitaux.com'].includes(normalized)) {
       router.push('/dashboard/admin');
     } else {
       router.push('/dashboard/eleve');
@@ -75,6 +83,12 @@ export default function MonComptePage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {errorMsg && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl flex items-center gap-2">
+                  <span>⚠️ {errorMsg}</span>
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <label className="text-xs font-extrabold text-[#332420]">Adresse Email :</label>
                 <div className="relative">

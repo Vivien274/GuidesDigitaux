@@ -171,10 +171,72 @@ export default function SuperadminDashboardPage() {
     }
   }, [user, role, router]);
 
-  // Load real accounts & purchases directly from Supabase DB tables (profiles, orders, enrollments, preorder_buyers) & localStorage
+  // Load real accounts & purchases via secure server API route (bypassing client RLS restrictions)
   const loadDashboardData = async () => {
     try {
+      const res = await fetch('/api/admin/dashboard-stats');
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.usersList && data?.stats) {
+          let mergedUsers = [...data.usersList];
+          let mergedStats = { ...data.stats };
+
+          // Fallback merge for client-only local test purchases
+          if (typeof window !== 'undefined') {
+            const localPurchasesStr = localStorage.getItem('gd_user_purchases');
+            if (localPurchasesStr) {
+              try {
+                const localPurchases = JSON.parse(localPurchasesStr);
+                const accountsMap = new Map(mergedUsers.map(u => [u.email.toLowerCase().trim(), u]));
+
+                Object.entries(localPurchases).forEach(([emailKey, items]: [string, any]) => {
+                  const em = emailKey.toLowerCase().trim();
+                  if (em && Array.isArray(items) && items.length > 0) {
+                    items.forEach((item: any) => {
+                      const amount = item.price ? Number(item.price) : 0;
+                      const existing = accountsMap.get(em);
+                      if (existing) {
+                        if (existing.purchasesCount === 0) {
+                          existing.purchasesCount += 1;
+                          existing.totalSpent += amount;
+                          mergedStats.totalOrders += 1;
+                          mergedStats.totalRevenue += amount;
+                        }
+                      } else {
+                        const newUserItem = {
+                          id: `lp-${Date.now()}_${Math.random()}`,
+                          name: em.split('@')[0],
+                          email: em,
+                          role: 'eleve' as UserRole,
+                          purchasesCount: 1,
+                          totalSpent: amount
+                        };
+                        accountsMap.set(em, newUserItem);
+                        mergedStats.totalOrders += 1;
+                        mergedStats.totalRevenue += amount;
+                      }
+                    });
+                  }
+                });
+
+                mergedUsers = Array.from(accountsMap.values());
+                mergedStats.totalMembers = mergedUsers.length;
+              } catch (e) {}
+            }
+          }
+
+          setUsersList(mergedUsers);
+          setStats(mergedStats);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard stats via API', err);
+    }
+
+    try {
       const accountsMap = new Map<string, AdminUserItem>();
+
 
       // 1. Fetch all registered user profiles from Supabase DB
       const { data: profiles } = await supabase.from('profiles').select('*');
@@ -198,12 +260,24 @@ export default function SuperadminDashboardPage() {
       let totalRev = 0;
       let totalOrdersCount = 0;
 
+      // Helper to resolve product price from store
+      const resolveProductPrice = (productId?: string, fallbackPrice?: number): number => {
+        if (fallbackPrice && fallbackPrice > 0) return fallbackPrice;
+        if (productId) {
+          const prod = DEFAULT_PRODUCTS.find(p => p.id === productId || p.slug === productId);
+          if (prod?.price) return prod.price;
+        }
+        return 0;
+      };
+
       // 2. Fetch sales from orders table
       const { data: orders } = await supabase.from('orders').select('*');
       if (orders && Array.isArray(orders)) {
         orders.forEach((ord: any) => {
           const em = (ord.customer_email || ord.user_email || ord.email || '').toLowerCase().trim();
-          const amount = ord.amount ? Number(ord.amount) : (ord.total_amount_cents ? ord.total_amount_cents / 100 : (ord.price ? Number(ord.price) : 29));
+          const rawPrice = ord.amount ? Number(ord.amount) : (ord.total_amount_cents ? ord.total_amount_cents / 100 : (ord.price ? Number(ord.price) : 0));
+          const amount = resolveProductPrice(ord.product_id, rawPrice);
+
           totalOrdersCount += 1;
           totalRev += amount;
 
@@ -253,7 +327,8 @@ export default function SuperadminDashboardPage() {
       if (enrollments && Array.isArray(enrollments)) {
         enrollments.forEach((enr: any) => {
           const em = (enr.user_email || enr.customer_email || enr.email || '').toLowerCase().trim();
-          const amount = enr.price ? Number(enr.price) : (enr.amount ? Number(enr.amount) : 29);
+          const rawPrice = enr.price ? Number(enr.price) : (enr.amount ? Number(enr.amount) : 0);
+          const amount = resolveProductPrice(enr.product_id || enr.course_id, rawPrice);
 
           const info = resolveProductInfo(
             enr.course_title || enr.title || enr.item_title,
@@ -298,7 +373,7 @@ export default function SuperadminDashboardPage() {
         });
       }
 
-      // 4. Fetch preorder_buyers table from Supabase
+      // 4. Fetch preorder_buyers table from Supabasepabase
       const { data: prebuyers } = await supabase.from('preorder_buyers').select('*');
       if (prebuyers && Array.isArray(prebuyers)) {
         prebuyers.forEach((pb: any) => {
@@ -434,7 +509,86 @@ export default function SuperadminDashboardPage() {
         }
       }
 
+      // 4. Fetch sales from preorder_buyers table
+      try {
+        const { data: preorderBuyers } = await supabase.from('preorder_buyers').select('*');
+        if (preorderBuyers && Array.isArray(preorderBuyers)) {
+          preorderBuyers.forEach((pb: any) => {
+            const em = (pb.customer_email || pb.email || '').toLowerCase().trim();
+            const rawPrice = pb.price ? Number(pb.price) : 0;
+            const amount = resolveProductPrice(pb.campaign_id || pb.course_id, rawPrice);
+
+            if (em) {
+              const existing = accountsMap.get(em);
+              if (existing) {
+                if (existing.purchasesCount === 0) {
+                  existing.purchasesCount += 1;
+                  existing.totalSpent += amount;
+                  totalOrdersCount += 1;
+                  totalRev += amount;
+                }
+              } else {
+                accountsMap.set(em, {
+                  id: pb.id || `pb-${Date.now()}`,
+                  name: pb.customer_name || em.split('@')[0],
+                  email: em,
+                  role: 'eleve',
+                  purchasesCount: 1,
+                  totalSpent: amount,
+                  purchasesDetails: []
+                });
+                totalOrdersCount += 1;
+                totalRev += amount;
+              }
+            }
+          });
+        }
+      } catch (pbErr) {
+        console.warn('Preorder buyers load notice:', pbErr);
+      }
+
+
+      // 5. Aggregate local purchases storage (fallback for client-only test purchases)
+      if (typeof window !== 'undefined') {
+        const localPurchasesStr = localStorage.getItem('gd_user_purchases');
+        if (localPurchasesStr) {
+          try {
+            const localPurchases = JSON.parse(localPurchasesStr);
+            Object.entries(localPurchases).forEach(([emailKey, items]: [string, any]) => {
+              const em = emailKey.toLowerCase().trim();
+              if (em && Array.isArray(items) && items.length > 0) {
+                items.forEach((item: any) => {
+                  const amount = item.price ? Number(item.price) : 29;
+                  const existing = accountsMap.get(em);
+                  if (existing) {
+                    if (existing.purchasesCount === 0) {
+                      existing.purchasesCount += 1;
+                      existing.totalSpent += amount;
+                      totalOrdersCount += 1;
+                      totalRev += amount;
+                    }
+                  } else {
+                    accountsMap.set(em, {
+                      id: `lp-${Date.now()}_${Math.random()}`,
+                      name: em.split('@')[0],
+                      email: em,
+                      role: 'eleve',
+                      purchasesCount: 1,
+                      totalSpent: amount,
+                      purchasesDetails: []
+                    });
+                    totalOrdersCount += 1;
+                    totalRev += amount;
+                  }
+                });
+              }
+            });
+          } catch (e) {}
+        }
+      }
+
       const uniqueList = Array.from(accountsMap.values());
+
 
       setUsersList(uniqueList);
       setStats({
@@ -546,6 +700,14 @@ export default function SuperadminDashboardPage() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
+              onClick={loadDashboardData}
+              className="px-4 py-2 bg-[#18757d] hover:bg-[#12595f] text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-white" />
+              Actualiser les ventes BDD
+            </button>
+
+            <button
               onClick={handleResetPurchasesOnly}
               className="px-4 py-2 bg-white border border-[#e8ded0] text-xs font-bold text-[#5e4d46] hover:text-[#18757d] hover:border-[#18757d]/30 rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
@@ -561,6 +723,7 @@ export default function SuperadminDashboardPage() {
               Réinitialiser tout à zéro
             </button>
           </div>
+
         </div>
       </section>
 
