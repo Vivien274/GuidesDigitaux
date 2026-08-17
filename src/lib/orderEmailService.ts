@@ -1,4 +1,5 @@
 import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
+import { getEncryptedDownloadUrl } from '@/lib/downloadSecurity';
 
 export interface OrderEmailItem {
   id: string;
@@ -27,35 +28,27 @@ export interface SendOrderEmailPayload {
 const PDF_DOWNLOAD_LINKS: Record<string, { title: string; fileUrl: string }> = {
   'mini-guide-ecrire-web-artisan': {
     title: "Mini-guide : Écrire pour le web quand on est artisan",
-    fileUrl: "https://guides-digitaux.com/downloads/mini-guide-ecrire-web-artisan.pdf"
-  },
-  'mini-guide-comprendre-ses-stats-sans-etre-data-scientist': {
-    title: "Mini-Guide : Comprendre ses stats sans être data scientist",
-    fileUrl: "https://guides-digitaux.com/downloads/mini-guide-comprendre-ses-stats.pdf"
-  },
-  'mini-guide-optimiser-ses-photos': {
-    title: "Mini-Guide : Optimiser ses photos sans perdre en qualité",
-    fileUrl: "https://guides-digitaux.com/downloads/mini-guide-optimiser-ses-photos.pdf"
-  },
-  'mini-guide-seo-local': {
-    title: "Mini-Guide : SEO Local — Être trouvé par les clients près de chez toi",
-    fileUrl: "https://guides-digitaux.com/downloads/mini-guide-seo-local.pdf"
+    fileUrl: "/downloads/mini-guide-ecrire-web-artisan.pdf"
   },
   'ebook-visibilite-ligne-artisan': {
-    title: "Ebook : Bien Démarrer sa Visibilité en Ligne Quand on est Artisan",
-    fileUrl: "https://guides-digitaux.com/downloads/ebook-visibilite-ligne-artisan.pdf"
-  },
-  'checklist-les-principes-ux': {
-    title: "Checklist : Les Principes Clés UX pour un Site d'Artisan Réussi",
-    fileUrl: "https://guides-digitaux.com/downloads/checklist-principes-ux.pdf"
+    title: "Ebook : Doubler sa visibilité locale",
+    fileUrl: "/downloads/ebook-visibilite-ligne-artisan.pdf"
   },
   'checklist-securite-anti-spam-wordpress': {
     title: "Checklist : Sécurité & Anti-Spam WordPress",
-    fileUrl: "https://guides-digitaux.com/downloads/checklist-securite-anti-spam-wordpress.pdf"
+    fileUrl: "/downloads/checklist-securite-anti-spam-wordpress.pdf"
+  },
+  'checklist-les-principes-ux': {
+    title: "Checklist : Les 10 Principes UX Incontournables",
+    fileUrl: "/downloads/checklist-principes-ux.pdf"
   },
   'checklist-profil-reseaux-sociaux': {
-    title: "Checklist : Profil Réseaux Sociaux Irrésistible",
-    fileUrl: "https://guides-digitaux.com/downloads/checklist-profil-reseaux-sociaux.pdf"
+    title: "Checklist : Profil réseaux sociaux pro",
+    fileUrl: "/downloads/checklist-profil-reseaux-sociaux.pdf"
+  },
+  'checklist-google-business-profile': {
+    title: "Checklist : Optimisation Google Business Profile",
+    fileUrl: "/downloads/checklist-google-business-profile.pdf"
   }
 };
 
@@ -68,11 +61,19 @@ export function getDeduplicatedDownloadLinksForProduct(productId: string, payloa
 
   const addLink = (title: string, rawUrl?: string) => {
     if (!rawUrl || !rawUrl.trim()) return;
-    const url = rawUrl.trim();
+    let url = rawUrl.trim();
+    
+    // Encrypt raw PDF path into secure URL (valid for 30 days in emails)
+    let secureUrl = getEncryptedDownloadUrl(url, productId, 720);
+    if (secureUrl.startsWith('/')) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.guides-digitaux.com';
+      secureUrl = `${baseUrl}${secureUrl}`;
+    }
+
     // Normalize URL key to remove duplicates (e.g. /downloads/file.pdf vs full http url)
     const filenameKey = url.split('/').pop()?.toLowerCase().split('?')[0] || url.toLowerCase();
     if (!linksMap.has(filenameKey)) {
-      linksMap.set(filenameKey, { title, url });
+      linksMap.set(filenameKey, { title, url: secureUrl });
     }
   };
 

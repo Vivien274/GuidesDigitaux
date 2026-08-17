@@ -18,8 +18,25 @@ import {
   UserCheck,
   BookOpen,
   Tag,
-  BarChart2
+  BarChart2,
+  X,
+  ExternalLink,
+  Download,
+  Eye,
+  Receipt,
+  Clock,
+  Package
 } from 'lucide-react';
+
+export interface UserPurchaseDetail {
+  id: string;
+  title: string;
+  price: number;
+  date: string;
+  type: string;
+  slug?: string;
+  downloadPdf?: string;
+}
 
 interface AdminUserItem {
   id: string;
@@ -28,11 +45,13 @@ interface AdminUserItem {
   role: UserRole;
   purchasesCount: number;
   totalSpent: number;
+  purchasesDetails: UserPurchaseDetail[];
 }
 
 import { purgeAllCoursesData } from '@/lib/coursesStore';
 import { purgeAllPreorders } from '@/lib/preordersStore';
-import { purgeAllUserPurchases } from '@/lib/userPurchasesStore';
+import { purgeAllUserPurchases, getUserPurchases } from '@/lib/userPurchasesStore';
+import { getEncryptedDownloadUrl } from '@/lib/downloadSecurity';
 import { supabase } from '@/lib/supabaseLms';
 
 import { useRouter } from 'next/navigation';
@@ -52,6 +71,8 @@ export default function SuperadminDashboardPage() {
   const [newFormateurEmail, setNewFormateurEmail] = useState('');
   const [showCreateFormateur, setShowCreateFormateur] = useState(false);
 
+  const [selectedUserForDetails, setSelectedUserForDetails] = useState<AdminUserItem | null>(null);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedUser = localStorage.getItem('gd_auth_user');
@@ -67,8 +88,7 @@ export default function SuperadminDashboardPage() {
     }
   }, [user, role, router]);
 
-  // Load real accounts & purchases from Supabase DB & localStorage
-  // Load real accounts & purchases directly from Supabase DB tables (profiles, orders, enrollments, preorder_buyers)
+  // Load real accounts & purchases directly from Supabase DB tables (profiles, orders, enrollments) & localStorage
   const loadDashboardData = async () => {
     try {
       const accountsMap = new Map<string, AdminUserItem>();
@@ -85,7 +105,8 @@ export default function SuperadminDashboardPage() {
               email: em,
               role: p.role || 'eleve',
               purchasesCount: 0,
-              totalSpent: 0
+              totalSpent: 0,
+              purchasesDetails: []
             });
           }
         });
@@ -103,21 +124,33 @@ export default function SuperadminDashboardPage() {
           totalOrdersCount += 1;
           totalRev += amount;
 
+          const detailItem: UserPurchaseDetail = {
+            id: ord.id || `ord-${Math.random().toString(36).substring(2, 7)}`,
+            title: ord.product_title || ord.title || 'Produit Digital',
+            price: amount,
+            date: ord.created_at || ord.purchase_date || new Date().toISOString(),
+            type: ord.category || ord.type || 'Achat Boutique',
+            slug: ord.product_id || ord.slug,
+            downloadPdf: ord.download_pdf || ord.pdf_url
+          };
+
           if (em) {
-            const existing = accountsMap.get(em);
-            if (existing) {
-              existing.purchasesCount += 1;
-              existing.totalSpent += amount;
-            } else {
-              accountsMap.set(em, {
+            let userObj = accountsMap.get(em);
+            if (!userObj) {
+              userObj = {
                 id: ord.id || `o-${Date.now()}`,
                 name: em.split('@')[0],
                 email: em,
                 role: 'eleve',
-                purchasesCount: 1,
-                totalSpent: amount
-              });
+                purchasesCount: 0,
+                totalSpent: 0,
+                purchasesDetails: []
+              };
+              accountsMap.set(em, userObj);
             }
+            userObj.purchasesCount += 1;
+            userObj.totalSpent += amount;
+            userObj.purchasesDetails.push(detailItem);
           }
         });
       }
@@ -128,30 +161,64 @@ export default function SuperadminDashboardPage() {
         enrollments.forEach((enr: any) => {
           const em = enr.user_email?.toLowerCase().trim();
           const amount = enr.price ? Number(enr.price) : 29;
+
+          const detailItem: UserPurchaseDetail = {
+            id: enr.id || `enr-${Math.random().toString(36).substring(2, 7)}`,
+            title: enr.course_title || enr.title || 'Formation LMS',
+            price: amount,
+            date: enr.enrolled_at || new Date().toISOString(),
+            type: enr.category || 'Formation LMS',
+            slug: enr.course_slug || enr.slug,
+            downloadPdf: enr.download_pdf
+          };
+
           if (em) {
-            const existing = accountsMap.get(em);
-            if (existing) {
-              if (existing.purchasesCount === 0) {
-                existing.purchasesCount += 1;
-                existing.totalSpent += amount;
-                totalOrdersCount += 1;
-                totalRev += amount;
-              }
-            } else {
-              accountsMap.set(em, {
+            let userObj = accountsMap.get(em);
+            if (!userObj) {
+              userObj = {
                 id: enr.id || `e-${Date.now()}`,
                 name: em.split('@')[0],
                 email: em,
                 role: 'eleve',
-                purchasesCount: 1,
-                totalSpent: amount
-              });
+                purchasesCount: 0,
+                totalSpent: 0,
+                purchasesDetails: []
+              };
+              accountsMap.set(em, userObj);
+            }
+            if (!userObj.purchasesDetails.some(d => d.title === detailItem.title || d.id === detailItem.id)) {
+              userObj.purchasesCount += 1;
+              userObj.totalSpent += amount;
+              userObj.purchasesDetails.push(detailItem);
               totalOrdersCount += 1;
               totalRev += amount;
             }
           }
         });
       }
+
+      // 4. Merge local storage purchases for client-side test accounts
+      accountsMap.forEach((userObj, em) => {
+        const localItems = getUserPurchases(em);
+        if (localItems && localItems.length > 0) {
+          localItems.forEach(item => {
+            if (!userObj.purchasesDetails.some(d => d.title === item.title || d.id === item.id)) {
+              const price = item.price || 29;
+              userObj.purchasesCount += 1;
+              userObj.totalSpent += price;
+              userObj.purchasesDetails.push({
+                id: item.id || `loc-${Date.now()}`,
+                title: item.title,
+                price: price,
+                date: item.purchaseDate || new Date().toISOString(),
+                type: item.typeLabel || item.type || 'Guide Digital',
+                slug: item.slug,
+                downloadPdf: item.downloadPdf
+              });
+            }
+          });
+        }
+      });
 
       const uniqueList = Array.from(accountsMap.values());
 
@@ -540,9 +607,27 @@ export default function SuperadminDashboardPage() {
                 <tbody className="divide-y divide-[#eee7da]">
                   {usersList.map((u) => (
                     <tr key={u.id} className="hover:bg-[#faf8f5] transition-colors">
-                      <td className="py-4 px-4 font-extrabold">{u.name}</td>
+                      <td className="py-4 px-4 font-extrabold">
+                        <button
+                          onClick={() => setSelectedUserForDetails(u)}
+                          className="text-[#18757d] hover:text-[#e05a47] font-extrabold flex items-center gap-1.5 cursor-pointer hover:underline text-left group"
+                          title="Cliquer pour consulter le détail des commandes"
+                        >
+                          <span>{u.name}</span>
+                          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      </td>
                       <td className="py-4 px-4 text-slate-600">{u.email}</td>
-                      <td className="py-4 px-4">{u.purchasesCount} commande(s)</td>
+                      <td className="py-4 px-4">
+                        <button
+                          onClick={() => setSelectedUserForDetails(u)}
+                          className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-teal-50 text-[#18757d] hover:bg-[#18757d] hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1"
+                          title="Voir les achats de ce client"
+                        >
+                          <ShoppingBag className="w-3 h-3" />
+                          {u.purchasesCount} commande(s)
+                        </button>
+                      </td>
                       <td className="py-4 px-4 font-bold text-[#18757d]">{u.totalSpent.toFixed(2).replace('.', ',')} €</td>
                       <td className="py-4 px-4">
                         <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase ${
@@ -575,6 +660,124 @@ export default function SuperadminDashboardPage() {
 
         </div>
       </section>
+
+      {/* USER PURCHASES & ORDERS DETAIL MODAL */}
+      {selectedUserForDetails && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-3xl rounded-3xl border border-[#eee7da] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-6 bg-[#faf8f5] border-b border-[#eee7da] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center font-bold">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#332420]">
+                    Historique des Achats de {selectedUserForDetails.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">{selectedUserForDetails.email}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedUserForDetails(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Summary KPI */}
+            <div className="p-6 border-b border-[#f4ede0] bg-white grid grid-cols-3 gap-4 text-center">
+              <div className="p-3 bg-[#faf8f5] rounded-2xl border border-[#eee7da]">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total Dépensé</span>
+                <span className="text-lg font-black text-[#18757d]">
+                  {selectedUserForDetails.totalSpent.toFixed(2).replace('.', ',')} €
+                </span>
+              </div>
+              <div className="p-3 bg-[#faf8f5] rounded-2xl border border-[#eee7da]">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Nombre d'Achats</span>
+                <span className="text-lg font-black text-[#332420]">
+                  {selectedUserForDetails.purchasesCount}
+                </span>
+              </div>
+              <div className="p-3 bg-[#faf8f5] rounded-2xl border border-[#eee7da]">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Rôle Compte</span>
+                <span className="text-xs font-black text-[#e05a47] uppercase inline-block mt-1">
+                  {selectedUserForDetails.role}
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Content / Orders List */}
+            <div className="p-6 max-h-[60vh] overflow-y-auto space-y-4">
+              {(!selectedUserForDetails.purchasesDetails || selectedUserForDetails.purchasesDetails.length === 0) ? (
+                <div className="py-12 text-center text-xs text-slate-400 font-medium">
+                  Aucune commande enregistrée pour ce profil client.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {selectedUserForDetails.purchasesDetails.map((item, idx) => (
+                    <div key={idx} className="p-4 bg-[#faf8f5] rounded-2xl border border-[#eee7da] flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-[#18757d] transition-colors">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-[#e6f4f3] text-[#18757d]">
+                            {item.type}
+                          </span>
+                          <span className="text-xs font-extrabold text-[#332420]">{item.title}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          Commande du {new Date(item.date).toLocaleDateString('fr-FR')} • Réf: <span className="font-mono">{item.id.substring(0, 14)}</span>
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3 self-end sm:self-auto">
+                        <span className="text-sm font-black text-[#18757d] font-mono whitespace-nowrap">
+                          {item.price.toFixed(2).replace('.', ',')} €
+                        </span>
+
+                        <div className="flex items-center gap-1.5">
+                          {item.downloadPdf && (
+                            <a
+                              href={getEncryptedDownloadUrl(item.downloadPdf, item.id)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-[#18757d] text-white hover:bg-[#12595f] rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs"
+                              title="Télécharger le PDF sécurisé"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              PDF
+                            </a>
+                          )}
+                          <Link
+                            href={item.slug ? `/produit/${item.slug}` : '/boutique'}
+                            target="_blank"
+                            className="p-1.5 text-slate-500 hover:text-[#18757d] hover:bg-white rounded-xl transition-colors"
+                            title="Voir la page produit"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-[#faf8f5] border-t border-[#eee7da] text-right">
+              <button
+                onClick={() => setSelectedUserForDetails(null)}
+                className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-extrabold transition-colors cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

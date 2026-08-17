@@ -27,6 +27,7 @@ import {
 
 import { fetchCoursesFromDb, saveUserPurchaseToDb } from '@/lib/supabaseLms';
 import { getUserPurchases, getUserPurchasesAsync, addPurchaseToUser } from '@/lib/userPurchasesStore';
+import { getEncryptedDownloadUrl } from '@/lib/downloadSecurity';
 import { getCoachingStatusForUser } from '@/lib/coachingStore';
 
 const DEFAULT_THUMBNAIL = 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp';
@@ -445,7 +446,7 @@ function EleveDashboardContent() {
                         </Link>
                       ) : (
                         <a
-                          href={item.downloadPdf}
+                          href={getEncryptedDownloadUrl(item.downloadPdf, item.id)}
                           target="_blank"
                           rel="noreferrer"
                           className="w-full py-3.5 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"

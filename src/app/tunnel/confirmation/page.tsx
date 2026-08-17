@@ -23,6 +23,7 @@ import {
 
 import { incrementPreorderEnrollment } from '@/lib/preordersStore';
 import { addPurchaseToUser, getUserPurchases } from '@/lib/userPurchasesStore';
+import { getEncryptedDownloadUrl } from '@/lib/downloadSecurity';
 import { saveOrderToDb, saveUserPurchaseToDb } from '@/lib/supabaseLms';
 import { recordPreorderPurchaseInDb } from '@/lib/supabaseLms';
 import { trackPurchase } from '@/lib/metaPixel';
@@ -257,7 +258,7 @@ function ConfirmationContent() {
                         </div>
                       </div>
                       <a
-                        href={pdfItem.downloadPdf || '/downloads/support-formation-woocommerce.pdf'}
+                        href={getEncryptedDownloadUrl(pdfItem.downloadPdf || '/downloads/mini-guide-ecrire-web-artisan.pdf', pdfItem.id)}
                         target="_blank"
                         rel="noreferrer"
                         className="w-full sm:w-auto px-5 py-2.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"

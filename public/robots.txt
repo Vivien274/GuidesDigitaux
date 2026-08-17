@@ -1,0 +1,18 @@
+# Robots.txt for Guides Digitaux
+User-agent: *
+Allow: /
+Allow: /boutique
+Allow: /produit/
+Allow: /formation/
+Allow: /blog
+Allow: /blog/
+Allow: /precommande
+
+# Strictly Disallow search engine indexing of private assets & endpoints
+Disallow: /downloads/
+Disallow: /api/download
+Disallow: /dashboard/
+Disallow: /tunnel/
+Disallow: /api/
+
+Sitemap: https://www.guides-digitaux.com/sitemap.xml
