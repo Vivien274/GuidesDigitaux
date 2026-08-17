@@ -100,28 +100,23 @@ function ProductEditorContent() {
       if (found || defMatch) {
         const item = found || (defMatch as any);
         setId(item.id);
-        setTitle(defMatch?.title || item.title);
-        setSlug(item.slug);
-        setCategory(item.category);
-        setCategoryLabel(item.categoryLabel || 'Formation Vidéo');
-        setBadge(item.badge || '');
-        setPrice(String(item.price));
-        setOriginalPrice(item.originalPrice ? String(item.originalPrice) : '');
-        setBookingUrl(item.bookingUrl || '');
-        setDownloadPdf(item.downloadPdf || '');
-        setImage(defMatch?.image || item.image || '');
-        setGallery(item.gallery || [item.image]);
-        setDescription(defMatch?.description || item.description || '');
-        
-        const effectiveLongDesc = (defMatch?.longDescription) 
-          ? defMatch.longDescription 
-          : (item.longDescription || item.description || '');
-        setLongDescription(effectiveLongDesc);
-
-        setFeatures(item.features && item.features.length > 0 ? item.features : ['Accès immédiat par e-mail']);
-        setProductType(item.productType || (item.category === 'ebook' && item.categoryLabel?.toLowerCase().includes('pack') ? 'bundle' : 'simple'));
-        setBundleProductIds(item.bundleProductIds || []);
-        setBundleCustomItems(item.bundleCustomItems || []);
+        setTitle(item.title || defMatch?.title || '');
+        setSlug(item.slug || defMatch?.slug || '');
+        setCategory(item.category || defMatch?.category || 'checklist');
+        setCategoryLabel(item.categoryLabel || defMatch?.categoryLabel || 'Checklist Digital');
+        setBadge(item.badge || defMatch?.badge || '');
+        setPrice(String(item.price ?? defMatch?.price ?? 0));
+        setOriginalPrice(item.originalPrice ? String(item.originalPrice) : (defMatch?.originalPrice ? String(defMatch.originalPrice) : ''));
+        setBookingUrl(item.bookingUrl || defMatch?.bookingUrl || '');
+        setDownloadPdf(item.downloadPdf || defMatch?.downloadPdf || '');
+        setImage(item.image || defMatch?.image || '');
+        setGallery((item.gallery && item.gallery.length > 0) ? item.gallery : (defMatch?.gallery || [item.image || defMatch?.image || '']));
+        setDescription(item.description || defMatch?.description || '');
+        setLongDescription(item.longDescription || defMatch?.longDescription || item.description || '');
+        setFeatures(item.features && item.features.length > 0 ? item.features : (defMatch?.features || ['Accès immédiat par e-mail']));
+        setProductType(item.productType || defMatch?.productType || (item.category === 'ebook' && item.categoryLabel?.toLowerCase().includes('pack') ? 'bundle' : 'simple'));
+        setBundleProductIds(item.bundleProductIds || defMatch?.bundleProductIds || []);
+        setBundleCustomItems(item.bundleCustomItems || defMatch?.bundleCustomItems || []);
       }
     } else {
       setId(`prod-${Date.now()}`);

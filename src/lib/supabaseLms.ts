@@ -686,9 +686,13 @@ export interface DBCourse {
 }
 
 import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
+import { getStoredProducts } from '@/lib/productsStore';
 
 export async function fetchProductsFromDb(): Promise<any[]> {
   try {
+    const stored = getStoredProducts();
+    const storedMap = new Map(stored.map((p: any) => [p.id, p]));
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -697,56 +701,52 @@ export async function fetchProductsFromDb(): Promise<any[]> {
     if (!error && data && data.length > 0) {
       const dbProducts = data.map((row: any) => {
         const isBundle = (row.id && row.id.includes('bundle')) || (row.slug && row.slug.includes('bundle'));
-        const localMatch = DEFAULT_PRODUCTS.find(p => 
+        const localMatch = storedMap.get(row.id) || storedMap.get(row.slug) || DEFAULT_PRODUCTS.find(p => 
           p.id === row.id || 
           p.slug === row.slug || 
           p.id === row.slug ||
           p.slug === row.id ||
-          p.title.toLowerCase().trim() === (row.title || '').toLowerCase().trim() || 
-          (isBundle && p.id.includes('bundle'))
+          p.title?.toLowerCase().trim() === (row.title || '').toLowerCase().trim()
         );
-        const resolvedImage = localMatch?.image || row.image || row.image_url || 'https://www.guides-digitaux.com/wp-content/uploads/2025/10/GD-LogoFondTransparent.webp';
-        
-        const effectiveLongDescription = (localMatch && localMatch.longDescription)
-          ? localMatch.longDescription
-          : (row.long_description || row.description || '');
 
-        const effectiveDescription = (localMatch && localMatch.description)
-          ? localMatch.description
-          : (row.description || '');
+        const resolvedImage = row.image || row.image_url || localMatch?.image || 'https://www.guides-digitaux.com/wp-content/uploads/2025/10/GD-LogoFondTransparent.webp';
+        
+        const effectiveLongDescription = row.long_description || localMatch?.longDescription || row.description || '';
+        const effectiveDescription = row.description || localMatch?.description || '';
 
         return {
           id: row.id,
-          title: localMatch?.title || row.title,
+          title: row.title || localMatch?.title,
           slug: row.slug || row.id,
           category: row.category || localMatch?.category || 'checklist',
-          categoryLabel: localMatch?.categoryLabel || row.category_label || row.categoryLabel || 'Checklist Digital',
-          price: isBundle ? 250 : (localMatch?.price ?? Number(row.price)),
+          categoryLabel: row.category_label || row.categoryLabel || localMatch?.categoryLabel || 'Checklist Digital',
+          price: isBundle ? 250 : (row.price ? Number(row.price) : (localMatch?.price ?? 0)),
           originalPrice: isBundle ? 298 : (row.original_price ? Number(row.original_price) : localMatch?.originalPrice),
           rating: Number(row.rating) || localMatch?.rating || 5,
           reviewsCount: Number(row.reviews_count) || localMatch?.reviewsCount || 0,
           badge: isBundle ? 'ÉCONOMISE 48€' : (row.badge || localMatch?.badge),
           image: resolvedImage,
-          imageAlt: localMatch?.imageAlt || row.image_alt || row.imageAlt || `${row.title} - Guides digitaux - Métropole lilloise`,
+          imageAlt: row.image_alt || row.imageAlt || localMatch?.imageAlt || `${row.title} - Guides digitaux - Métropole lilloise`,
           description: effectiveDescription,
           longDescription: effectiveLongDescription,
           htmlContent: row.html_content,
-          downloadPdf: localMatch?.downloadPdf || row.download_pdf || row.pdf_file_url,
-          features: (isBundle && localMatch?.features) ? localMatch.features : (Array.isArray(row.features) && row.features.length > 0 ? row.features : (localMatch?.features || [])),
-          gallery: (localMatch?.gallery && localMatch.gallery.length > 0) ? localMatch.gallery : (Array.isArray(row.gallery) && row.gallery.length > 0 ? row.gallery : [resolvedImage])
+          downloadPdf: row.download_pdf || row.pdf_file_url || localMatch?.downloadPdf,
+          features: (Array.isArray(row.features) && row.features.length > 0) ? row.features : (localMatch?.features || []),
+          gallery: (Array.isArray(row.gallery) && row.gallery.length > 0) ? row.gallery : (localMatch?.gallery || [resolvedImage])
         };
       });
 
       const dbIds = new Set(dbProducts.map((p: any) => p.id));
       const dbSlugs = new Set(dbProducts.map((p: any) => p.slug));
-      const missingDefaults = DEFAULT_PRODUCTS.filter(dp => !dbIds.has(dp.id) && !dbSlugs.has(dp.id) && !dbIds.has(dp.slug) && !dbSlugs.has(dp.slug));
+      
+      const missingStored = stored.filter((sp: any) => !dbIds.has(sp.id) && !dbSlugs.has(sp.id) && !dbIds.has(sp.slug) && !dbSlugs.has(sp.slug));
 
-      return [...dbProducts, ...missingDefaults];
+      return [...dbProducts, ...missingStored];
     }
   } catch (e) {
     console.warn('Error fetching products from Supabase DB', e);
   }
-  return DEFAULT_PRODUCTS;
+  return getStoredProducts();
 }
 
 export interface PreorderBuyer {
