@@ -331,8 +331,91 @@ function ConfirmationContent() {
             <span>Un e-mail contenant votre reçu, vos accès et vos liens de téléchargement PDF a été envoyé à <strong>{activeEmail}</strong></span>
           </div>
 
-          {/* DIRECT PDF DOWNLOAD BOX FOR PDF PURCHASES */}
-          {isMounted && (() => {
+          {/* PREORDER 3 BONUS DOWNLOAD BOX */}
+          {isMounted && isPreorder && (
+            <div className="p-6 bg-[#e6f4f3] rounded-3xl border-2 border-[#18757d]/40 text-left space-y-4 shadow-md">
+              <div className="flex items-center justify-between gap-2 border-b border-[#bce3e0] pb-3">
+                <div className="flex items-center gap-2 text-[#18757d] font-extrabold text-sm">
+                  <Gift className="w-5 h-5 text-[#F2542D] shrink-0" />
+                  <h3>Vos 3 Bonus Inclus (Téléchargement Immédiat) :</h3>
+                </div>
+                <span className="px-3 py-1 bg-[#F2542D] text-white text-[10px] font-extrabold uppercase rounded-full tracking-wider">
+                  Accès Direct PDF HD
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {/* BONUS 1 */}
+                <div className="p-4 bg-white rounded-2xl border border-[#bce3e0] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center font-bold shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-[#332420]">Bonus 1 : Checklist Audit Rapide Fiche Google</h4>
+                      <span className="text-[10px] text-slate-500 font-medium">25 points de contrôle stratégiques • Format PDF HD (4 pages)</span>
+                    </div>
+                  </div>
+                  <a
+                    href={getEncryptedDownloadUrl('/downloads/bonus-1-checklist-audit-fiche-google.pdf', 'bonus-1')}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full sm:w-auto px-5 py-2.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                  >
+                    <Download className="w-4 h-4" />
+                    Télécharger Bonus #1
+                  </a>
+                </div>
+
+                {/* BONUS 2 */}
+                <div className="p-4 bg-white rounded-2xl border border-[#bce3e0] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center font-bold shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-[#332420]">Bonus 2 : Kit 10 Modèles de Réponses aux Avis Google</h4>
+                      <span className="text-[10px] text-slate-500 font-medium">Modèles copier-coller (Avis 5★ & avis délicats) • Format PDF HD</span>
+                    </div>
+                  </div>
+                  <a
+                    href={getEncryptedDownloadUrl('/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf', 'bonus-2')}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full sm:w-auto px-5 py-2.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                  >
+                    <Download className="w-4 h-4" />
+                    Télécharger Bonus #2
+                  </a>
+                </div>
+
+                {/* BONUS 3 */}
+                <div className="p-4 bg-white rounded-2xl border border-[#bce3e0] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center font-bold shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-[#332420]">Bonus 3 : Scripts Prêts à l'Emploi WhatsApp, SMS & Email</h4>
+                      <span className="text-[10px] text-slate-500 font-medium">Méthode douce 5x plus d'avis • Format PDF HD</span>
+                    </div>
+                  </div>
+                  <a
+                    href={getEncryptedDownloadUrl('/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf', 'bonus-3')}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full sm:w-auto px-5 py-2.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                  >
+                    <Download className="w-4 h-4" />
+                    Télécharger Bonus #3
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DIRECT PDF DOWNLOAD BOX FOR EBOOK / CHECKLIST PURCHASES */}
+          {isMounted && !isPreorder && (() => {
             const purchases = getUserPurchases(activeEmail);
             const pdfPurchases = purchases.filter((p: any) => p.type === 'ebook' || p.type === 'checklist' || p.downloadPdf || p.title?.toLowerCase().includes('guide') || p.title?.toLowerCase().includes('checklist'));
             if (pdfPurchases.length === 0) return null;

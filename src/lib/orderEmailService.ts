@@ -100,7 +100,14 @@ export function getDeduplicatedDownloadLinksForProduct(productId: string, payloa
     }
   }
 
-  // 3. Bundled custom items
+  // 3. Preorder bonus PDFs (e.g. Fiche Google Business Profile)
+  if (productId.includes('precommande') || productId.includes('preorder') || productId === 'precommande-fiche-google') {
+    addLink('Bonus 1 : Checklist Audit Rapide Fiche Google', '/downloads/bonus-1-checklist-audit-fiche-google.pdf');
+    addLink('Bonus 2 : Kit 10 Modèles Avis Google', '/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf');
+    addLink('Bonus 3 : Scripts WhatsApp & SMS Avis 5★', '/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf');
+  }
+
+  // 4. Bundled custom items
   if (targetProd?.bundleCustomItems && targetProd.bundleCustomItems.length > 0) {
     for (const cItem of targetProd.bundleCustomItems) {
       if (cItem.pdfUrl) {
