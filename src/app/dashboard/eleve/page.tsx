@@ -30,6 +30,8 @@ import { getUserPurchases, getUserPurchasesAsync, addPurchaseToUser } from '@/li
 import { getEncryptedDownloadUrl } from '@/lib/downloadSecurity';
 import { getCoachingStatusForUser } from '@/lib/coachingStore';
 
+import CertificateModal from '@/components/CertificateModal';
+
 const DEFAULT_THUMBNAIL = 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp';
 
 function EleveDashboardContent() {
@@ -40,6 +42,7 @@ function EleveDashboardContent() {
 
   const [courses, setCourses] = useState<any[]>([]);
   const [coachingStatus, setCoachingStatus] = useState<any>(null);
+  const [certModalCourse, setCertModalCourse] = useState<{ title: string; date?: string } | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -252,15 +255,13 @@ function EleveDashboardContent() {
                 </Link>
               ) : heroBannerItem.progress >= 100 ? (
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0">
-                  <a
-                    href={heroBannerItem.downloadPdf || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp'}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full sm:w-auto px-6 py-4 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                  <button
+                    onClick={() => setCertModalCourse({ title: heroBannerItem.title, date: heroBannerItem.purchaseDate })}
+                    className="w-full sm:w-auto px-6 py-4 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Award className="w-5 h-5 text-[#332420]" />
-                    Télécharger le certificat
-                  </a>
+                    Afficher / Imprimer le certificat
+                  </button>
 
                   <Link
                     href={`/formation/${heroBannerItem.slug}`}
@@ -407,13 +408,51 @@ function EleveDashboardContent() {
                           </a>
                         )
                       ) : isPreorderItem ? (
-                        <Link
-                          href="/precommande"
-                          className="w-full py-3.5 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 uppercase tracking-wider cursor-pointer"
-                        >
-                          <Clock className="w-4 h-4" />
-                          SORTIE LE 15 SEPTEMBRE 2026
-                        </Link>
+                        <div className="space-y-2.5 w-full">
+                          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] font-semibold text-amber-900 flex items-center justify-between">
+                            <span>🚀 Sortie des vidéos : 25 Août 2026</span>
+                            <span className="font-extrabold text-[#18757d]">🎁 3 Bonus Inclus</span>
+                          </div>
+
+                          <a
+                            href={getEncryptedDownloadUrl('/downloads/bonus-1-checklist-audit-fiche-google.pdf', 'bonus-1')}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full py-2.5 px-3 text-[11px] font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-between"
+                          >
+                            <span className="flex items-center gap-1.5 truncate">
+                              <FileText className="w-3.5 h-3.5 shrink-0" />
+                              Bonus 1 : Checklist Audit Fiche Google
+                            </span>
+                            <Download className="w-3.5 h-3.5 shrink-0 text-[#18757d]" />
+                          </a>
+
+                          <a
+                            href={getEncryptedDownloadUrl('/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf', 'bonus-2')}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full py-2.5 px-3 text-[11px] font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-between"
+                          >
+                            <span className="flex items-center gap-1.5 truncate">
+                              <FileText className="w-3.5 h-3.5 shrink-0" />
+                              Bonus 2 : Kit 10 Modèles Avis Google
+                            </span>
+                            <Download className="w-3.5 h-3.5 shrink-0 text-[#18757d]" />
+                          </a>
+
+                          <a
+                            href={getEncryptedDownloadUrl('/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf', 'bonus-3')}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full py-2.5 px-3 text-[11px] font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-between"
+                          >
+                            <span className="flex items-center gap-1.5 truncate">
+                              <FileText className="w-3.5 h-3.5 shrink-0" />
+                              Bonus 3 : Scripts WhatsApp Avis 5★
+                            </span>
+                            <Download className="w-3.5 h-3.5 shrink-0 text-[#18757d]" />
+                          </a>
+                        </div>
                       ) : item.type === 'formation' || !item.downloadPdf ? (
                         <Link
                           href={`/formation/${item.slug}`}
@@ -443,6 +482,14 @@ function EleveDashboardContent() {
 
         </div>
       </section>
+
+      <CertificateModal
+        isOpen={!!certModalCourse}
+        onClose={() => setCertModalCourse(null)}
+        studentName={user?.fullName || user?.email?.split('@')[0] || ''}
+        courseTitle={certModalCourse?.title || ''}
+        completionDate={certModalCourse?.date}
+      />
 
       <Footer />
     </div>

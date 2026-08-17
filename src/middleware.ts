@@ -45,6 +45,16 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // 4. Protect Direct Downloads from Hotlinking & Theft
+  if (pathname.startsWith('/downloads/') && pathname.endsWith('.pdf')) {
+    const session = await verifySession(token);
+    if (!session) {
+      const redirectUrl = new URL('/mon-compte', request.url);
+      redirectUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
   return NextResponse.next();
 }
 
@@ -54,6 +64,7 @@ export const config = {
     '/dashboard/eleve',
     '/dashboard/admin/:path*',
     '/dashboard/admin',
-    '/mon-compte'
+    '/mon-compte',
+    '/downloads/:path*'
   ]
 };

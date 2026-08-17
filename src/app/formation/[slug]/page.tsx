@@ -9,6 +9,8 @@ import Footer from '@/components/Footer';
 import VideoPlayer from '@/components/VideoPlayer';
 import { getStoredCourses, Course } from '@/lib/coursesStore';
 import { fetchCoursesFromDb } from '@/lib/supabaseLms';
+import { useAuth } from '@/context/AuthContext';
+import CertificateModal from '@/components/CertificateModal';
 import { 
   Play, 
   CheckCircle2, 
@@ -44,6 +46,7 @@ const getShuffledOptions = (options: string[], qId: string) => {
 };
 
 export default function FormationViewerPage() {
+  const { user } = useAuth();
   const params = useParams();
   const router = useRouter();
   const rawSlug = (params?.slug as string) || '';
@@ -59,6 +62,7 @@ export default function FormationViewerPage() {
   const [courseData, setCourseData] = useState<any>(null);
   const [activeLesson, setActiveLesson] = useState<any>(null);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [showCertModal, setShowCertModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // QUIZ STATE
@@ -362,15 +366,13 @@ export default function FormationViewerPage() {
                     </p>
 
                     <div className="pt-2 flex flex-col sm:flex-row items-center gap-4">
-                      <a
-                        href={courseData.bonusDocUrl || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp'}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="w-full sm:w-auto px-6 py-3.5 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                      <button
+                        onClick={() => setShowCertModal(true)}
+                        className="w-full sm:w-auto px-6 py-3.5 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Award className="w-4 h-4 text-[#332420]" />
-                        Télécharger le certificat de formation
-                      </a>
+                        Afficher / Télécharger mon Certificat
+                      </button>
 
                       {courseData?.communityLink && courseData.communityLink.trim() !== '' && (
                         <a
@@ -653,6 +655,13 @@ export default function FormationViewerPage() {
           </div>
         </section>
       </div>
+
+      <CertificateModal
+        isOpen={showCertModal}
+        onClose={() => setShowCertModal(false)}
+        studentName={user?.fullName || user?.email?.split('@')[0] || ''}
+        courseTitle={courseData?.title || 'Formation Guides Digitaux'}
+      />
 
       <Footer />
     </div>
