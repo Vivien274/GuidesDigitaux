@@ -22,6 +22,7 @@ export interface SendOrderEmailPayload {
   purchaseDate?: string;
   downloadPdf?: string;
   bookingUrl?: string;
+  cartItems?: { id: string; title?: string; price?: number; downloadPdf?: string }[];
 }
 
 // Product download mapping helper for PDF items
@@ -53,18 +54,21 @@ const PDF_DOWNLOAD_LINKS: Record<string, { title: string; fileUrl: string }> = {
 };
 
 /**
- * Returns a deduplicated list of downloadable PDF files for a given product or bundle.
+ * Returns a deduplicated list of downloadable PDF files for a given product, bundle or cart items.
  */
-export function getDeduplicatedDownloadLinksForProduct(productId: string, payloadDownloadPdf?: string): { title: string; url: string }[] {
-  const targetProd = DEFAULT_PRODUCTS.find(p => p.id === productId || p.slug === productId);
+export function getDeduplicatedDownloadLinksForProduct(
+  productId: string, 
+  payloadDownloadPdf?: string,
+  cartItems?: { id: string; title?: string; downloadPdf?: string }[]
+): { title: string; url: string }[] {
   const linksMap = new Map<string, { title: string; url: string }>();
 
-  const addLink = (title: string, rawUrl?: string) => {
+  const addLink = (title: string, rawUrl?: string, targetId: string = productId) => {
     if (!rawUrl || !rawUrl.trim()) return;
     let url = rawUrl.trim();
     
     // Encrypt raw PDF path into secure URL (valid for 30 days in emails)
-    let secureUrl = getEncryptedDownloadUrl(url, productId, 720);
+    let secureUrl = getEncryptedDownloadUrl(url, targetId, 720);
     if (secureUrl.startsWith('/')) {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.guides-digitaux.com';
       secureUrl = `${baseUrl}${secureUrl}`;
@@ -76,6 +80,32 @@ export function getDeduplicatedDownloadLinksForProduct(productId: string, payloa
       linksMap.set(filenameKey, { title, url: secureUrl });
     }
   };
+
+  // If cartItems array provided, extract download links for each cart item
+  if (Array.isArray(cartItems) && cartItems.length > 0) {
+    for (const item of cartItems) {
+      const itemProd = DEFAULT_PRODUCTS.find(p => p.id === item.id || p.slug === item.id);
+      if (item.downloadPdf) {
+        addLink(item.title || itemProd?.title || 'Fichier PDF', item.downloadPdf, item.id);
+      }
+      if (itemProd?.downloadPdf) {
+        addLink(itemProd.title, itemProd.downloadPdf, item.id);
+      }
+      if (PDF_DOWNLOAD_LINKS[item.id]) {
+        addLink(PDF_DOWNLOAD_LINKS[item.id].title, PDF_DOWNLOAD_LINKS[item.id].fileUrl, item.id);
+      }
+      if (item.id.includes('precommande') || item.id.includes('preorder') || item.id === 'precommande-fiche-google') {
+        addLink('Bonus 1 : Checklist Audit Rapide Fiche Google', '/downloads/bonus-1-checklist-audit-fiche-google.pdf', item.id);
+        addLink('Bonus 2 : Kit 10 Modèles Avis Google', '/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf', item.id);
+        addLink('Bonus 3 : Scripts WhatsApp & SMS Avis 5★', '/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf', item.id);
+      }
+    }
+    if (linksMap.size > 0) {
+      return Array.from(linksMap.values());
+    }
+  }
+
+  const targetProd = DEFAULT_PRODUCTS.find(p => p.id === productId || p.slug === productId);
 
   // 1. Direct PDF payload or product downloadPdf
   if (payloadDownloadPdf) {
@@ -161,7 +191,7 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
   const isFormation = (productId.includes('formation') || productId.includes('bundle') || productTitle.toLowerCase().includes('formation')) && !productId.includes('pack-guides');
   const isPdf = !isCoaching && !isFormation;
 
-  const deduplicatedLinks = getDeduplicatedDownloadLinksForProduct(productId, payload.downloadPdf);
+  const deduplicatedLinks = getDeduplicatedDownloadLinksForProduct(productId, payload.downloadPdf, payload.cartItems);
   const bookingUrl = payload.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18';
   const courseUrl = `https://guides-digitaux.com/dashboard/eleve`;
 

@@ -209,7 +209,8 @@ export async function POST(request: Request) {
           productTitle: itemTitle,
           productId: productId,
           amount: amountEur,
-          currency: session.currency || 'EUR'
+          currency: session.currency || 'EUR',
+          cartItems: rawCartItems
         });
 
       } catch (emailErr) {

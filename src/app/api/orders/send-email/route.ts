@@ -25,7 +25,8 @@ export async function POST(request: Request) {
       productTitle,
       productId: productId || (cartItems?.[0]?.id || 'guide'),
       amount: Number(amount) || 0,
-      currency: 'EUR'
+      currency: 'EUR',
+      cartItems
     });
 
     return NextResponse.json({ success: true });
