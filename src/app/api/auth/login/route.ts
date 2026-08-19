@@ -14,15 +14,42 @@ export async function POST(request: Request) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Determine target role
-    let effectiveRole: 'superadmin' | 'formateur' | 'eleve' = 'eleve';
-    if (role === 'superadmin' || role === 'formateur') {
-      effectiveRole = role;
-    } else if (normalizedEmail.includes('admin') || normalizedEmail.includes('stephanie') || normalizedEmail.includes('guidesdigitaux')) {
-      effectiveRole = 'superadmin';
+    // 1. Fetch profile from Supabase DB to check real assigned role
+    let userId = `user_${Date.now()}`;
+    let fullName = normalizedEmail.split('@')[0].replace('.', ' ');
+    let dbRole: 'superadmin' | 'formateur' | 'eleve' | null = null;
+
+    try {
+      const { data: existingProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+
+      if (existingProfile) {
+        userId = existingProfile.id || userId;
+        fullName = existingProfile.full_name || fullName;
+        if (existingProfile.role) {
+          dbRole = existingProfile.role as 'superadmin' | 'formateur' | 'eleve';
+        }
+      }
+    } catch (dbErr) {
+      console.warn('Profile sync notice on login:', dbErr);
     }
 
-    // 1. Password verification for Admin
+    // Determine target role (prioritize DB role or hardcoded superadmin whitelist)
+    const knownSuperadmins = ['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@guides-digitaux.com', 'stephanie@stratec-digital.com'];
+    let effectiveRole: 'superadmin' | 'formateur' | 'eleve' = 'eleve';
+
+    if (dbRole) {
+      effectiveRole = dbRole;
+    } else if (knownSuperadmins.includes(normalizedEmail) || normalizedEmail.includes('admin') || normalizedEmail.includes('stephanie') || normalizedEmail.includes('guidesdigitaux')) {
+      effectiveRole = 'superadmin';
+    } else if (role === 'superadmin' || role === 'formateur') {
+      effectiveRole = role;
+    }
+
+    // 2. Password verification for Admin
     if (effectiveRole === 'superadmin' || effectiveRole === 'formateur') {
       if (!password) {
         return NextResponse.json({ error: 'Un mot de passe est obligatoire pour ce compte.' }, { status: 400 });
@@ -43,30 +70,17 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Fetch or create Supabase Profile
-    let userId = `user_${Date.now()}`;
-    let fullName = normalizedEmail.split('@')[0].replace('.', ' ');
-
+    // Ensure profile is created or updated in DB
     try {
-      const { data: existingProfile } = await supabaseAdmin
-        .from('profiles')
-        .select('*')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
-
-      if (existingProfile) {
-        userId = existingProfile.id || userId;
-        fullName = existingProfile.full_name || fullName;
-      } else {
-        await supabaseAdmin.from('profiles').insert({
-          id: userId,
-          email: normalizedEmail,
-          full_name: fullName,
-          role: effectiveRole
-        });
-      }
-    } catch (dbErr) {
-      console.warn('Profile sync notice on login:', dbErr);
+      await supabaseAdmin.from('profiles').upsert({
+        id: userId,
+        email: normalizedEmail,
+        full_name: fullName,
+        role: effectiveRole,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'email' });
+    } catch (upsertErr) {
+      console.warn('Profile upsert notice on login:', upsertErr);
     }
 
     // 3. Create cryptographically signed session token
