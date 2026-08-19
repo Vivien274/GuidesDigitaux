@@ -25,7 +25,10 @@ import {
   Eye,
   Receipt,
   Clock,
-  Package
+  Package,
+  Mail,
+  Send,
+  CheckCircle2
 } from 'lucide-react';
 
 export interface UserPurchaseDetail {
@@ -155,6 +158,71 @@ export default function SuperadminDashboardPage() {
   const [showCreateFormateur, setShowCreateFormateur] = useState(false);
 
   const [selectedUserForDetails, setSelectedUserForDetails] = useState<AdminUserItem | null>(null);
+
+  // Email Management States
+  const [manualEmailTarget, setManualEmailTarget] = useState('');
+  const [manualNameTarget, setManualNameTarget] = useState('');
+  const [manualProductTarget, setManualProductTarget] = useState('precommande-fiche-google');
+  const [manualAmountTarget, setManualAmountTarget] = useState<number>(29);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailStatusMsg, setEmailStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [resendStatusPerUser, setResendStatusPerUser] = useState<Record<string, string>>({});
+
+  const handleSendManualEmail = async (overrideEmail?: string, overrideProductId?: string, overrideAmount?: number) => {
+    const targetEmail = (overrideEmail || manualEmailTarget).trim();
+    const targetProduct = overrideProductId || manualProductTarget;
+    const targetAmount = overrideAmount !== undefined ? overrideAmount : manualAmountTarget;
+    const targetName = manualNameTarget.trim();
+
+    if (!targetEmail || !targetEmail.includes('@')) {
+      alert('Veuillez saisir une adresse e-mail valide.');
+      return;
+    }
+
+    setIsSendingEmail(true);
+    setEmailStatusMsg(null);
+    if (overrideEmail) {
+      setResendStatusPerUser(prev => ({ ...prev, [overrideEmail]: 'Envoi...' }));
+    }
+
+    try {
+      const foundProduct = DEFAULT_PRODUCTS.find(p => p.id === targetProduct || p.slug === targetProduct);
+      const productTitle = foundProduct?.title || 'Fais décoller ton activité locale grâce à une Fiche Google parfaite';
+
+      const res = await fetch('/api/admin/send-manual-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerEmail: targetEmail,
+          customerName: targetName || targetEmail.split('@')[0],
+          productId: targetProduct,
+          productTitle: productTitle,
+          amount: targetAmount,
+          orderId: `MANUAL-ADMIN-${Date.now()}`
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        setEmailStatusMsg({ type: 'success', text: data.message || `E-mail et liens de téléchargement envoyés à ${targetEmail}` });
+        if (overrideEmail) {
+          setResendStatusPerUser(prev => ({ ...prev, [overrideEmail]: 'Envoyé ✓' }));
+        }
+      } else {
+        setEmailStatusMsg({ type: 'error', text: data?.error || 'Erreur lors de l’envoi de l’e-mail.' });
+        if (overrideEmail) {
+          setResendStatusPerUser(prev => ({ ...prev, [overrideEmail]: 'Erreur' }));
+        }
+      }
+    } catch (e: any) {
+      setEmailStatusMsg({ type: 'error', text: `Erreur technique : ${e?.message || 'Connexion au serveur échouée'}` });
+      if (overrideEmail) {
+        setResendStatusPerUser(prev => ({ ...prev, [overrideEmail]: 'Erreur' }));
+      }
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -902,6 +970,123 @@ export default function SuperadminDashboardPage() {
             </div>
           </div>
 
+          {/* SUPERADMIN EMAIL MANAGEMENT CONTROL PANEL */}
+          <div className="bg-white p-8 rounded-3xl border-2 border-[#18757d]/30 shadow-md space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#eee7da] pb-4 gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-[#18757d] text-white text-[10px] font-black uppercase rounded-full tracking-wider">
+                    MODULE SUPERADMIN
+                  </span>
+                  <h2 className="text-xl font-extrabold text-[#332420] flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-[#18757d]" />
+                    Gestion & Envoi des E-mails de Commande Client
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">
+                  Testez les envois, vérifiez les e-mails de vos clientes ou renvoyez manuellement une confirmation avec tous les bonus PDF en 1 clic.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-bold bg-[#faf8f5] px-3.5 py-2 rounded-xl border border-[#eee7da]">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Service d'envoi d'e-mails : <strong className="text-[#18757d]">Actif</strong></span>
+              </div>
+            </div>
+
+            {/* Live Feedback Alert */}
+            {emailStatusMsg && (
+              <div className={`p-4 rounded-2xl text-xs font-extrabold flex items-center justify-between gap-3 ${
+                emailStatusMsg.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-900 border border-emerald-300'
+                  : 'bg-rose-50 text-rose-900 border border-rose-300'
+              }`}>
+                <div className="flex items-center gap-2">
+                  {emailStatusMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <X className="w-4 h-4 text-rose-600 shrink-0" />}
+                  <span>{emailStatusMsg.text}</span>
+                </div>
+                <button onClick={() => setEmailStatusMsg(null)} className="text-slate-400 hover:text-slate-600 text-xs">
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Manual Dispatch Form */}
+            <form onSubmit={(e) => { e.preventDefault(); handleSendManualEmail(); }} className="bg-[#faf8f5] p-5 rounded-2xl border border-[#eee7da] space-y-4">
+              <h3 className="text-xs font-extrabold text-[#332420] uppercase tracking-wider flex items-center gap-1.5">
+                <Send className="w-4 h-4 text-[#18757d]" />
+                Formulaire d'Envoi / Renvoi d'E-mail Manuel
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="text-[11px] font-bold text-[#332420] block mb-1">E-mail de la cliente :</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="exemple@domaine.fr"
+                    value={manualEmailTarget}
+                    onChange={(e) => setManualEmailTarget(e.target.value)}
+                    className="w-full bg-white border border-[#eee7da] rounded-xl px-3 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-[#332420] block mb-1">Nom / Prénom (Optionnel) :</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Sophie"
+                    value={manualNameTarget}
+                    onChange={(e) => setManualNameTarget(e.target.value)}
+                    className="w-full bg-white border border-[#eee7da] rounded-xl px-3 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-[#332420] block mb-1">Produit / Offre :</label>
+                  <select
+                    value={manualProductTarget}
+                    onChange={(e) => {
+                      const selId = e.target.value;
+                      setManualProductTarget(selId);
+                      const prod = DEFAULT_PRODUCTS.find(p => p.id === selId || p.slug === selId);
+                      if (prod?.price) setManualAmountTarget(prod.price);
+                    }}
+                    className="w-full bg-white border border-[#eee7da] rounded-xl px-3 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
+                  >
+                    <option value="precommande-fiche-google">🚀 Précommande Fiche Google (29€ - 3 Bonus Inclus)</option>
+                    {DEFAULT_PRODUCTS.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.title} ({p.price}€)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-[#332420] block mb-1">Montant (€) :</label>
+                  <input
+                    type="number"
+                    value={manualAmountTarget}
+                    onChange={(e) => setManualAmountTarget(Number(e.target.value))}
+                    className="w-full bg-white border border-[#eee7da] rounded-xl px-3 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  disabled={isSendingEmail}
+                  className="px-6 py-3 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                  {isSendingEmail ? 'Envoi en cours...' : 'Envoyer l’e-mail de confirmation & bonus'}
+                </button>
+              </div>
+            </form>
+          </div>
+
           {/* User Roles Management Table */}
           <div className="bg-white p-8 rounded-3xl border border-[#eee7da] shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#eee7da] pb-4 gap-4">
@@ -978,6 +1163,7 @@ export default function SuperadminDashboardPage() {
                     <th className="pb-3 px-4">Achats</th>
                     <th className="pb-3 px-4">Total Dépensé</th>
                     <th className="pb-3 px-4">Rôle Actuel</th>
+                    <th className="pb-3 px-4 text-center">Action E-mail</th>
                     <th className="pb-3 px-4 text-right">Changer de rôle</th>
                   </tr>
                 </thead>
@@ -1016,6 +1202,17 @@ export default function SuperadminDashboardPage() {
                         }`}>
                           {u.role}
                         </span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <button
+                          onClick={() => handleSendManualEmail(u.email, u.purchasesDetails?.[0]?.id || 'precommande-fiche-google', u.purchasesDetails?.[0]?.price || 29)}
+                          disabled={isSendingEmail}
+                          className="px-3 py-1.5 bg-[#e6f4f3] hover:bg-[#18757d] text-[#18757d] hover:text-white rounded-xl text-[11px] font-extrabold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          title="Renvoyer l'e-mail de confirmation et de téléchargement bonus à ce client"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>{resendStatusPerUser[u.email] || 'Renvoyer Email'}</span>
+                        </button>
                       </td>
                       <td className="py-4 px-4 text-right">
                         <select

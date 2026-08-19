@@ -86,10 +86,16 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   }
 ];
 
+const isValidEmail = (emailStr: string): boolean => {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(emailStr.trim());
+};
+
 export default function DigitalizationQuiz() {
   const [currentStep, setCurrentStep] = useState<number>(0); // 0: intro, 1-6: Q1-Q6, 7: email, 8: result
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profileResult, setProfileResult] = useState<'A' | 'B' | 'C' | null>(null);
 
@@ -114,8 +120,19 @@ export default function DigitalizationQuiz() {
 
   const handleSubmitEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes('@')) return;
+    const cleanEmail = email.trim();
 
+    if (!cleanEmail) {
+      setEmailError('Veuillez renseigner votre adresse e-mail.');
+      return;
+    }
+
+    if (!isValidEmail(cleanEmail)) {
+      setEmailError('Veuillez saisir une adresse e-mail valide (ex: contact@exemple.fr).');
+      return;
+    }
+
+    setEmailError(null);
     setIsSubmitting(true);
     const computed = computeProfile();
     setProfileResult(computed);
@@ -127,7 +144,7 @@ export default function DigitalizationQuiz() {
         stored.push({
           id: Date.now(),
           date: new Date().toLocaleDateString('fr-FR'),
-          email,
+          email: cleanEmail,
           profile: computed,
           answers
         });
@@ -142,7 +159,7 @@ export default function DigitalizationQuiz() {
       await fetch('/api/quiz/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, profile: computed })
+        body: JSON.stringify({ email: cleanEmail, profile: computed })
       });
     } catch (err) {
       console.error('Quiz subscribe error', err);
@@ -156,6 +173,7 @@ export default function DigitalizationQuiz() {
     setCurrentStep(0);
     setAnswers({});
     setEmail('');
+    setEmailError(null);
     setProfileResult(null);
   };
 
@@ -280,28 +298,45 @@ export default function DigitalizationQuiz() {
             </p>
 
             <form onSubmit={handleSubmitEmail} className="max-w-md mx-auto space-y-4 pt-2">
-              <div className="relative">
-                <Mail className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="ton@email.com"
-                  className="w-full pl-12 pr-4 py-4 bg-white border-2 border-[#eee7da] focus:border-[#18757d] text-[#332420] placeholder:text-slate-400 font-semibold text-sm rounded-2xl focus:outline-none shadow-inner"
-                />
+              <div className="space-y-2">
+                <div className="relative">
+                  <Mail className={`w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${emailError ? 'text-rose-500' : 'text-slate-400'}`} />
+                  <input
+                    type="email"
+                    required
+                    pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                    value={email}
+                    onChange={e => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError(null);
+                    }}
+                    placeholder="ton@email.com"
+                    className={`w-full pl-12 pr-4 py-4 bg-white border-2 text-[#332420] placeholder:text-slate-400 font-semibold text-sm rounded-2xl focus:outline-none shadow-inner transition-colors ${
+                      emailError 
+                        ? 'border-rose-500 focus:border-rose-600 bg-rose-50/30' 
+                        : 'border-[#eee7da] focus:border-[#18757d]'
+                    }`}
+                  />
+                </div>
+
+                {emailError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-bold text-left flex items-center gap-2 animate-in fade-in duration-200">
+                    <span className="shrink-0 text-rose-500">⚠️</span>
+                    <span>{emailError}</span>
+                  </div>
+                )}
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 text-sm font-extrabold text-white bg-[#F2542D] hover:bg-[#d8441f] rounded-2xl shadow-lg uppercase tracking-wider transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-4 text-sm font-extrabold text-white bg-[#F2542D] hover:bg-[#d8441f] rounded-2xl shadow-lg uppercase tracking-wider transition-transform hover:scale-[1.02] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? 'Calcul en cours...' : 'DÉBLOQUER MON RÉSULTAT →'}
               </button>
 
               <p className="text-[11px] text-slate-500 font-medium">
-                🔒 Données confidentielles. Désinscription possible à tout moment.
+                🔒 Données confidentielles. Format e-mail vérifié. Désinscription en 1 clic.
               </p>
             </form>
           </div>
