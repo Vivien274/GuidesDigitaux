@@ -67,6 +67,25 @@ export async function POST(request: Request) {
 
     const emailParam = customerEmail ? `&email=${encodeURIComponent(customerEmail.toLowerCase().trim())}` : '';
 
+    // Dynamic resolution of Return / Cancel URL (prioritize HTTP Referer or custom cancelUrl over hardcoded defaults)
+    const customCancelUrl = body.cancelUrl || body.cancel_url || body.returnUrl;
+    const refererHeader = request.headers.get('referer');
+
+    let resolvedCancelUrl: string;
+    if (customCancelUrl && typeof customCancelUrl === 'string' && customCancelUrl.trim() !== '') {
+      resolvedCancelUrl = customCancelUrl.startsWith('http') 
+        ? customCancelUrl 
+        : `${siteUrl}${customCancelUrl.startsWith('/') ? '' : '/'}${customCancelUrl}`;
+    } else if (refererHeader && refererHeader.startsWith('http')) {
+      resolvedCancelUrl = refererHeader;
+    } else if (isPreorder && courseId) {
+      resolvedCancelUrl = `${siteUrl}/tunnel/${courseId}`;
+    } else if (courseId && courseId !== 'precommande-fiche-google') {
+      resolvedCancelUrl = `${siteUrl}/produit/${courseId}?canceled=true`;
+    } else {
+      resolvedCancelUrl = `${siteUrl}/boutique?canceled=true`;
+    }
+
     // 1. If real Stripe test key is configured in env, create real Stripe Checkout Session
     if (hasRealStripeKey) {
       const stripe = new Stripe(secretKey);
@@ -77,10 +96,8 @@ export async function POST(request: Request) {
         mode: 'payment',
         success_url: Array.isArray(items) && items.length > 0
           ? `${siteUrl}/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&cart_checkout=true&price=${totalPriceSum}${emailParam}`
-          : `${siteUrl}/tunnel/confirmation?id=${courseId}&session_id={CHECKOUT_SESSION_ID}&price=${price}${emailParam}`,
-        cancel_url: (isPreorder || courseId)
-          ? `${siteUrl}/tunnel/${courseId}`
-          : `${siteUrl}/boutique?canceled=true`,
+          : `${siteUrl}/tunnel/confirmation?id=${courseId || 'precommande-fiche-google'}&session_id={CHECKOUT_SESSION_ID}&price=${price}${emailParam}`,
+        cancel_url: resolvedCancelUrl,
         metadata: {
           courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
           productId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),

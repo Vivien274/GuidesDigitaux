@@ -34,6 +34,11 @@ export async function POST(request: Request) {
     }
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || originUrl || 'https://www.guides-digitaux.com';
 
+    const refererHeader = request.headers.get('referer');
+    const resolvedCancelUrl = (refererHeader && refererHeader.startsWith('http'))
+      ? refererHeader
+      : (product.slug ? `${siteUrl}/produit/${product.slug}?canceled=true` : `${siteUrl}/boutique?canceled=true`);
+
     // 2. Création de la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -54,7 +59,7 @@ export async function POST(request: Request) {
       mode: 'payment',
       invoice_creation: { enabled: true },
       success_url: `${siteUrl}/mes-achats?success=true`,
-      cancel_url: `${siteUrl}/guides/${product.slug}?canceled=true`,
+      cancel_url: resolvedCancelUrl,
       metadata: {
         productId: product.id,
         userId: user?.id ?? '',
