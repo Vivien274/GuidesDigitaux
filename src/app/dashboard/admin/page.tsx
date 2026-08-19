@@ -1087,149 +1087,223 @@ export default function SuperadminDashboardPage() {
             </form>
           </div>
 
-          {/* User Roles Management Table */}
-          <div className="bg-white p-8 rounded-3xl border border-[#eee7da] shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#eee7da] pb-4 gap-4">
-              <div>
-                <h2 className="text-xl font-extrabold text-[#332420]">
-                  Gestion des Utilisateurs & Attribution des Rôles
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">{usersList.length} comptes authentifiés répertoriés</p>
+          {/* User Roles & Recent Orders Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            
+            {/* User Roles Management Table */}
+            <div className="bg-white p-8 rounded-3xl border border-[#eee7da] shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#eee7da] pb-4 gap-4">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#332420]">
+                    Gestion des Utilisateurs & Rôles
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">{usersList.length} comptes authentifiés répertoriés</p>
+                </div>
+
+                <button
+                  onClick={() => setShowCreateFormateur(!showCreateFormateur)}
+                  className="px-4 py-2 bg-[#18757d] hover:bg-[#12595f] text-white rounded-xl text-xs font-extrabold shadow-sm transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  + Formateur
+                </button>
               </div>
 
-              <button
-                onClick={() => setShowCreateFormateur(!showCreateFormateur)}
-                className="px-4 py-2 bg-[#18757d] hover:bg-[#12595f] text-white rounded-xl text-xs font-extrabold shadow-sm transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
-              >
-                <GraduationCap className="w-4 h-4" />
-                + Créer un compte Formateur
-              </button>
-            </div>
-
-            {/* Formateur Creation Box */}
-            {showCreateFormateur && (
-              <form onSubmit={handleCreateFormateur} className="p-5 bg-[#e6f4f3]/60 rounded-2xl border border-[#18757d]/30 space-y-4 animate-in fade-in duration-200">
-                <h3 className="text-xs font-extrabold text-[#18757d] uppercase tracking-wider">
-                  Nouveau Compte Formateur
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-[#332420] block mb-1">Nom du formateur :</label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Claire Martin"
-                      value={newFormateurName}
-                      onChange={(e) => setNewFormateurName(e.target.value)}
-                      className="w-full bg-white border border-[#eee7da] rounded-xl px-3.5 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
-                    />
+              {/* Formateur Creation Box */}
+              {showCreateFormateur && (
+                <form onSubmit={handleCreateFormateur} className="p-5 bg-[#e6f4f3]/60 rounded-2xl border border-[#18757d]/30 space-y-4 animate-in fade-in duration-200">
+                  <h3 className="text-xs font-extrabold text-[#18757d] uppercase tracking-wider">
+                    Nouveau Compte Formateur
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-[#332420] block mb-1">Nom du formateur :</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Claire Martin"
+                        value={newFormateurName}
+                        onChange={(e) => setNewFormateurName(e.target.value)}
+                        className="w-full bg-white border border-[#eee7da] rounded-xl px-3.5 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-[#332420] block mb-1">Adresse email du formateur :</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="formateur@exemple.fr"
+                        value={newFormateurEmail}
+                        onChange={(e) => setNewFormateurEmail(e.target.value)}
+                        className="w-full bg-white border border-[#eee7da] rounded-xl px-3.5 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-[#332420] block mb-1">Adresse email du formateur :</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="formateur@exemple.fr"
-                      value={newFormateurEmail}
-                      onChange={(e) => setNewFormateurEmail(e.target.value)}
-                      className="w-full bg-white border border-[#eee7da] rounded-xl px-3.5 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
-                    />
+
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateFormateur(false)}
+                      className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-colors"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#18757d] hover:bg-[#12595f] text-white rounded-xl text-xs font-extrabold transition-colors shadow-sm"
+                    >
+                      Valider le compte Formateur
+                    </button>
                   </div>
-                </div>
+                </form>
+              )}
 
-                <div className="flex justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateFormateur(false)}
-                    className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 bg-[#18757d] hover:bg-[#12595f] text-white rounded-xl text-xs font-extrabold transition-colors shadow-sm"
-                  >
-                    Valider le compte Formateur
-                  </button>
-                </div>
-              </form>
-            )}
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-semibold text-[#332420]">
-                <thead>
-                  <tr className="border-b border-[#eee7da] text-slate-500 uppercase tracking-wider text-[10px]">
-                    <th className="pb-3 px-4">Utilisateur</th>
-                    <th className="pb-3 px-4">Email</th>
-                    <th className="pb-3 px-4">Achats</th>
-                    <th className="pb-3 px-4">Total Dépensé</th>
-                    <th className="pb-3 px-4">Rôle Actuel</th>
-                    <th className="pb-3 px-4 text-center">Action E-mail</th>
-                    <th className="pb-3 px-4 text-right">Changer de rôle</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#eee7da]">
-                  {usersList.map((u) => (
-                    <tr key={u.id} className="hover:bg-[#faf8f5] transition-colors">
-                      <td className="py-4 px-4 font-extrabold">
-                        <button
-                          onClick={() => setSelectedUserForDetails(u)}
-                          className="text-[#18757d] hover:text-[#e05a47] font-extrabold flex items-center gap-1.5 cursor-pointer hover:underline text-left group"
-                          title="Cliquer pour consulter le détail des commandes"
-                        >
-                          <span>{u.name}</span>
-                          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </button>
-                      </td>
-                      <td className="py-4 px-4 text-slate-600">{u.email}</td>
-                      <td className="py-4 px-4">
-                        <button
-                          onClick={() => setSelectedUserForDetails(u)}
-                          className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-teal-50 text-[#18757d] hover:bg-[#18757d] hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1"
-                          title="Voir les achats de ce client"
-                        >
-                          <ShoppingBag className="w-3 h-3" />
-                          {u.purchasesCount} commande(s)
-                        </button>
-                      </td>
-                      <td className="py-4 px-4 font-bold text-[#18757d]">{u.totalSpent.toFixed(2).replace('.', ',')} €</td>
-                      <td className="py-4 px-4">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase ${
-                          u.role === 'superadmin' 
-                            ? 'bg-rose-100 text-[#e05a47]' 
-                            : u.role === 'formateur' 
-                            ? 'bg-[#e6f4f3] text-[#18757d]' 
-                            : 'bg-[#f4ede0] text-[#332420]'
-                        }`}>
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <button
-                          onClick={() => handleSendManualEmail(u.email, u.purchasesDetails?.[0]?.id || 'precommande-fiche-google', u.purchasesDetails?.[0]?.price || 29)}
-                          disabled={isSendingEmail}
-                          className="px-3 py-1.5 bg-[#e6f4f3] hover:bg-[#18757d] text-[#18757d] hover:text-white rounded-xl text-[11px] font-extrabold transition-colors inline-flex items-center gap-1 cursor-pointer"
-                          title="Renvoyer l'e-mail de confirmation et de téléchargement bonus à ce client"
-                        >
-                          <Mail className="w-3.5 h-3.5" />
-                          <span>{resendStatusPerUser[u.email] || 'Renvoyer Email'}</span>
-                        </button>
-                      </td>
-                      <td className="py-4 px-4 text-right">
-                        <select
-                          value={u.role}
-                          onChange={(e) => handleRoleChange(u.email, e.target.value as UserRole)}
-                          className="bg-[#faf8f5] border border-[#eee7da] rounded-xl px-3 py-1.5 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
-                        >
-                          <option value="eleve">Élève</option>
-                          <option value="formateur">Formateur</option>
-                          <option value="superadmin">Superadmin</option>
-                        </select>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-semibold text-[#332420]">
+                  <thead>
+                    <tr className="border-b border-[#eee7da] text-slate-500 uppercase tracking-wider text-[10px]">
+                      <th className="pb-3 px-3">Utilisateur</th>
+                      <th className="pb-3 px-3">Achats</th>
+                      <th className="pb-3 px-3">Dépensé</th>
+                      <th className="pb-3 px-3 text-right">Rôle / Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#eee7da]">
+                    {usersList.map((u) => (
+                      <tr key={u.id} className="hover:bg-[#faf8f5] transition-colors">
+                        <td className="py-3.5 px-3">
+                          <button
+                            onClick={() => setSelectedUserForDetails(u)}
+                            className="text-[#18757d] hover:text-[#e05a47] font-extrabold cursor-pointer hover:underline text-left"
+                            title="Cliquer pour consulter le détail des commandes"
+                          >
+                            <div className="font-extrabold">{u.name}</div>
+                            <div className="text-[10px] text-slate-400 font-normal">{u.email}</div>
+                          </button>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <button
+                            onClick={() => setSelectedUserForDetails(u)}
+                            className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-50 text-[#18757d] hover:bg-[#18757d] hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1"
+                            title="Voir les achats de ce client"
+                          >
+                            <ShoppingBag className="w-3 h-3" />
+                            {u.purchasesCount}
+                          </button>
+                        </td>
+                        <td className="py-3.5 px-3 font-bold text-[#18757d] whitespace-nowrap">{u.totalSpent.toFixed(2).replace('.', ',')} €</td>
+                        <td className="py-3.5 px-3 text-right">
+                          <select
+                            value={u.role}
+                            onChange={(e) => handleRoleChange(u.email, e.target.value as UserRole)}
+                            className="bg-[#faf8f5] border border-[#eee7da] rounded-xl px-2 py-1 text-[11px] font-bold text-[#332420] focus:outline-none focus:border-[#18757d]"
+                          >
+                            <option value="eleve">Élève</option>
+                            <option value="formateur">Formateur</option>
+                            <option value="superadmin">Superadmin</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
+
+            {/* List of Recent Orders Table */}
+            <div className="bg-white p-8 rounded-3xl border border-[#eee7da] shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#eee7da] pb-4 gap-4">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#332420] flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-[#18757d]" />
+                    Liste des Commandes Passées
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Triées par date d'achat (récentes en premier)</p>
+                </div>
+
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-900 text-xs font-black rounded-full uppercase tracking-wider self-start sm:self-auto">
+                  {stats.totalOrders} commande(s)
+                </span>
+              </div>
+
+              {(() => {
+                const allOrders = usersList.flatMap(u => 
+                  (u.purchasesDetails || []).map(p => ({
+                    id: p.id,
+                    title: p.title,
+                    price: p.price,
+                    date: p.date,
+                    type: p.type,
+                    userName: u.name,
+                    userEmail: u.email
+                  }))
+                ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                if (allOrders.length === 0) {
+                  return (
+                    <div className="py-12 text-center text-xs text-slate-400 font-medium">
+                      Aucune commande enregistrée pour le moment.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs font-semibold text-[#332420]">
+                      <thead>
+                        <tr className="border-b border-[#eee7da] text-slate-500 uppercase tracking-wider text-[10px]">
+                          <th className="pb-3 px-3">Date</th>
+                          <th className="pb-3 px-3">Montant</th>
+                          <th className="pb-3 px-3">Utilisateur</th>
+                          <th className="pb-3 px-3">Produit</th>
+                          <th className="pb-3 px-3 text-center">E-mail</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#eee7da]">
+                        {allOrders.map((ord, idx) => {
+                          const dateObj = new Date(ord.date);
+                          const formattedDate = isNaN(dateObj.getTime()) 
+                            ? ord.date 
+                            : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+                          return (
+                            <tr key={ord.id || idx} className="hover:bg-[#faf8f5] transition-colors">
+                              <td className="py-3.5 px-3 font-mono text-slate-600 text-[11px] whitespace-nowrap">
+                                {formattedDate}
+                              </td>
+                              <td className="py-3.5 px-3 font-extrabold text-emerald-700 whitespace-nowrap">
+                                {ord.price.toFixed(2).replace('.', ',')} €
+                              </td>
+                              <td className="py-3.5 px-3 font-bold text-[#332420]">
+                                <div className="font-extrabold truncate max-w-[130px]">{ord.userName}</div>
+                                <div className="text-[10px] text-slate-400 font-normal truncate max-w-[130px]">{ord.userEmail}</div>
+                              </td>
+                              <td className="py-3.5 px-3">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-bold text-[#332420] text-[11px] line-clamp-1">{ord.title}</span>
+                                  <span className="text-[9px] font-extrabold text-[#18757d] uppercase">{ord.type}</span>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                                <button
+                                  onClick={() => handleSendManualEmail(ord.userEmail, ord.id || 'precommande-fiche-google', ord.price)}
+                                  disabled={isSendingEmail}
+                                  className="px-2 py-1 bg-[#e6f4f3] hover:bg-[#18757d] text-[#18757d] hover:text-white rounded-lg text-[10px] font-extrabold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                  title="Renvoyer l'e-mail de confirmation"
+                                >
+                                  <Mail className="w-3 h-3" />
+                                  <span>Email</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+
           </div>
 
         </div>
