@@ -188,6 +188,64 @@ export async function GET() {
       });
     }
 
+    // 4. Fetch preorder_buyers table
+    const { data: preorderBuyers } = await supabaseServer.from('preorder_buyers').select('*');
+    if (preorderBuyers && Array.isArray(preorderBuyers)) {
+      preorderBuyers.forEach((pb: any) => {
+        const em = (pb.customer_email || pb.email || '').toLowerCase().trim();
+        const price = pb.price ? Number(pb.price) : 29;
+        const campaignId = pb.campaign_id || 'precommande-fiche-google';
+        const prodInfo = resolveProductInfo(campaignId, price);
+        const title = pb.course_title || prodInfo.title || 'Précommande Fiche Google';
+
+        const detailItem = {
+          id: pb.id || `pb_${Date.now()}`,
+          title: title.includes('Précommande') ? title : `Précommande : ${title}`,
+          price: price,
+          date: pb.created_at || new Date().toISOString(),
+          type: 'Précommande',
+          slug: campaignId
+        };
+
+        allOrdersList.push({
+          id: pb.id,
+          customerEmail: em,
+          productId: campaignId,
+          productTitle: detailItem.title,
+          amount: price,
+          currency: 'eur',
+          status: 'paid',
+          stripeSessionId: `pb_sess_${pb.id}`,
+          createdAt: pb.created_at || new Date().toISOString()
+        });
+
+        if (em) {
+          const existing = accountsMap.get(em);
+          if (existing) {
+            if (!existing.purchasesDetails.some(d => d.title === detailItem.title || d.id === detailItem.id)) {
+              existing.purchasesCount += 1;
+              existing.totalSpent += price;
+              existing.purchasesDetails.push(detailItem);
+              totalOrdersCount += 1;
+              totalRevenue += price;
+            }
+          } else {
+            accountsMap.set(em, {
+              id: pb.id || `pb_${Date.now()}`,
+              name: pb.customer_name || em.split('@')[0],
+              email: em,
+              role: 'eleve',
+              purchasesCount: 1,
+              totalSpent: price,
+              purchasesDetails: [detailItem]
+            });
+            totalOrdersCount += 1;
+            totalRevenue += price;
+          }
+        }
+      });
+    }
+
     const userList = Array.from(accountsMap.values());
 
     return NextResponse.json({

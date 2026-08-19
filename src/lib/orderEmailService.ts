@@ -368,18 +368,24 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
   // Try sending via Resend API / Mailchimp Transactional / Custom Transport / HTTP API
   const adminEmail = 'contact@guides-digitaux.com';
 
-  const results = await Promise.allSettled([
+  const [adminRes, customerRes] = await Promise.all([
     sendSingleEmail(adminEmail, adminSubject, adminHtml),
     sendSingleEmail(customerEmail, customerSubject, customerHtml)
   ]);
 
-  console.log(`[Order Email Service] Order ${orderId} emails processed:`, results);
+  console.log(`[Order Email Service] Order ${orderId} emails processed. Admin: ${adminRes.ok ? 'OK' : adminRes.error}, Customer: ${customerRes.ok ? 'OK' : customerRes.error}`);
+
+  return {
+    success: customerRes.ok || adminRes.ok,
+    adminStatus: adminRes,
+    customerStatus: customerRes
+  };
 }
 
 /**
- * Send a single email using Mailchimp / Resend / Direct API or HTTP Fallback
+ * Send a single email using Resend API / Mailchimp / Fallback
  */
-async function sendSingleEmail(to: string, subject: string, html: string): Promise<boolean> {
+async function sendSingleEmail(to: string, subject: string, html: string): Promise<{ ok: boolean; provider?: string; error?: string }> {
   const resendApiKey = process.env.RESEND_API_KEY;
   const mailchimpApiKey = process.env.MAILCHIMP_API_KEY || '';
 
@@ -424,17 +430,19 @@ async function sendSingleEmail(to: string, subject: string, html: string): Promi
 
       if (res.ok) {
         console.log(`[Email Service] Sent email to ${to} via Resend (ID: ${resData?.id || 'ok'})`);
-        return true;
+        return { ok: true, provider: 'resend' };
       } else {
-        console.error(`[Email Service] Resend API Error for ${to}:`, resData);
+        const errorMsg = resData?.message || `Resend error status ${res.status}`;
+        console.error(`[Email Service] Resend API Error for ${to}:`, errorMsg);
+        // Continue fallback
       }
-    } catch (e) {
-      console.warn(`[Email Service] Resend attempt failed for ${to}`, e);
+    } catch (e: any) {
+      console.warn(`[Email Service] Resend attempt failed for ${to}:`, e?.message || e);
     }
   }
 
-  // 2. Try Mailchimp Mandrill Transactional API
-  if (mailchimpApiKey) {
+  // 2. Try Mailchimp Mandrill Transactional API (if valid Mandrill key)
+  if (mailchimpApiKey && mailchimpApiKey.startsWith('md-')) {
     try {
       const res = await fetch('https://mandrillapp.com/api/1.0/messages/send.json', {
         method: 'POST',
@@ -452,14 +460,13 @@ async function sendSingleEmail(to: string, subject: string, html: string): Promi
       });
       if (res.ok) {
         console.log(`[Email Service] Sent email to ${to} via Mailchimp Transactional`);
-        return true;
+        return { ok: true, provider: 'mailchimp' };
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn(`[Email Service] Mailchimp Transactional attempt failed for ${to}`, e);
     }
   }
 
-  // Logged as successfully handled for offline / fallback environments
-  console.log(`[Email Service Log] Email to: ${to} | Subject: ${subject}`);
-  return true;
+  console.log(`[Email Service Log] Simulation mode or provider unverified for: ${to}`);
+  return { ok: false, provider: 'none', error: 'Domaine Resend non vérifié ou clé d\'envoi absente dans .env' };
 }

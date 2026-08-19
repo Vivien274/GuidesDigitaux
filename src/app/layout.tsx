@@ -9,6 +9,7 @@ import MetaPixel from "@/components/MetaPixel";
 import { FB_PIXEL_ID_1, FB_PIXEL_ID_2 } from "@/lib/metaPixel";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import AccessibilityWidget from "@/components/AccessibilityWidget";
 
 const jakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -81,6 +82,7 @@ export default function RootLayout({
             </Suspense>
             {children}
             <CookieConsentBanner />
+            <AccessibilityWidget />
           </CartProvider>
         </AuthProvider>
       </body>

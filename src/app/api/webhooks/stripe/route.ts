@@ -178,6 +178,33 @@ export async function POST(request: Request) {
         }
       }
 
+      // 6. Enregistrement sécurisé dans la table `preorder_buyers` (dédupliqué serveur)
+      const isPreorderProduct = productId.includes('precommande') || productId.includes('preorder') || session.metadata?.isPreorder === 'true';
+      if (isPreorderProduct) {
+        try {
+          const campaignId = productId || 'precommande-fiche-google';
+          const { data: existingBuyer } = await supabaseAdmin
+            .from('preorder_buyers')
+            .select('id')
+            .eq('customer_email', customerEmail.toLowerCase().trim())
+            .eq('campaign_id', campaignId)
+            .maybeSingle();
+
+          if (!existingBuyer) {
+            await supabaseAdmin.from('preorder_buyers').insert({
+              campaign_id: campaignId,
+              customer_email: customerEmail.toLowerCase().trim(),
+              customer_name: session.customer_details?.name || customerEmail.split('@')[0],
+              price: amountEur,
+              created_at: new Date().toISOString()
+            });
+            console.log(`[Stripe Webhook] Précommande enregistrée dans preorder_buyers pour ${customerEmail}`);
+          }
+        } catch (poErr) {
+          console.warn('[Stripe Webhook] Notice enregistrement preorder_buyers:', poErr);
+        }
+      }
+
       console.log(`[Stripe Webhook] Traitement de commande terminé pour l'utilisateur ${userId} (${customerEmail})`);
 
       // 7. Envoi de l'événement d'achat serveur (Meta CAPI) non-bloquant

@@ -863,38 +863,23 @@ export async function recordPreorderPurchaseInDb(
   const targetCampaign = campaignId || 'precommande-fiche-google';
 
   try {
-    // Check if buyer has already preordered this campaign to prevent duplicate insertions
-    const { data: existing } = await supabase
-      .from('preorder_buyers')
-      .select('id')
-      .eq('customer_email', normalizedEmail)
-      .eq('campaign_id', targetCampaign)
-      .maybeSingle();
-
-    if (existing) {
-      return; // Already recorded for this campaign
-    }
-
-    // 1. Increment preorder enrollments counter in Supabase BDD
+    // Increment preorder enrollments counter in Supabase BDD
     await incrementPreorderEnrollmentInDb(targetCampaign);
 
-    // 2. Insert into preorder_buyers table
-    await supabase.from('preorder_buyers').insert({
-      campaign_id: targetCampaign,
-      customer_email: normalizedEmail,
-      customer_name: customerName || normalizedEmail.split('@')[0],
-      price: price,
-      created_at: new Date().toISOString()
-    });
-
-    // 3. Insert into orders table
-    await supabase.from('orders').insert({
-      customer_email: normalizedEmail,
-      product_id: targetCampaign,
-      status: 'paid',
-      created_at: new Date().toISOString()
-    });
+    // Call server-side API to record preorder with admin rights and deduplication
+    if (typeof window !== 'undefined') {
+      await fetch('/api/preorders/record', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId: targetCampaign,
+          customerEmail: normalizedEmail,
+          customerName: customerName || normalizedEmail.split('@')[0],
+          price: price
+        })
+      });
+    }
   } catch (e) {
-    console.warn('recordPreorderPurchaseInDb insert notice:', e);
+    console.warn('recordPreorderPurchaseInDb notice:', e);
   }
 }

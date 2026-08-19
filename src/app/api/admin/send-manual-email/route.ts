@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const amountToSend = amount !== undefined ? Number(amount) : (foundProduct?.price || 29);
     const refOrderId = orderId || `ADMIN-RESEND-${Date.now()}`;
 
-    await processOrderEmails({
+    const emailResult = await processOrderEmails({
       orderId: refOrderId,
       customerEmail: customerEmail.toLowerCase().trim(),
       customerName: customerName || customerEmail.split('@')[0],
@@ -28,10 +28,17 @@ export async function POST(req: Request) {
       currency: 'EUR'
     });
 
-    return NextResponse.json({
-      success: true,
-      message: `E-mail de confirmation avec liens de téléchargement renvoyé avec succès à ${customerEmail}`
-    });
+    if (emailResult?.customerStatus?.ok || emailResult?.adminStatus?.ok) {
+      return NextResponse.json({
+        success: true,
+        message: `E-mail de confirmation transmis avec succès via ${emailResult.customerStatus?.provider || emailResult.adminStatus?.provider || 'Resend'} à ${customerEmail}`
+      });
+    } else {
+      return NextResponse.json({
+        success: false,
+        error: `Resend : ${emailResult?.customerStatus?.error || 'Le domaine guides-digitaux.com nécessite une validation sur resend.com/domains pour livrer les clients.'}`
+      }, { status: 400 });
+    }
   } catch (error: any) {
     console.error('Error sending manual admin email:', error);
     return NextResponse.json({

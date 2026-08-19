@@ -176,7 +176,14 @@ function ConfirmationContent() {
           if (data?.customerEmail) {
             const stripeEmail = data.customerEmail.toLowerCase().trim();
             setCustomerEmail(stripeEmail);
-            processPurchasesForEmail(stripeEmail, stripeAmount, data.customerName, data.cartItems);
+
+            if (typeof window !== 'undefined') {
+              const processedKey = `gd_purchases_processed_${sessionId || stripeEmail}`;
+              if (!sessionStorage.getItem(processedKey)) {
+                sessionStorage.setItem(processedKey, 'true');
+                processPurchasesForEmail(stripeEmail, stripeAmount, data.customerName, data.cartItems);
+              }
+            }
 
             // Send confirmation & admin email once per session
             if (typeof window !== 'undefined') {
@@ -205,9 +212,13 @@ function ConfirmationContent() {
     }
     fetchStripeCustomerEmail();
 
-    // 3. Add purchase to user account if activeEmail is present
-    if (activeEmail) {
-      processPurchasesForEmail(activeEmail, resolvedPrice);
+    // 3. Add purchase to user account once if activeEmail is present
+    if (activeEmail && typeof window !== 'undefined') {
+      const processedKey = `gd_purchases_processed_${sessionId || activeEmail}`;
+      if (!sessionStorage.getItem(processedKey)) {
+        sessionStorage.setItem(processedKey, 'true');
+        processPurchasesForEmail(activeEmail, resolvedPrice);
+      }
     }
 
     // 4. Safely increment preorder counter once per checkout session
