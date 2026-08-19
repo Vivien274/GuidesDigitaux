@@ -8,15 +8,40 @@ import { Mail, Phone, Send, CheckCircle2, Sparkles, Calendar, ArrowRight, HeartH
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 4000);
+    setErrorMessage(null);
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setErrorMessage('Veuillez saisir une adresse e-mail valide (ex: contact@exemple.fr).');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        setSubmitted(true);
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      } else {
+        setErrorMessage(data?.error || 'Erreur lors de l’envoi de votre message.');
+      }
+    } catch (err: any) {
+      setErrorMessage(`Erreur technique : ${err?.message || 'Connexion au serveur impossible'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -167,12 +192,20 @@ export default function ContactPage() {
                       ></textarea>
                     </div>
 
+                    {errorMessage && (
+                      <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-800 flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span>{errorMessage}</span>
+                      </div>
+                    )}
+
                     <button
                       type="submit"
-                      className="w-full py-4 text-xs font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-all transform active:scale-[0.99] flex items-center justify-center gap-2"
+                      disabled={isSubmitting}
+                      className="w-full py-4 text-xs font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-md uppercase tracking-wider transition-all transform active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       <Send className="w-4 h-4" />
-                      Envoyer
+                      {isSubmitting ? 'Envoi du message...' : 'Envoyer mon message'}
                     </button>
                   </form>
                 )}
