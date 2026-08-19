@@ -31,25 +31,41 @@ const PDF_DOWNLOAD_LINKS: Record<string, { title: string; fileUrl: string }> = {
     title: "Mini-guide : Écrire pour le web quand on est artisan",
     fileUrl: "/downloads/mini-guide-ecrire-web-artisan.pdf"
   },
+  'mini-guide-comprendre-ses-stats-sans-etre-data-scientist': {
+    title: "Mini-guide : Comprendre ses statistiques",
+    fileUrl: "/downloads/1786958633139-mini-guide-comprendre-ses-stats-sans-etre-data-scientist.pdf"
+  },
+  'mini-guide-optimiser-ses-photos': {
+    title: "Mini-guide : Optimiser ses photos sans perdre en qualité",
+    fileUrl: "/downloads/1786958659305-mini-guide-optimiser-ses-photos-sans-perdre-en-qualite.pdf"
+  },
+  'mini-guide-seo-local': {
+    title: "Mini-guide : SEO Local pour artisans",
+    fileUrl: "/downloads/mini-guide-seo-local.pdf"
+  },
   'ebook-visibilite-ligne-artisan': {
-    title: "Ebook : Doubler sa visibilité locale",
+    title: "Ebook : Bien Démarrer sa Visibilité en Ligne Quand on est Artisan",
     fileUrl: "/downloads/ebook-visibilite-ligne-artisan.pdf"
   },
   'checklist-securite-anti-spam-wordpress': {
     title: "Checklist : Sécurité & Anti-Spam WordPress",
-    fileUrl: "/downloads/checklist-securite-anti-spam-wordpress.pdf"
+    fileUrl: "/downloads/1786958808414-checklist-securite-et-anti-spam-wordpress.pdf"
   },
   'checklist-les-principes-ux': {
-    title: "Checklist : Les 10 Principes UX Incontournables",
-    fileUrl: "/downloads/checklist-principes-ux.pdf"
+    title: "Checklist : Les Principes Clés de l'UX (Expérience Utilisateur)",
+    fileUrl: "/downloads/1786959220933-checklist-obligatoire-pour-ton-site-les-principes-cles-de-l-ux.pdf"
   },
   'checklist-profil-reseaux-sociaux': {
-    title: "Checklist : Profil réseaux sociaux pro",
-    fileUrl: "/downloads/checklist-profil-reseaux-sociaux.pdf"
+    title: "Checklist : Profil Réseaux Sociaux Pro",
+    fileUrl: "/downloads/1786959425575-checklist-profil-pro-rs.pdf"
+  },
+  'checklist-verification-lancement-site': {
+    title: "Checklist : À Vérifier avant le Lancement du Site",
+    fileUrl: "/downloads/1786961163702-checklist-a-verifier-avant-le-lancement-du-site.pdf"
   },
   'checklist-google-business-profile': {
     title: "Checklist : Optimisation Google Business Profile",
-    fileUrl: "/downloads/checklist-google-business-profile.pdf"
+    fileUrl: "/downloads/1786961735239-checklist-fiche-google.pdf"
   }
 };
 
@@ -70,7 +86,7 @@ export function getDeduplicatedDownloadLinksForProduct(
     // Encrypt raw PDF path into secure URL (valid for 30 days in emails)
     let secureUrl = getEncryptedDownloadUrl(url, targetId, 720);
     if (secureUrl.startsWith('/')) {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.guides-digitaux.com';
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://www.guides-digitaux.com';
       secureUrl = `${baseUrl}${secureUrl}`;
     }
 
@@ -188,8 +204,9 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
 
   // Determine Product Type & Action Button
   const isCoaching = productId.includes('coaching') || productTitle.toLowerCase().includes('coaching');
-  const isFormation = (productId.includes('formation') || productId.includes('bundle') || productTitle.toLowerCase().includes('formation')) && !productId.includes('pack-guides');
-  const isPdf = !isCoaching && !isFormation;
+  const isPreorder = productId.includes('precommande') || productId.includes('preorder') || productTitle.toLowerCase().includes('précommande') || productTitle.toLowerCase().includes('fiche google');
+  const isFormation = (productId.includes('formation') || productId.includes('bundle') || productTitle.toLowerCase().includes('formation')) && !productId.includes('pack-guides') && !isPreorder;
+  const isPdf = !isCoaching && !isFormation && !isPreorder;
 
   const deduplicatedLinks = getDeduplicatedDownloadLinksForProduct(productId, payload.downloadPdf, payload.cartItems);
   const bookingUrl = payload.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18';
@@ -248,13 +265,13 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
         </p>
 
         <p style="font-size: 15px; line-height: 1.6;">
-          C'est <strong>Stéphanie de Guides Digitaux</strong> ! Ta commande pour <strong>« ${productTitle} »</strong> est bien enregistrée et ton accès est débloqué immédiatement.
+          C'est <strong>Stéphanie de Guides Digitaux</strong> ! Ta précommande pour <strong>« ${productTitle} »</strong> est bien enregistrée.
         </p>
 
         <!-- RECAP TABLE -->
         <div style="background-color: #faf8f5; border: 1px solid #eee7da; border-radius: 14px; padding: 20px; margin: 20px 0;">
           <h3 style="margin-top: 0; color: #332420; font-size: 16px; border-bottom: 1px solid #e8ded0; padding-bottom: 8px;">
-            📄 Récapitulatif de ta commande
+            📄 Récapitulatif de ta précommande
           </h3>
           <p style="margin: 6px 0; font-size: 14px;"><strong>Produit :</strong> ${productTitle}</p>
           <p style="margin: 6px 0; font-size: 14px;"><strong>Montant réglé :</strong> ${formattedAmount}</p>
@@ -269,9 +286,30 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
             <p style="font-size: 14px; color: #562C2C; margin-bottom: 15px;">
               Ton forfait comprend <strong>2 sessions individuelles de 45 minutes</strong>. Choisis ton créneau directement dans mon agenda Google :
             </p>
-            <a href="${bookingUrl}" target="_blank" style="display: inline-block; background-color: #F2542D; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 14px 28px; border-radius: 30px; text-transform: uppercase; tracking-wider: 1px;">
+            <a href="${bookingUrl}" target="_blank" style="display: inline-block; background-color: #F2542D; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 14px 28px; border-radius: 30px; text-transform: uppercase;">
               🗓️ RÉSERVER MA SESSION EN VISIO →
             </a>
+          </div>
+        ` : isPreorder ? `
+          <div style="background-color: #fff7ed; border-left: 4px solid #F2542D; border-radius: 0 14px 14px 0; padding: 16px 20px; margin: 20px 0;">
+            <strong style="color: #562C2C; font-size: 14px;">🚀 Date de sortie officielle :</strong>
+            <span style="font-size: 14px; color: #562C2C;">Le 15 septembre 2026. Tu recevras automatiquement par email ton guide complet dès sa parution.</span>
+          </div>
+
+          <div style="background-color: #e6f4f3; border: 2px solid #18757d; border-radius: 16px; padding: 20px; margin: 25px 0;">
+            <h3 style="color: #18757d; margin-top: 0; text-align: center; font-size: 17px;">
+              🎁 Tes 3 Bonus Exclusifs (Disponibles Immédiatement)
+            </h3>
+            <p style="font-size: 14px; color: #332420; text-align: center; margin-bottom: 18px;">
+              En remerciement de ta précommande, voici tes 3 guides bonus prêts à être téléchargés :
+            </p>
+            ${deduplicatedLinks.map(link => `
+              <div style="margin-bottom: 12px; text-align: center;">
+                <a href="${link.url}" target="_blank" style="display: inline-block; width: 90%; max-width: 440px; background-color: #18757d; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px; padding: 13px 20px; border-radius: 25px; text-transform: uppercase;">
+                  📄 ${link.title} →
+                </a>
+              </div>
+            `).join('')}
           </div>
         ` : isPdf ? `
           <div style="background-color: #e6f4f3; border: 2px solid #18757d; border-radius: 16px; padding: 20px; margin: 25px 0;">

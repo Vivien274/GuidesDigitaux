@@ -76,7 +76,8 @@ export const DEFAULT_PRODUCTS: Product[] = [
       "Explication claire des métriques Google Analytics et Search Console",
       "Méthode simple pour identifier les canaux qui apportent des clients",
       "Format PDF clair et synthétique consultable sur tous vos écrans"
-    ]
+    ],
+    "downloadPdf": "/downloads/1786958633139-mini-guide-comprendre-ses-stats-sans-etre-data-scientist.pdf"
   },
   {
     "id": "mini-guide-optimiser-ses-photos",
@@ -102,7 +103,8 @@ export const DEFAULT_PRODUCTS: Product[] = [
       "Sélection des meilleurs outils d’optimisation d’images gratuits",
       "Guide du format moderne WebP et du redimensionnement optimal",
       "Instructions concrètes pour optimiser vos balises ALT pour Google"
-    ]
+    ],
+    "downloadPdf": "/downloads/1786958659305-mini-guide-optimiser-ses-photos-sans-perdre-en-qualite.pdf"
   },
   {
     "id": "mini-guide-seo-local",
@@ -131,7 +133,8 @@ export const DEFAULT_PRODUCTS: Product[] = [
       "Techniques concrètes pour récolter plus d’avis clients 5 étoiles",
       "Stratégie de mots-clés géolocalisés pour la recherche de proximité",
       "Checklist de déploiement rapide en 1 heure"
-    ]
+    ],
+    "downloadPdf": "/downloads/1786961735239-mini-guide-seo-local.pdf"
   },
   {
     "id": "ebook-visibilite-ligne-artisan",
@@ -157,7 +160,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
       "Fiches d’action guidées et exemples d’artisans inspirants",
       "Format PDF téléchargeable et consultable à vie sur tous vos appareils"
     ],
-    "downloadPdf": "/downloads/ebook-visibilite-ligne-artisan.pdf"
+    "downloadPdf": "/downloads/1786961735239-ebook-visibilite-ligne-artisan.pdf"
   },
   {
     "id": "checklist-securite-anti-spam-wordpress",
@@ -172,14 +175,14 @@ export const DEFAULT_PRODUCTS: Product[] = [
     "image": "/images/products/checklist-securite-anti-spam-wordpress.webp",
     "imageAlt": "Checklist de sécurité anti-piratage et anti-spam WordPress - Guides digitaux - Nord (59)",
     "description": "La grille de contrôle essentielle pour immuniser ton site WordPress contre les piratages automatisés, sécuriser tes formulaires de contact et protéger la réputation de ton entreprise d’artisan.",
-    "longDescription": "<h3>Ne laisse pas les hackers et les spambots détruire la réputation de ton site d'artisan</h3>\n<p>Un site internet indisponible, affichant une page blanche ou infecté par des spams de redirections douteuses peut ruiner des mois d'efforts et faire fuir tes prospects en quelques secondes. Beaucoup d'artisans, de créateurs et d'indépendants dans le Nord et la Métropole lilloise pensent à tort que leur site vitrine n'intéresse pas les pirates informatiques. C'est une idée reçue extrêmement dangereuse ! Sur Internet, les attaques ne sont pas ciblées à la main : ce sont des robots automatisés (botnets) qui scandent et attaquent quotidiennement des milliers de sites sous <a href=\"https://wordpress.org\" target=\"_blank\" rel=\"noopener noreferrer\">WordPress</a> à la recherche de failles non colmatées.</p>\n\n<p>Chaque jour sans protection adéquate, ton formulaire de contact risque d'être bombardé de messages indésirables, ou pire, ton site peut servir de relais pour des attaques malveillantes sans que tu ne t'en rendes compte. La <strong>Checklist Sécurité & Anti-Spam WordPress</strong> a été spécialement créée pour te donner une feuille de route simple, claire et accessible sans aucune connaissance préalable en développement web.</p>\n\n<h3>Les 5 piliers fondamentaux de la sécurité WordPress passés au crible</h3>\n<p>Cette grille de contrôle interactive te guide pas-à-pas pour vérifier et verrouiller chaque point névralgique de ton site web :</p>\n<ul>\n  <li><strong>Pilier 1 : Sauvegardes automatiques et protocole de restauration d'urgence</strong> : Mettre en place des sauvegardes régulières et automatisées sur un serveur distant sécurisé grâce à des extensions certifiées comme <a href=\"https://updraftplus.com/\" target=\"_blank\" rel=\"noopener noreferrer\">UpdraftPlus</a>, et tester au moins une fois la procédure de restauration pour parer à tout crash.</li>\n  <li><strong>Pilier 2 : Protection des formulaires de contact et filtrage anti-spam intelligent</strong> : Éliminer 99,9 % des spambots sur tes formulaires de devis et espace commentaires grâce à des pièges à robots (Honeypot) et des outils comme <a href=\"https://akismet.com/\" target=\"_blank\" rel=\"noopener noreferrer\">Akismet</a> ou Cloudflare Turnstile, sans imposer de Captcha illisible qui décourage tes vrais clients.</li>\n  <li><strong>Pilier 3 : Verrouillage des accès d'administration & Double Authentification (2FA)</strong> : Supprimer le compte administrateur « admin » par défaut, modifier l'URL d'accès au back-office, imposer des mots de passe ultra-sécurisés et limiter le nombre de tentatives de connexion échouées (Limit Login Attempts).</li>\n  <li><strong>Pilier 4 : Maintenance préventive & mises à jour du cœur WordPress, thèmes et plugins</strong> : Établir une routine de mise à jour mensuelle sans risque pour colmater immédiatement les failles de sécurité (CVE) récemment découvertes sur tes extensions.</li>\n  <li><strong>Pilier 5 : Sécurisation de la base de données & Conformité aux normes de protection</strong> : Modifier le préfixe de base de données par défaut (`wp_`), désactiver l'éditeur de fichier interne et appliquer les bonnes pratiques recommandées par l'<a href=\"https://www.ssi.gouv.fr/\" target=\"_blank\" rel=\"noopener noreferrer\">ANSSI (Agence Nationale de la Sécurité des Systèmes d'Information)</a> et la <a href=\"https://www.cybermalveillance.gouv.fr/\" target=\"_blank\" rel=\"noopener noreferrer\">Plateforme Nationale Cybermalveillance</a>.</li>\n</ul>\n\n<h3>Pourquoi cette checklist est un investissement indispensable pour ton activité</h3>\n<p>Faire réparer un site piraté par un prestataire informatique coûte généralement entre 300 € et 1 500 €, sans compter la perte de chiffre d'affaires pendant la coupure. En appliquant cette checklist en moins de 30 minutes :</p>\n<ul>\n  <li>Tu nettoies définitivement ta boîte mail des dizaines de spams quotidiens.</li>\n  <li>Tu garantis la confidentialité des données personnelles de tes clients conformément au RGPD préconisé par la <a href=\"https://www.cnil.fr/\" target=\"_blank\" rel=\"noopener noreferrer\">CNIL</a>.</li>\n  <li>Tu offres à ton entreprise artisanale un niveau de protection pro digne d'une grande structure.</li>\n</ul>\n\n<p>Pour construire des fondations solides et inscrire ton site dans une véritable démarche de conversion globale, associe cette checklist à notre <a href=\"/produit/ebook-visibilite-ligne-artisan\">Ebook Visibilité en Ligne Artisan</a>. Si tu souhaites apprendre à maîtriser l'ensemble de la plateforme de A à Z, découvre notre <a href=\"/produit/formation-wordpress\">Formation Vidéo Vitrine WordPress</a>. Retrouve également l'intégralité de nos guides dans notre <a href=\"/produit/pack-guides\">Pack Guides Utiles Création de Site</a> accessible sur la <a href=\"/boutique\">boutique digitale Guides Digitaux</a>.</p>\n\n<h3>Un format PDF dynamique, clair et réutilisable à vie</h3>\n<p>Disponible en téléchargement immédiat au format PDF interactif ou imprimable, cette checklist te permet de cocher chaque point directement sur ton écran. Une question sur la mise en place d'une extension de sécurité ? Stéphanie et l'équipe sont à ton écoute via la <a href=\"/contact\">page de contact</a>.</p>",
+    "longDescription": "<h3>Ne laisse pas les hackers et les spambots détruire la réputation de ton site d'artisan</h3>\n<p>Un site internet indisponible, affichant une page blanche ou infecté par des spams de redirections douteuses peut ruiner des mois d'efforts et faire fuir tes prospects en quelques secondes. Beaucoup d'artisans, de créateurs et d'indépendants dans le Nord et la Métropole lilloise pensent à tort que leur site vitrine n'intéresse pas les pirates informatiques. C'est une idée reçue extrêmement dangereuse ! Sur Internet, les attaques ne sont pas ciblées à la main : ce sont des robots automatisés (botnets) qui scandent et attaquent quotidiennement des milliers de sites sous <a href=\"https://wordpress.org\" target=\"_blank\" rel=\"noopener noreferrer\">WordPress</a> à la recherche de failles non colmatées.</p>\n\n<p>Chaque jour sans protection adéquate, ton formulaire de contact risque d'être bombardé de messages indésirables, ou pire, ton site peut servir de relais pour des attaques malveillantes sans que tu ne t'en rendes compte. La <strong>Checklist Sécurité & Anti-Spam WordPress</strong> a été spécialement créée pour te donner une feuille de route simple, claire et accessible sans aucune connaissance préalable en développement web.</p>\n\n<h3>Les 5 piliers fondamentaux de la sécurité WordPress passés au crible</h3>\n<p>Cette grille de contrôle interactive te guide pas-à-pas pour vérifier et verrouiller chaque point névralgique de ton site web :</p>\n<ul>\n  <li><strong>Pilier 1 : Sauvegardes automatiques et protocole de restauration d'urgence</strong> : Mettre en place des sauvegardes régulières et automatisées sur un serveur distant sécurisé grâce à des extensions certifiées comme <a href=\"https://updraftplus.com/\" target=\"_blank\" rel=\"noopener noreferrer\">UpdraftPlus</a>, et tester au moins une fois la procédure de restauration pour parer à tout crash.</li>\n  <li><strong>Pilier 2 : Protection des formulaires de contact et filtrage anti-spam intelligent</strong> : Éliminer 99,9 % des spambots sur tes formulaires de devis et espace commentaires grâce à des pièges à robots (Honeypot) et des outils comme <a href=\"https://akismet.com/\" target=\"_blank\" rel=\"noopener noreferrer\">Akismet</a> ou Cloudflare Turnstile, sans imposer de Captcha illisible qui décourage tes vrais clients.</li>\n  <li><strong>Pilier 3 : Verrouillage des accès d'administration & Double Authentification (2FA)</strong> : Supprimer le compte administrateur « admin » par défaut, modifier l'URL d'accès au back-office, imposer des mots de passe ultra-sécurisés et limiter le nombre de tentatives de connexion échouées (Limit Login Attempts).</li>\n  <li><strong>Pilier 4 : Maintenance préventive & mises à jour du cœur WordPress, thèmes et plugins</strong> : Établir une routine de mise à jour mensuelle sans risque pour colmataer immédiatement les failles de sécurité (CVE) récemment découvertes sur tes extensions.</li>\n  <li><strong>Pilier 5 : Sécurisation de la base de données & Conformité aux normes de protection</strong> : Modifier le préfixe de base de données par défaut (`wp_`), désactiver l'éditeur de fichier interne et appliquer les bonnes pratiques recommandées par l'<a href=\"https://www.ssi.gouv.fr/\" target=\"_blank\" rel=\"noopener noreferrer\">ANSSI (Agence Nationale de la Sécurité des Systèmes d'Information)</a> et la <a href=\"https://www.cybermalveillance.gouv.fr/\" target=\"_blank\" rel=\"noopener noreferrer\">Plateforme Nationale Cybermalveillance</a>.</li>\n</ul>\n\n<h3>Pourquoi cette checklist est un investissement indispensable pour ton activité</h3>\n<p>Faire réparer un site piraté par un prestataire informatique coûte généralement entre 300 € et 1 500 €, sans compter la perte de chiffre d'affaires pendant la coupure. En appliquant cette checklist en moins de 30 minutes :</p>\n<ul>\n  <li>Tu nettoies définitivement ta boîte mail des dizaines de spams quotidiens.</li>\n  <li>Tu garantis la confidentialité des données personnelles de tes clients conformément au RGPD préconisé par la <a href=\"https://www.cnil.fr/\" target=\"_blank\" rel=\"noopener noreferrer\">CNIL</a>.</li>\n  <li>Tu offres à ton entreprise artisanale un niveau de protection pro digne d'une grande structure.</li>\n</ul>\n\n<p>Pour construire des fondations solides et inscrire ton site dans une véritable démarche de conversion globale, associe cette checklist à notre <a href=\"/produit/ebook-visibilite-ligne-artisan\">Ebook Visibilité en Ligne Artisan</a>. Si tu souhaites apprendre à maîtriser l'ensemble de la plateforme de A à Z, découvre notre <a href=\"/produit/formation-wordpress\">Formation Vidéo Vitrine WordPress</a>. Retrouve également l'intégralité de nos guides dans notre <a href=\"/produit/pack-guides\">Pack Guides Utiles Création de Site</a> accessible sur la <a href=\"/boutique\">boutique digitale Guides Digitaux</a>.</p>\n\n<h3>Un format PDF dynamique, clair et réutilisable à vie</h3>\n<p>Disponible en téléchargement immédiat au format PDF interactif ou imprimable, cette checklist te permet de cocher chaque point directement sur ton écran. Une question sur la mise en place d'une extension de sécurité ? Stéphanie et l'équipe sont à ton écoute via la <a href=\"/contact\">page de contact</a>.</p>",
     "features": [
       "Checklist dynamique à cocher pour immuniser ton site WordPress",
       "Protocole anti-spam complet pour formulaires de contact sans Captcha complexe",
       "Guide pas-à-pas de sauvegarde automatique et de restauration d'urgence",
       "Conseils de sécurité alignés avec les recommandations ANSSI et RGPD"
     ],
-    "downloadPdf": "/downloads/checklist-securite-anti-spam-wordpress.pdf"
+    "downloadPdf": "/downloads/1786958808414-checklist-securite-et-anti-spam-wordpress.pdf"
   },
   {
     "id": "checklist-les-principes-ux",
@@ -201,7 +204,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
       "Optimisation de la lisibilité mobile, de la hiérarchie visuelle et des boutons CTA",
       "Format dynamique à cocher et imprimable pour une révision immédiata"
     ],
-    "downloadPdf": "/downloads/checklist-principes-ux.pdf"
+    "downloadPdf": "/downloads/1786959220933-checklist-obligatoire-pour-ton-site-les-principes-cles-de-l-ux.pdf"
   },
   {
     "id": "checklist-profil-reseaux-sociaux",
@@ -223,7 +226,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
       "Guide d’organisation des Stories à la une (Highlights) et du feed",
       "Conseils pour paramétrer la messagerie et les réponses automatiques"
     ],
-    "downloadPdf": "/downloads/checklist-profil-reseaux-sociaux.pdf"
+    "downloadPdf": "/downloads/1786959425575-checklist-profil-pro-rs.pdf"
   },
   {
     "id": "checklist-verification-lancement-site",
@@ -245,6 +248,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
       "Recette du tunnel de paiement et de la conformité juridique RGPD / CNIL",
       "Format PDF dynamique interactif à cocher et imprimable"
     ],
+    "downloadPdf": "/downloads/1786961163702-checklist-a-verifier-avant-le-lancement-du-site.pdf"
   },
   {
     "id": "checklist-google-business-profile",
@@ -266,7 +270,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
       "Protocole de collecte et de réponse aux avis clients Google",
       "Format PDF dynamique interactif à cocher et imprimable"
     ],
-    "downloadPdf": "/downloads/checklist-google-business-profile.pdf"
+    "downloadPdf": "/downloads/1786961735239-checklist-fiche-google.pdf"
   },
   {
     "id": "pack-guides",

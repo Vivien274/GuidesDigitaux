@@ -95,7 +95,25 @@ export async function GET(request: Request) {
 
     // Handle local file in public directory (e.g. /downloads/xxx.pdf)
     let cleanRelativePath = targetFilePath.startsWith('/') ? targetFilePath : `/${targetFilePath}`;
-    const localFilePath = path.join(process.cwd(), 'public', cleanRelativePath);
+    let localFilePath = path.join(process.cwd(), 'public', cleanRelativePath);
+
+    if (!fs.existsSync(localFilePath)) {
+      // Smart fuzzy matching in public/downloads
+      const downloadsDir = path.join(process.cwd(), 'public', 'downloads');
+      if (fs.existsSync(downloadsDir)) {
+        const files = fs.readdirSync(downloadsDir);
+        const searchBase = path.basename(cleanRelativePath, '.pdf').toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        const matchedFile = files.find(f => {
+          const cleanF = f.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return cleanF.includes(searchBase) || (searchBase.length > 5 && cleanF.replace(/^[0-9]+/, '').includes(searchBase));
+        });
+
+        if (matchedFile) {
+          localFilePath = path.join(downloadsDir, matchedFile);
+        }
+      }
+    }
 
     if (!fs.existsSync(localFilePath)) {
       // Fallback: try default fallback PDF if file path doesn't exist on disk
