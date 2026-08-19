@@ -184,6 +184,10 @@ export default function AdminProductsPage() {
                             >
                               <span>📄 PDF Associé ✓</span>
                             </a>
+                          ) : (product.productType === 'bundle' || product.bundleProductIds?.length || product.id === 'pack-guides') ? (
+                            <span className="inline-block text-[10px] font-extrabold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                              📦 Pack Combo ({product.bundleProductIds?.length || 7} PDFs) ✓
+                            </span>
                           ) : (product.category === 'ebook' || product.category === 'checklist') ? (
                             <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                               ⚠️ Pas de PDF téléversé

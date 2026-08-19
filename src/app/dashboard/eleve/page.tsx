@@ -29,6 +29,7 @@ import { fetchCoursesFromDb, saveUserPurchaseToDb } from '@/lib/supabaseLms';
 import { getUserPurchases, getUserPurchasesAsync, addPurchaseToUser } from '@/lib/userPurchasesStore';
 import { getEncryptedDownloadUrl } from '@/lib/downloadSecurity';
 import { getCoachingStatusForUser } from '@/lib/coachingStore';
+import { getDeduplicatedDownloadLinksForProduct } from '@/lib/orderEmailService';
 
 import CertificateModal from '@/components/CertificateModal';
 
@@ -453,7 +454,28 @@ function EleveDashboardContent() {
                             <Download className="w-3.5 h-3.5 shrink-0 text-[#18757d]" />
                           </a>
                         </div>
-                      ) : item.type === 'formation' || !item.downloadPdf ? (
+                      ) : (item.id === 'pack-guides' || item.bundleProductIds?.length || item.productType === 'bundle') ? (
+                        <div className="space-y-2 w-full">
+                          <div className="p-2.5 bg-teal-50 rounded-xl border border-teal-200 text-[11px] font-extrabold text-[#18757d] text-center">
+                            📦 Coffret Intégral (7 Guides & Checklists PDF)
+                          </div>
+                          {getDeduplicatedDownloadLinksForProduct(item.id).map((link, idx) => (
+                            <a
+                              key={idx}
+                              href={link.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="w-full py-2.5 px-3 text-[11px] font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-between"
+                            >
+                              <span className="flex items-center gap-1.5 truncate">
+                                <FileText className="w-3.5 h-3.5 shrink-0 text-[#18757d]" />
+                                {link.title}
+                              </span>
+                              <Download className="w-3.5 h-3.5 shrink-0 text-[#18757d]" />
+                            </a>
+                          ))}
+                        </div>
+                      ) : (item.type === 'formation' || item.category === 'formation') && !item.downloadPdf ? (
                         <Link
                           href={`/formation/${item.slug}`}
                           className="w-full py-3.5 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
@@ -463,7 +485,7 @@ function EleveDashboardContent() {
                         </Link>
                       ) : (
                         <a
-                          href={getEncryptedDownloadUrl(item.downloadPdf, item.id)}
+                          href={getEncryptedDownloadUrl(item.downloadPdf || '/downloads/mini-guide-ecrire-web-artisan.pdf', item.id)}
                           target="_blank"
                           rel="noreferrer"
                           className="w-full py-3.5 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
