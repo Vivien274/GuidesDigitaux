@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import {
   Sparkles,
   CheckCircle2,
@@ -30,6 +29,8 @@ function UpsellContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          courseId: 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+          courseTitle: 'Upgrade Combo E-Commerce : Formation WooCommerce',
           productId: 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
           title: 'Upgrade Combo E-Commerce : Formation WooCommerce',
           price: 51,
@@ -172,7 +173,16 @@ function UpsellContent() {
         </div>
       </main>
 
-      <Footer />
+      <footer className="py-8 bg-[#332420] text-teal-100/70 text-xs text-center border-t border-[#4a3630]">
+        <div className="max-w-4xl mx-auto px-4 space-y-2">
+          <p>© {new Date().getFullYear()} Guides Digitaux — Tous droits réservés.</p>
+          <div className="flex items-center justify-center gap-4 text-[11px]">
+            <Link href="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
+            <span>•</span>
+            <Link href="/cgv" className="hover:text-white transition-colors">CGV</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

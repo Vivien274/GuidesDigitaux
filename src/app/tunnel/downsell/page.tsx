@@ -2,9 +2,9 @@
 
 import React, { useState, Suspense } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import {
   Sparkles,
   CheckCircle2,
@@ -26,6 +26,8 @@ function DownsellContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          courseId: 'pack-guides',
+          courseTitle: 'Offre Spéciale : Pack Guides Utiles (7 Fichiers PDF)',
           productId: 'pack-guides',
           title: 'Offre Spéciale : Pack Guides Utiles (7 Fichiers PDF)',
           price: 17,
@@ -145,7 +147,16 @@ function DownsellContent() {
         </div>
       </main>
 
-      <Footer />
+      <footer className="py-8 bg-[#332420] text-teal-100/70 text-xs text-center border-t border-[#4a3630]">
+        <div className="max-w-4xl mx-auto px-4 space-y-2">
+          <p>© {new Date().getFullYear()} Guides Digitaux — Tous droits réservés.</p>
+          <div className="flex items-center justify-center gap-4 text-[11px]">
+            <Link href="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
+            <span>•</span>
+            <Link href="/cgv" className="hover:text-white transition-colors">CGV</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

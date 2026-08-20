@@ -4,15 +4,13 @@ import Stripe from 'stripe';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { 
-      items,
-      courseId = 'precommande-fiche-google',
-      courseTitle = 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
-      price = 29,
-      isPreorder = false,
-      releaseDate = '15 septembre 2026',
-      customerEmail
-    } = body;
+    const items = body.items;
+    const courseId = body.courseId || body.productId || 'precommande-fiche-google';
+    const courseTitle = body.courseTitle || body.title || 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress';
+    const price = body.price || 199;
+    const isPreorder = body.isPreorder || false;
+    const releaseDate = body.releaseDate || '15 septembre 2026';
+    const customerEmail = body.customerEmail;
 
     const secretKey = (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('...'))
       ? process.env.STRIPE_SECRET_KEY 
