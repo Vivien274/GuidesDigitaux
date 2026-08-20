@@ -25,7 +25,12 @@ import {
   ThumbsUp,
   GraduationCap,
   RefreshCw,
-  HeartHandshake
+  HeartHandshake,
+  FileCheck2,
+  FileText,
+  HelpCircle as QuizIcon,
+  CreditCard,
+  CalendarCheck
 } from 'lucide-react';
 
 export default function TunnelFormationWordpressPage() {
@@ -33,8 +38,10 @@ export default function TunnelFormationWordpressPage() {
   const [openModule, setOpenModule] = useState<number | null>(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentOption, setPaymentOption] = useState<'1x' | '3x'>('1x');
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (selectedOption?: '1x' | '3x') => {
+    const opt = selectedOption || paymentOption;
     setIsLoading(true);
     try {
       const res = await fetch('/api/stripe/checkout', {
@@ -42,10 +49,11 @@ export default function TunnelFormationWordpressPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           courseId: 'formation-wordpress',
-          courseTitle: 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
+          courseTitle: opt === '3x' ? 'Formation Vidéo : Vitrine WordPress (Option 3x Klarna)' : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
           productId: 'formation-wordpress',
-          title: 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
-          price: 199,
+          title: opt === '3x' ? 'Formation Vidéo : Vitrine WordPress (Option 3x Klarna)' : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
+          price: opt === '3x' ? 225 : 199,
+          paymentOption: opt,
           cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-wordpress',
           successUrl: 'https://www.guides-digitaux.com/tunnel/upsell?session_id={CHECKOUT_SESSION_ID}&productId=formation-wordpress'
         })
@@ -151,6 +159,10 @@ export default function TunnelFormationWordpressPage() {
       a: "Absolument pas ! Cette formation est 100% conçue pour les débutants complets. Tout se fait en glisser-déposer sur votre écran avec Elementor et WordPress, sans toucher à la moindre ligne de code."
     },
     {
+      q: "Est-ce que l'option 3x sans frais Klarna engendre des frais cachés ?",
+      a: "Aucun ! En choisissant l'option 3x 75 €, vous réglez votre première mensualité de 75 € aujourd'hui via Stripe/Klarna, puis les 2 mensualités suivantes sont prélevées automatiquement à 30 et 60 jours sans aucun frais supplémentaire pour vous."
+    },
+    {
       q: "Est-ce que les vidéos doivent être suivies dans l'ordre ?",
       a: "Toutes les vidéos ont été spécialement conçues pour pouvoir être visionnées de manière 100% indépendante les unes des autres, selon vos besoins du moment, tout en suivant une trame pédagogique logique et fluide."
     },
@@ -174,7 +186,7 @@ export default function TunnelFormationWordpressPage() {
           <span className="bg-amber-400 text-[#332420] text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full">
             ACCÈS IMMÉDIAT
           </span>
-          <span>⚡ Formation Vidéo WordPress Complète (6 Modules Officiels) — 2 Vidéos Bonus Incluses !</span>
+          <span>⚡ Formation Vidéo WordPress Complète — Option Paiement 3x Klarna Disponible !</span>
         </div>
       </div>
 
@@ -201,7 +213,7 @@ export default function TunnelFormationWordpressPage() {
               {/* Highlight Note */}
               <div className="p-3.5 bg-[#e6f4f3]/70 rounded-2xl border border-[#18757d]/20 text-xs text-[#18757d] font-bold flex items-center gap-2.5">
                 <Zap className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>Format modulable (6 Modules) : visionnez chaque vidéo indépendamment selon vos besoins, tout en suivant une trame claire.</span>
+                <span>Format modulable (6 Modules) : visionnez chaque vidéo indépendamment selon vos besoins, avec checklists, workbooks & quizz inclus.</span>
               </div>
 
               {/* Bullet Highlights */}
@@ -215,24 +227,24 @@ export default function TunnelFormationWordpressPage() {
                   Accès illimité à vie 24h/24 & 7j/7
                 </div>
                 <div className="flex items-center gap-2.5 text-xs font-extrabold text-[#332420] bg-white p-3 rounded-2xl border border-[#eee7da] shadow-2xs">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  Design mobile & SEO local inclus
+                  <FileCheck2 className="w-4 h-4 text-[#18757d] shrink-0" />
+                  Checklists & Workbooks téléchargeables
                 </div>
                 <div className="flex items-center gap-2.5 text-xs font-extrabold text-[#332420] bg-white p-3 rounded-2xl border border-[#eee7da] shadow-2xs">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  2 Vidéos Bonus Exclusives Offertes
+                  <QuizIcon className="w-4 h-4 text-amber-500 shrink-0" />
+                  Paiement 1x (199 €) ou 3x (3x 75 € Klarna)
                 </div>
               </div>
 
               {/* HERO CTA BUTTON 1 */}
               <div className="pt-4 space-y-3">
                 <button
-                  onClick={handleCheckout}
+                  onClick={() => handleCheckout('1x')}
                   disabled={isLoading}
                   className="w-full sm:w-auto px-9 py-5 text-sm sm:text-base font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-xl hover:shadow-2xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-3 mx-auto lg:mx-0 cursor-pointer"
                 >
                   {isLoading ? (
-                    <span>Redirection sécurisée vers Stripe...</span>
+                    <span>Redirection sécurisée...</span>
                   ) : (
                     <>
                       <span>REJOINDRE LA FORMATION MAINTENANT (199 €)</span>
@@ -243,7 +255,7 @@ export default function TunnelFormationWordpressPage() {
 
                 <div className="flex items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-[#5e4d46]">
                   <span className="flex items-center gap-1">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" /> Paiement Sécurisé SSL
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" /> Paiement 100% Sécurisé
                   </span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
@@ -270,7 +282,7 @@ export default function TunnelFormationWordpressPage() {
                     </div>
                   </div>
                   <span className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
-                    🎓 6 Modules Vidéo HD Pas-à-Pas
+                    🎓 6 Modules + Workbooks & Quizz
                   </span>
                 </div>
 
@@ -287,7 +299,7 @@ export default function TunnelFormationWordpressPage() {
                   <p className="text-xs text-[#5e4d46] font-medium leading-relaxed">
                     « Une formation construite sur-mesure pour les artisans et créateurs : vous apprenez à votre rythme et vous gardez le contrôle total sur votre outil web. »
                   </p>
-                  <span className="text-[11px] font-extrabold text-[#332420] block">— Stéphanie Rocq (Stratec Digital & Guides Digitaux)</span>
+                  <span className="text-[11px] font-extrabold text-[#332420] block">— Stéphanie Rocq (Stratec Digital)</span>
                 </div>
               </div>
             </div>
@@ -343,7 +355,7 @@ export default function TunnelFormationWordpressPage() {
           {/* CTA BUTTON 2 */}
           <div className="pt-4">
             <button
-              onClick={handleCheckout}
+              onClick={() => handleCheckout('1x')}
               disabled={isLoading}
               className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
@@ -367,7 +379,7 @@ export default function TunnelFormationWordpressPage() {
               Le cursus complet pour bâtir votre site vitrine
             </h2>
             <p className="text-sm text-[#5e4d46] max-w-2xl mx-auto leading-relaxed">
-              Toutes les vidéos ont été conçues pour que vous puissiez les visionner de manière <strong>100% indépendante</strong> les unes des autres, selon vos besoins du moment, tout en suivant une trame claire pour construire votre site de A à Z.
+              Toutes les vidéos ont été conçues pour que vous puissiez les visionner de manière <strong>100% indépendante</strong> les unes des autres, avec des <strong>checklists, workbooks pratiques et quizz</strong> à chaque étape.
             </p>
           </div>
 
@@ -386,7 +398,7 @@ export default function TunnelFormationWordpressPage() {
                       </span>
                       <div>
                         <h3 className="text-base font-extrabold text-[#332420]">{m.title}</h3>
-                        <span className="text-xs text-[#18757d] font-bold">Vidéos accessibles indépendamment • Trame progressive</span>
+                        <span className="text-xs text-[#18757d] font-bold">Vidéos indépendantes • Workbooks, Checklists & Quizz inclus</span>
                       </div>
                     </div>
                     {isOpen ? <ChevronUp className="w-5 h-5 text-[#18757d]" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
@@ -410,7 +422,7 @@ export default function TunnelFormationWordpressPage() {
           {/* CTA BUTTON 3 */}
           <div className="text-center pt-4">
             <button
-              onClick={handleCheckout}
+              onClick={() => handleCheckout('1x')}
               disabled={isLoading}
               className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
@@ -428,7 +440,7 @@ export default function TunnelFormationWordpressPage() {
           
           <div className="space-y-3">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[#e6f4f3] text-[#18757d] uppercase tracking-wider">
-              <Award className="w-4 h-4" /> Les 3 Engagements Qualité Guides Digitaux
+              <Award className="w-4 h-4" /> Les 3 Engagements Qualité Stratec Digital
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-[#332420]">
               Une méthode éprouvée pour la réussite de votre projet
@@ -450,7 +462,7 @@ export default function TunnelFormationWordpressPage() {
           {/* CTA BUTTON 4 */}
           <div className="pt-4">
             <button
-              onClick={handleCheckout}
+              onClick={() => handleCheckout('1x')}
               disabled={isLoading}
               className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
@@ -489,7 +501,7 @@ export default function TunnelFormationWordpressPage() {
           {/* CTA BUTTON 5 */}
           <div className="pt-4">
             <button
-              onClick={handleCheckout}
+              onClick={() => handleCheckout('1x')}
               disabled={isLoading}
               className="px-9 py-5 text-sm sm:text-base font-black text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
@@ -500,7 +512,7 @@ export default function TunnelFormationWordpressPage() {
         </div>
       </section>
 
-      {/* AUTHENTIC STORYTELLING BIO */}
+      {/* AUTHENTIC STORYTELLING BIO (STRATEC DIGITAL) */}
       <section className="py-16 bg-white border-b border-[#eee7da]">
         <div className="max-w-4xl mx-auto px-4 space-y-8">
           <div className="bg-[#faf8f5] p-8 sm:p-12 rounded-3xl border border-[#eee7da] space-y-6">
@@ -508,7 +520,7 @@ export default function TunnelFormationWordpressPage() {
               <div className="relative w-40 h-40 rounded-full overflow-hidden shrink-0 shadow-xl border-4 border-[#18757d]">
                 <Image
                   src="/images/stephanie_v2.png"
-                  alt="Stéphanie ROCQ - Fondatrice Stratec Digital & Guides Digitaux"
+                  alt="Stéphanie ROCQ - Fondatrice Stratec Digital"
                   fill
                   className="object-cover object-[center_65%]"
                 />
@@ -519,15 +531,15 @@ export default function TunnelFormationWordpressPage() {
                 </div>
                 <h3 className="text-2xl font-black text-[#332420]">Stéphanie ROCQ</h3>
                 <p className="text-xs font-extrabold text-[#18757d]">
-                  Fondatrice de <a href="https://stratec-digital.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#12595f]">Stratec Digital</a> & Guides-Digitaux.com
+                  Fondatrice de <a href="https://stratec-digital.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#12595f]">Stratec Digital</a>
                 </p>
-                <div className="flex items-center justify-center md:justify-start gap-3 pt-1">
-                  <a href="https://stratec-digital.com" target="_blank" rel="noopener noreferrer" className="text-xs text-[#18757d] font-bold flex items-center gap-1 hover:underline">
-                    <Globe className="w-3.5 h-3.5" /> stratec-digital.com
+                <div className="flex items-center justify-center md:justify-start gap-4 pt-1 flex-wrap">
+                  <a href="https://stratec-digital.com" target="_blank" rel="noopener noreferrer" className="text-xs text-[#18757d] font-bold flex items-center gap-1.5 hover:underline">
+                    <Globe className="w-4 h-4 text-[#18757d]" /> stratec-digital.com
                   </a>
                   <span className="text-slate-300">•</span>
-                  <a href="https://www.instagram.com/guidesdigitaux/" target="_blank" rel="noopener noreferrer" className="text-xs text-[#18757d] font-bold flex items-center gap-1 hover:underline">
-                    <span>📸 @guidesdigitaux</span>
+                  <a href="https://stratec-digital.com" target="_blank" rel="noopener noreferrer" className="text-xs text-[#18757d] font-bold flex items-center gap-1.5 hover:underline">
+                    <span>🌐 Stratec Digital</span>
                   </a>
                 </div>
               </div>
@@ -535,7 +547,7 @@ export default function TunnelFormationWordpressPage() {
 
             <div className="text-xs sm:text-sm text-[#5e4d46] leading-relaxed space-y-3 border-t border-[#eee7da] pt-6">
               <p>
-                « À travers mon entreprise <strong>Stratec Digital</strong> et la plateforme <strong>Guides Digitaux</strong>, j’accompagne les artisans, créateurs et indépendants qui veulent mieux comprendre le digital pour en tirer un vrai bénéfice — pas juste “faire comme tout le monde”.
+                « À travers mon entreprise <strong>Stratec Digital</strong>, j’accompagne les artisans, créateurs et indépendants qui veulent mieux comprendre le digital pour en tirer un vrai bénéfice — pas juste “faire comme tout le monde”.
               </p>
               <p>
                 Mon approche est simple : <strong>aucun jargon technique incompréhensible, un ton bienveillant, très concret et un brin décalé 😊</strong>. Chaque vidéo a été tournée pour vous transmettre l'autonomie totale sur votre site, sans vous prendre la tête ! »
@@ -546,7 +558,7 @@ export default function TunnelFormationWordpressPage() {
           {/* CTA BUTTON 6 */}
           <div className="text-center">
             <button
-              onClick={handleCheckout}
+              onClick={() => handleCheckout('1x')}
               disabled={isLoading}
               className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
@@ -558,8 +570,8 @@ export default function TunnelFormationWordpressPage() {
         </div>
       </section>
 
-      {/* PRICING & OFFER BOX */}
-      <section className="py-16 lg:py-24 bg-[#faf8f5]">
+      {/* PRICING & OFFER BOX WITH 2-TAB PAYMENT SELECTOR (1x vs 3x Klarna) */}
+      <section className="py-16 lg:py-24 bg-[#faf8f5]" id="commande">
         <div className="max-w-3xl mx-auto px-4">
           <div className="bg-white rounded-3xl p-8 sm:p-12 border-2 border-[#18757d] shadow-2xl space-y-8 text-center relative overflow-hidden">
             
@@ -572,21 +584,65 @@ export default function TunnelFormationWordpressPage() {
                 Formation Vidéo : Créer sa vitrine en ligne avec WordPress
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-[#332420]">
-                Accès Illimité à Vie
+                Choisissez Votre Mode De Règlement
               </h2>
               <p className="text-xs text-[#5e4d46]">
-                Formez-vous à votre rythme avec les 6 modules vidéo officiels et les 2 vidéos bonus offertes.
+                Formez-vous à votre rythme avec les 6 modules vidéo officiels, les 2 vidéos bonus et vos supports pratiques.
               </p>
             </div>
 
-            <div className="py-4 bg-[#faf8f5] rounded-2xl border border-[#eee7da] inline-block px-8 mx-auto">
-              <div className="flex items-baseline justify-center gap-3">
-                <span className="text-4xl sm:text-5xl font-black text-[#18757d]">199 €</span>
-                <span className="text-sm text-slate-400 font-semibold line-through">298 €</span>
-              </div>
-              <span className="text-[11px] font-extrabold text-emerald-700 block mt-1">
-                Paiement unique — Aucun abonnement ni frais cachés
-              </span>
+            {/* 2-TAB PAYMENT TOGGLE (1X vs 3X KLARNA) */}
+            <div className="max-w-md mx-auto p-1.5 bg-[#faf8f5] rounded-2xl border border-[#eee7da] grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPaymentOption('1x')}
+                className={`py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  paymentOption === '1x'
+                    ? 'bg-[#18757d] text-white shadow-md'
+                    : 'text-[#5e4d46] hover:text-[#332420]'
+                }`}
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Paiement 1x (199 €)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentOption('3x')}
+                className={`py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  paymentOption === '3x'
+                    ? 'bg-[#18757d] text-white shadow-md'
+                    : 'text-[#5e4d46] hover:text-[#332420]'
+                }`}
+              >
+                <CalendarCheck className="w-4 h-4" />
+                <span>Facilité 3x (3x 75 €)</span>
+              </button>
+            </div>
+
+            {/* PRICE DISPLAY */}
+            <div className="py-4 bg-[#faf8f5] rounded-2xl border border-[#eee7da] inline-block px-8 mx-auto w-full max-w-md">
+              {paymentOption === '1x' ? (
+                <div>
+                  <div className="flex items-baseline justify-center gap-3">
+                    <span className="text-4xl sm:text-5xl font-black text-[#18757d]">199 €</span>
+                    <span className="text-sm text-slate-400 font-semibold line-through">298 €</span>
+                  </div>
+                  <span className="text-[11px] font-extrabold text-emerald-700 block mt-1">
+                    Paiement unique — Économisez 26 € immédiatement
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-baseline justify-center gap-2">
+                    <span className="text-3xl sm:text-4xl font-black text-[#18757d]">3 x 75 €</span>
+                    <span className="text-xs text-slate-500 font-bold">/ mois</span>
+                  </div>
+                  <span className="text-[11px] font-extrabold text-[#18757d] block mt-1">
+                    Total : 225 € réglés en 3 mensualités sans frais via Klarna (75 € aujourd'hui)
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* What's included checklist */}
@@ -594,6 +650,10 @@ export default function TunnelFormationWordpressPage() {
               <div className="flex items-center gap-2.5 text-xs font-bold text-[#332420]">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>Accès immédiat aux 6 modules vidéo officiels</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs font-bold text-[#332420]">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Checklists pratiques, Workbooks & Quizz interactifs inclus</span>
               </div>
               <div className="flex items-center gap-2.5 text-xs font-bold text-[#332420]">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -611,15 +671,19 @@ export default function TunnelFormationWordpressPage() {
 
             {/* CTA BUTTON 7 */}
             <button
-              onClick={handleCheckout}
+              onClick={() => handleCheckout(paymentOption)}
               disabled={isLoading}
               className="w-full py-5 text-base font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-3 cursor-pointer"
             >
               {isLoading ? (
-                <span>Redirection vers Stripe...</span>
+                <span>Redirection sécurisée...</span>
               ) : (
                 <>
-                  <span>VALIDER MA COMMANDE & ACCÉDER AUX VIDÉOS (199 €)</span>
+                  <span>
+                    {paymentOption === '1x'
+                      ? 'VALIDER MA COMMANDE (199 € EN 1X)'
+                      : 'VALIDER MON PAIEMENT 3X (75 € AUJOURD\'HUI)'}
+                  </span>
                   <ArrowRight className="w-5 h-5 text-amber-300" />
                 </>
               )}
@@ -627,7 +691,7 @@ export default function TunnelFormationWordpressPage() {
 
             <div className="flex items-center justify-center gap-6 text-xs text-slate-500 font-semibold pt-2">
               <span className="flex items-center gap-1">
-                <Lock className="w-3.5 h-3.5 text-emerald-600" /> Cryptage Stripe 256-bit
+                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Paiement 100% Sécurisé
               </span>
               <span className="flex items-center gap-1">
                 <Award className="w-3.5 h-3.5 text-amber-500" /> Certificat Inclus
@@ -671,11 +735,11 @@ export default function TunnelFormationWordpressPage() {
           {/* CTA BUTTON 8 */}
           <div className="text-center pt-6">
             <button
-              onClick={handleCheckout}
+              onClick={() => handleCheckout(paymentOption)}
               disabled={isLoading}
               className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
-              <span>REJOINDRE LA FORMATION VITRINE (199 €)</span>
+              <span>REJOINDRE LA FORMATION VITRINE</span>
               <ArrowRight className="w-4 h-4 text-amber-300" />
             </button>
           </div>
@@ -686,11 +750,11 @@ export default function TunnelFormationWordpressPage() {
       {/* STICKY MOBILE CTA 9 */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#eee7da] p-3 shadow-2xl z-50">
         <button
-          onClick={handleCheckout}
+          onClick={() => handleCheckout(paymentOption)}
           disabled={isLoading}
           className="w-full py-3.5 px-4 text-xs font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-md uppercase tracking-wider flex items-center justify-between cursor-pointer"
         >
-          <span>ACCÉDER À LA FORMATION (199 €)</span>
+          <span>ACCÉDER À LA FORMATION ({paymentOption === '1x' ? '199 €' : '3x 75 €'})</span>
           <ArrowRight className="w-4 h-4 text-amber-300" />
         </button>
       </div>
@@ -698,7 +762,7 @@ export default function TunnelFormationWordpressPage() {
       {/* MINIMAL TUNNEL FOOTER */}
       <footer className="py-8 bg-[#332420] text-teal-100/70 text-xs text-center border-t border-[#4a3630]">
         <div className="max-w-4xl mx-auto px-4 space-y-2">
-          <p>© {new Date().getFullYear()} Guides Digitaux — Tous droits réservés.</p>
+          <p>© {new Date().getFullYear()} Stratec Digital — Tous droits réservés.</p>
           <div className="flex items-center justify-center gap-4 text-[11px]">
             <Link href="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
             <span>•</span>

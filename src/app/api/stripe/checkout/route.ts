@@ -8,8 +8,12 @@ export async function POST(request: Request) {
     const items = body.items;
     const courseId = body.courseId || body.productId || 'formation-wordpress';
     const matchedProduct = DEFAULT_PRODUCTS.find(p => p.id === courseId || p.slug === courseId || p.id === body.productId);
-    const courseTitle = body.courseTitle || body.title || matchedProduct?.title || 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress';
-    const price = body.price || matchedProduct?.price || 199;
+    const paymentOption = body.paymentOption || '1x';
+    const is3x = paymentOption === '3x';
+    const price = is3x ? 225 : (body.price || matchedProduct?.price || 199);
+    const courseTitle = is3x 
+      ? 'Formation Vidéo : Vitrine WordPress (Option 3x avec Klarna)' 
+      : (body.courseTitle || body.title || matchedProduct?.title || 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress');
     const isPreorder = body.isPreorder || false;
     const releaseDate = body.releaseDate || '15 septembre 2026';
     const customerEmail = body.customerEmail;
@@ -56,7 +60,7 @@ export async function POST(request: Request) {
             currency: 'eur',
             product_data: {
               name: courseTitle,
-              description: isPreorder ? `🚀 Précommande exclusive - Sortie le ${releaseDate}` : 'Formation Vidéo Guides Digitaux',
+              description: is3x ? 'Paiement en 3 fois sans frais via Klarna (3 x 75 €)' : (isPreorder ? `🚀 Précommande exclusive - Sortie le ${releaseDate}` : 'Formation Vidéo Guides Digitaux'),
             },
             unit_amount: priceCents,
           },
@@ -102,7 +106,7 @@ export async function POST(request: Request) {
     if (hasRealStripeKey) {
       const stripe = new Stripe(secretKey);
       const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
+        payment_method_types: ['card', 'klarna'],
         customer_email: customerEmail ? customerEmail.toLowerCase().trim() : undefined,
         line_items: lineItems,
         mode: 'payment',
