@@ -18,14 +18,14 @@ import {
   Award,
   Zap,
   Lock,
-  MessageCircle,
   Gift,
   HelpCircle,
-  UserCheck,
   Check,
   Globe,
   ThumbsUp,
-  Quote
+  GraduationCap,
+  RefreshCw,
+  HeartHandshake
 } from 'lucide-react';
 
 export default function TunnelFormationWordpressPage() {
@@ -67,43 +67,52 @@ export default function TunnelFormationWordpressPage() {
 
   const modules = [
     {
-      title: "Module 1 : Nom de domaine et hébergement web",
+      title: "Module 1 : Préparer son projet",
       lessons: [
-        "Réserver votre nom de domaine professionnel (.fr / .com) et éviter les erreurs d'usurpation",
-        "Choisir un hébergement web rapide et performant au meilleur tarif",
-        "Installer WordPress en 1 clic et activer le certificat de sécurité SSL/HTTPS"
+        "Bienvenue dans l’aventure ! (Présentation rapide de ce qu’on va faire ensemble)",
+        "Trouver le bon nom pour son site (Comment choisir un nom de domaine efficace : idées, extensions, erreurs à éviter)",
+        "Acheter son nom de domaine et son hébergement (Démonstration concrète chez OVH, O2Switch, Ionos…)",
+        "Créer une adresse email pro"
       ]
     },
     {
-      title: "Module 2 : Prise en main et configuration de WordPress",
+      title: "Module 2 : Installation de WordPress",
       lessons: [
-        "Découvrir le tableau de bord WordPress et le paramétrer sereinement sans stress",
-        "Configurer les permaliens SEO pour plaire immédiatement aux moteurs de recherche",
-        "Choisir, installer et personnaliser votre thème graphique professionnel"
+        "Installer WordPress en 5 minutes (Auto-installateur et installation manuelle expliquée simplement)",
+        "Première connexion et réglages essentiels (Découverte du tableau de bord + titre du site, slogan, langue, fuseau horaire)"
       ]
     },
     {
-      title: "Module 3 : Conception de pages avec Elementor",
+      title: "Module 3 : Sécuriser et mettre en place la base",
       lessons: [
-        "Maîtriser le constructeur de page visuel Elementor en glisser-déposer (zéro ligne de code)",
-        "Créer une Page d'Accueil captivante qui donne envie de travailler avec vous",
-        "Construire la page 'Prestations / Services', la page 'À propos' authentique et la page 'Contact'"
+        "Sécuriser son site dès le départ (Mot de passe, suppression contenus par défaut, premier plugin de sécurité)",
+        "Installer un thème adapté à son projet (Où trouver un thème, comment l’installer, première personnalisation)",
+        "Les plugins indispensables (Sécurité, sauvegardes, SEO, formulaire de contact, optimisation)"
       ]
     },
     {
-      title: "Module 4 : Optimisation mobile (Responsive)",
+      title: "Module 4 : Créer et organiser son contenu",
       lessons: [
-        "Adapter précisément votre mise en page sur smartphones iOS, Android et tablettes",
-        "Positionner des boutons d'action cliquables au pouce pour maximiser les appels et devis",
-        "Appliquer les règles d'ergonomie mobile et alléger l'affichage"
+        "Créer ses premières pages (Accueil, À propos, Services/Produits, Contact)",
+        "Créer son premier article de blog (Différence page/article + mise en page de base)",
+        "Construire son menu de navigation (Ajouter ses pages, créer des sous-menus)",
+        "Configurer la page d’accueil (Page statique vs derniers articles + réglages simples)"
       ]
     },
     {
-      title: "Module 5 : Référencement naturel (SEO local) & Sécurité",
+      title: "Module 5 : Réglages avancés",
       lessons: [
-        "Rédiger et optimiser vos balises Meta Title & Description pour votre ville et région",
-        "Securiser votre site avec un plugin anti-piratage et bloquer 99,9 % des spambots",
-        "Lier votre site à Google Maps / Google Search Console et publier officiellement"
+        "Améliorer l’expérience utilisateur (Personnaliser couleurs, polices, logo, favicon)",
+        "Paramétrer les URL et le HTTPS (Permaliens propres + activation du certificat SSL)",
+        "Sauvegardes automatiques et anti-spam (Mettre son site en mode « tranquille mais efficace »)"
+      ]
+    },
+    {
+      title: "Module 6 : Mise en ligne et suivi",
+      lessons: [
+        "Tester son site avant le grand lancement (Mobile, tablette, formulaires)",
+        "Se faire remarquer par Google (Google Search Console, Analytics, bases du SEO)",
+        "Félicitations : votre site est en ligne ! 🎉 (Checklist finale + bonnes pratiques pour la suite)"
       ]
     }
   ];
@@ -121,27 +130,18 @@ export default function TunnelFormationWordpressPage() {
     }
   ];
 
-  const realReviews = [
+  const engagements = [
     {
-      author: "Julien M.",
-      role: "Artisan Ébéniste (Métropole Lilloise)",
-      source: "Avis Google 5★",
-      date: "Février 2026",
-      text: "« Un accompagnement au top ! Stéphanie rend le digital ultra-simple. Grâce aux vidéos pas-à-pas, j'ai pu créer le site vitrine de mon atelier sans toucher au moindre code. Les clients me trouvent enfin sur Google Maps ! »"
+      title: "Pédagogie 100% Concrète & Pas-à-Pas",
+      desc: "Chaque étape est filmée directement sur écran. Pas de théorie abstraite : vous regardez la vidéo et vous reproduisez exactement la même action sur votre site."
     },
     {
-      author: "Camille D.",
-      role: "Créatrice Céramiste & Déco",
-      source: "Avis Facebook 5★",
-      date: "Janvier 2026",
-      text: "« J'avais très peur de m'y perdre ou de tout bloquer sur WordPress. Le ton de Stéphanie est bienveillant, clair et sans blabla. On suit la vidéo, on clique au même endroit, et le site est en ligne. Merci Stratec Digital ! »"
+      title: "Accès Illimité à Vie & Évolutif",
+      desc: "Votre accès reste valable sans limite de temps. Vous pouvez revenir visionner n'importe quel cours quand vous en avez besoin et profiter de toutes les futures mises à jour."
     },
     {
-      author: "Marc L.",
-      role: "Prestataire Indépendant & Consultant",
-      source: "Avis Google 5★",
-      date: "Mars 2026",
-      text: "« Rien à voir avec les formations théoriques indigestes qu'on trouve sur le net. Ici chaque vidéo répond à un besoin précis. Pouvoir visionner les cours indépendamment selon son avancement est un vrai plus ! »"
+      title: "Accompagnement Adapté aux Artisans",
+      desc: "Un langage clair, sans blabla ni jargon technique complexe, conçu pour préserver votre temps et garantir votre autonomie absolue."
     }
   ];
 
@@ -174,7 +174,7 @@ export default function TunnelFormationWordpressPage() {
           <span className="bg-amber-400 text-[#332420] text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full">
             ACCÈS IMMÉDIAT
           </span>
-          <span>⚡ Formation Vidéo WordPress Complète — 2 Vidéos Bonus Incluses Gratuitement !</span>
+          <span>⚡ Formation Vidéo WordPress Complète (6 Modules Officiels) — 2 Vidéos Bonus Incluses !</span>
         </div>
       </div>
 
@@ -201,7 +201,7 @@ export default function TunnelFormationWordpressPage() {
               {/* Highlight Note */}
               <div className="p-3.5 bg-[#e6f4f3]/70 rounded-2xl border border-[#18757d]/20 text-xs text-[#18757d] font-bold flex items-center gap-2.5">
                 <Zap className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>Format modulable : visionnez chaque vidéo indépendamment selon vos besoins, tout en suivant une trame claire.</span>
+                <span>Format modulable (6 Modules) : visionnez chaque vidéo indépendamment selon vos besoins, tout en suivant une trame claire.</span>
               </div>
 
               {/* Bullet Highlights */}
@@ -224,7 +224,7 @@ export default function TunnelFormationWordpressPage() {
                 </div>
               </div>
 
-              {/* HERO CTA BUTTON */}
+              {/* HERO CTA BUTTON 1 */}
               <div className="pt-4 space-y-3">
                 <button
                   onClick={handleCheckout}
@@ -270,24 +270,24 @@ export default function TunnelFormationWordpressPage() {
                     </div>
                   </div>
                   <span className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
-                    🎓 Cours Vidéo HD Pas-à-Pas
+                    🎓 6 Modules Vidéo HD Pas-à-Pas
                   </span>
                 </div>
 
-                {/* Social Proof Widget */}
+                {/* Autonomy Commitment Widget */}
                 <div className="p-4 bg-[#faf8f5] rounded-2xl border border-[#eee7da] space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-amber-500">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <span className="text-xs font-black text-[#18757d]">Avis Google & Facebook 5.0 / 5</span>
+                    <span className="text-xs font-black text-[#18757d] uppercase tracking-wider">
+                      Engagement Pédagogique
+                    </span>
+                    <span className="text-[10px] font-extrabold bg-[#e6f4f3] text-[#18757d] px-2.5 py-0.5 rounded-full">
+                      100% Autonome
+                    </span>
                   </div>
-                  <p className="text-xs text-[#5e4d46] italic leading-relaxed">
-                    « Stéphanie explique chaque clic avec une clarté remarquable. J'ai pu lancer le site de mon atelier d'ébénisterie en toute autonomie ! »
+                  <p className="text-xs text-[#5e4d46] font-medium leading-relaxed">
+                    « Une formation construite sur-mesure pour les artisans et créateurs : vous apprenez à votre rythme et vous gardez le contrôle total sur votre outil web. »
                   </p>
-                  <span className="text-[11px] font-extrabold text-[#332420] block">— Julien M., Artisan ébéniste</span>
+                  <span className="text-[11px] font-extrabold text-[#332420] block">— Stéphanie Rocq (Stratec Digital & Guides Digitaux)</span>
                 </div>
               </div>
             </div>
@@ -339,6 +339,19 @@ export default function TunnelFormationWordpressPage() {
               </p>
             </div>
           </div>
+
+          {/* CTA BUTTON 2 */}
+          <div className="pt-4">
+            <button
+              onClick={handleCheckout}
+              disabled={isLoading}
+              className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
+            >
+              <span>JE VEUX CRÉER MON SITE SANS STRESS (199 €)</span>
+              <ArrowRight className="w-4 h-4 text-amber-300" />
+            </button>
+          </div>
+
         </div>
       </section>
 
@@ -348,7 +361,7 @@ export default function TunnelFormationWordpressPage() {
           
           <div className="text-center space-y-3">
             <span className="text-xs font-black text-[#18757d] uppercase tracking-wider bg-[#e6f4f3] px-3 py-1 rounded-full border border-[#18757d]/20">
-              Programme Pédagogique Officiel
+              Programme Pédagogique Officiel (6 Modules)
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-[#332420]">
               Le cursus complet pour bâtir votre site vitrine
@@ -394,49 +407,56 @@ export default function TunnelFormationWordpressPage() {
             })}
           </div>
 
+          {/* CTA BUTTON 3 */}
+          <div className="text-center pt-4">
+            <button
+              onClick={handleCheckout}
+              disabled={isLoading}
+              className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
+            >
+              <span>ACCÉDER AUX 6 MODULES VIDÉO (199 €)</span>
+              <ArrowRight className="w-4 h-4 text-amber-300" />
+            </button>
+          </div>
+
         </div>
       </section>
 
-      {/* REAL REVIEWS & SOCIAL PROOF SECTION */}
+      {/* ENGAGEMENTS & PILLARS SECTION */}
       <section className="py-16 bg-white border-y border-[#eee7da]">
         <div className="max-w-5xl mx-auto px-4 space-y-10 text-center">
           
           <div className="space-y-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 uppercase tracking-wider">
-              <Star className="w-4 h-4 text-amber-500 fill-amber-500" /> Vos avis vérifiés Google & Facebook
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[#e6f4f3] text-[#18757d] uppercase tracking-wider">
+              <Award className="w-4 h-4" /> Les 3 Engagements Qualité Guides Digitaux
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-[#332420]">
-              Ce que disent les artisans et créateurs qui nous font confiance
+              Une méthode éprouvée pour la réussite de votre projet
             </h2>
-            <p className="text-xs sm:text-sm text-[#5e4d46] max-w-xl mx-auto">
-              Découvrez les retours d'expérience réels de nos membres accompagnés par Stéphanie Rocq (Stratec Digital & Guides Digitaux).
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            {realReviews.map((rev, idx) => (
-              <div key={idx} className="bg-[#faf8f5] p-6 rounded-2xl border border-[#eee7da] shadow-sm flex flex-col justify-between space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-amber-500">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-extrabold bg-[#e6f4f3] text-[#18757d] px-2.5 py-0.5 rounded-full">
-                      {rev.source}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#5e4d46] leading-relaxed italic">
-                    {rev.text}
-                  </p>
+            {engagements.map((eng, idx) => (
+              <div key={idx} className="bg-[#faf8f5] p-6 rounded-2xl border border-[#eee7da] shadow-xs space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-[#18757d] text-white flex items-center justify-center font-extrabold text-sm">
+                  {idx + 1}
                 </div>
-                <div className="border-t border-[#eee7da] pt-3">
-                  <span className="text-xs font-extrabold text-[#332420] block">{rev.author}</span>
-                  <span className="text-[11px] text-slate-500 block">{rev.role}</span>
-                </div>
+                <h3 className="text-base font-extrabold text-[#332420]">{eng.title}</h3>
+                <p className="text-xs text-[#5e4d46] leading-relaxed">{eng.desc}</p>
               </div>
             ))}
+          </div>
+
+          {/* CTA BUTTON 4 */}
+          <div className="pt-4">
+            <button
+              onClick={handleCheckout}
+              disabled={isLoading}
+              className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
+            >
+              <span>REJOINDRE LA FORMATION ÉVOLUTIVE (199 €)</span>
+              <ArrowRight className="w-4 h-4 text-amber-300" />
+            </button>
           </div>
 
         </div>
@@ -465,12 +485,24 @@ export default function TunnelFormationWordpressPage() {
               </div>
             ))}
           </div>
+
+          {/* CTA BUTTON 5 */}
+          <div className="pt-4">
+            <button
+              onClick={handleCheckout}
+              disabled={isLoading}
+              className="px-9 py-5 text-sm sm:text-base font-black text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
+            >
+              <span>OBTENIR LA FORMATION + LES 2 VIDÉOS BONUS (199 €)</span>
+              <ArrowRight className="w-5 h-5 text-[#332420]" />
+            </button>
+          </div>
         </div>
       </section>
 
       {/* AUTHENTIC STORYTELLING BIO */}
       <section className="py-16 bg-white border-b border-[#eee7da]">
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="max-w-4xl mx-auto px-4 space-y-8">
           <div className="bg-[#faf8f5] p-8 sm:p-12 rounded-3xl border border-[#eee7da] space-y-6">
             <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="relative w-40 h-40 rounded-full overflow-hidden shrink-0 shadow-xl border-4 border-[#18757d]">
@@ -510,6 +542,19 @@ export default function TunnelFormationWordpressPage() {
               </p>
             </div>
           </div>
+
+          {/* CTA BUTTON 6 */}
+          <div className="text-center">
+            <button
+              onClick={handleCheckout}
+              disabled={isLoading}
+              className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
+            >
+              <span>COMMENCER MA FORMATION AVEC STÉPHANIE (199 €)</span>
+              <ArrowRight className="w-4 h-4 text-amber-300" />
+            </button>
+          </div>
+
         </div>
       </section>
 
@@ -530,7 +575,7 @@ export default function TunnelFormationWordpressPage() {
                 Accès Illimité à Vie
               </h2>
               <p className="text-xs text-[#5e4d46]">
-                Formez-vous à votre rythme avec les 5 modules vidéo officiels et les 2 vidéos bonus offertes.
+                Formez-vous à votre rythme avec les 6 modules vidéo officiels et les 2 vidéos bonus offertes.
               </p>
             </div>
 
@@ -548,7 +593,7 @@ export default function TunnelFormationWordpressPage() {
             <div className="text-left space-y-3 max-w-md mx-auto pt-2">
               <div className="flex items-center gap-2.5 text-xs font-bold text-[#332420]">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Accès immédiat aux 5 modules vidéo officiels</span>
+                <span>Accès immédiat aux 6 modules vidéo officiels</span>
               </div>
               <div className="flex items-center gap-2.5 text-xs font-bold text-[#332420]">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -564,6 +609,7 @@ export default function TunnelFormationWordpressPage() {
               </div>
             </div>
 
+            {/* CTA BUTTON 7 */}
             <button
               onClick={handleCheckout}
               disabled={isLoading}
@@ -621,10 +667,23 @@ export default function TunnelFormationWordpressPage() {
               );
             })}
           </div>
+
+          {/* CTA BUTTON 8 */}
+          <div className="text-center pt-6">
+            <button
+              onClick={handleCheckout}
+              disabled={isLoading}
+              className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
+            >
+              <span>REJOINDRE LA FORMATION VITRINE (199 €)</span>
+              <ArrowRight className="w-4 h-4 text-amber-300" />
+            </button>
+          </div>
+
         </div>
       </section>
 
-      {/* STICKY MOBILE CTA */}
+      {/* STICKY MOBILE CTA 9 */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#eee7da] p-3 shadow-2xl z-50">
         <button
           onClick={handleCheckout}

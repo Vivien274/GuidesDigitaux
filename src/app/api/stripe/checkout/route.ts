@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const items = body.items;
-    const courseId = body.courseId || body.productId || 'precommande-fiche-google';
-    const courseTitle = body.courseTitle || body.title || 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress';
-    const price = body.price || 199;
+    const courseId = body.courseId || body.productId || 'formation-wordpress';
+    const matchedProduct = DEFAULT_PRODUCTS.find(p => p.id === courseId || p.slug === courseId || p.id === body.productId);
+    const courseTitle = body.courseTitle || body.title || matchedProduct?.title || 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress';
+    const price = body.price || matchedProduct?.price || 199;
     const isPreorder = body.isPreorder || false;
     const releaseDate = body.releaseDate || '15 septembre 2026';
     const customerEmail = body.customerEmail;
