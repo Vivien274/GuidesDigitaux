@@ -86,6 +86,18 @@ export async function POST(request: Request) {
       resolvedCancelUrl = `${siteUrl}/boutique?canceled=true`;
     }
 
+    const customSuccessUrl = body.successUrl || body.success_url;
+    let resolvedSuccessUrl: string;
+    if (customSuccessUrl && typeof customSuccessUrl === 'string' && customSuccessUrl.trim() !== '') {
+      resolvedSuccessUrl = customSuccessUrl.startsWith('http')
+        ? customSuccessUrl
+        : `${siteUrl}${customSuccessUrl.startsWith('/') ? '' : '/'}${customSuccessUrl}`;
+    } else if (Array.isArray(items) && items.length > 0) {
+      resolvedSuccessUrl = `${siteUrl}/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&cart_checkout=true&price=${totalPriceSum}${emailParam}`;
+    } else {
+      resolvedSuccessUrl = `${siteUrl}/tunnel/confirmation?id=${courseId || 'precommande-fiche-google'}&session_id={CHECKOUT_SESSION_ID}&price=${price}${emailParam}`;
+    }
+
     // 1. If real Stripe test key is configured in env, create real Stripe Checkout Session
     if (hasRealStripeKey) {
       const stripe = new Stripe(secretKey);
@@ -94,9 +106,7 @@ export async function POST(request: Request) {
         customer_email: customerEmail ? customerEmail.toLowerCase().trim() : undefined,
         line_items: lineItems,
         mode: 'payment',
-        success_url: Array.isArray(items) && items.length > 0
-          ? `${siteUrl}/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&cart_checkout=true&price=${totalPriceSum}${emailParam}`
-          : `${siteUrl}/tunnel/confirmation?id=${courseId || 'precommande-fiche-google'}&session_id={CHECKOUT_SESSION_ID}&price=${price}${emailParam}`,
+        success_url: resolvedSuccessUrl,
         cancel_url: resolvedCancelUrl,
         metadata: {
           courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
