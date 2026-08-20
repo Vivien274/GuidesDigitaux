@@ -192,8 +192,39 @@ export default function ProductDetailPage() {
     }
   };
 
+  const productJsonLd = {
+    '@context': 'https://schema.org/',
+    '@type': 'Product',
+    'name': product.title,
+    'image': [
+      `https://www.guides-digitaux.com${product.image}`,
+      ...(product.gallery ? product.gallery.map((g: string) => `https://www.guides-digitaux.com${g}`) : [])
+    ],
+    'description': product.description,
+    'sku': product.id,
+    'brand': {
+      '@type': 'Brand',
+      'name': 'Guides Digitaux'
+    },
+    'offers': {
+      '@type': 'Offer',
+      'url': `https://www.guides-digitaux.com/produit/${product.slug || product.id}`,
+      'priceCurrency': 'EUR',
+      'price': product.price,
+      'availability': 'https://schema.org/InStock',
+      'seller': {
+        '@type': 'Organization',
+        'name': 'Guides Digitaux'
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
       <Header />
 
       {/* BREADCRUMB / FIL D'ARIANE */}

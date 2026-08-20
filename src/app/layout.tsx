@@ -27,6 +27,9 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     siteName: "Guides Digitaux",
   },
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ? {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+  } : undefined
 };
 
 export default function RootLayout({
@@ -34,9 +37,33 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-358P17K5M7';
+
   return (
     <html lang="fr" suppressHydrationWarning className={`${jakartaSans.variable} h-full antialiased scroll-smooth`}>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
+        {gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script
+              id="google-analytics"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${gaId}', {
+                    page_path: window.location.pathname,
+                  });
+                `,
+              }}
+            />
+          </>
+        )}
         <Script
           id="meta-pixel-script"
           strategy="afterInteractive"
