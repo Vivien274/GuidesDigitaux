@@ -714,7 +714,8 @@ export async function fetchProductsFromDb(): Promise<any[]> {
           p.title?.toLowerCase().trim() === (row.title || '').toLowerCase().trim()
         );
 
-        const resolvedImage = row.image || row.image_url || localMatch?.image || 'https://www.guides-digitaux.com/wp-content/uploads/2025/10/GD-LogoFondTransparent.webp';
+        const isBrokenWpUrl = (url?: string) => !url || url.includes('wp-content') || url.includes('GD-LogoFondTransparent');
+        const resolvedImage = localMatch?.image || (!isBrokenWpUrl(row.image) ? row.image : (!isBrokenWpUrl(row.image_url) ? row.image_url : '/images/products/coaching-site.webp'));
         
         const effectiveLongDescription = row.long_description || localMatch?.longDescription || row.description || '';
         const effectiveDescription = row.description || localMatch?.description || '';
