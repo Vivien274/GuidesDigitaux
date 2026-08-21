@@ -20,6 +20,14 @@ const jakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Guides Digitaux | Formations & Guides pour Artisans et Créateurs",
   description: "Formations, ebooks et checklists pour t'aider à booster ta visibilité, gérer ton business en ligne et enfin comprendre le digital à ton rythme.",
+  icons: {
+    icon: [
+      { url: "/icon.png" },
+      { url: "/favicon-gd.png" }
+    ],
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
   openGraph: {
     title: "Guides Digitaux | Des guides digitaux pour faire évoluer ton entreprise",
     description: "Spécial artisans, créateurs et indépendants. Guides et formations en ligne 100% adaptés aux débutants.",
