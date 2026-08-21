@@ -7,6 +7,8 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Lock, Sparkles } from 'lucide-react';
 
+import NewsletterOptIn from './NewsletterOptIn';
+
 export default function CartDrawer() {
   const { 
     cart, 
@@ -27,6 +29,7 @@ export default function CartDrawer() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [couponMsg, setCouponMsg] = useState<{ valid: boolean; text: string } | null>(null);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(true);
 
   if (!isCartOpen) return null;
 
@@ -51,7 +54,8 @@ export default function CartDrawer() {
           items: cart,
           customerEmail: user?.email || '',
           discountAmount: discountAmount || 0,
-          couponCode: appliedCoupon?.code || ''
+          couponCode: appliedCoupon?.code || '',
+          newsletterOptIn
         })
       });
 
@@ -228,6 +232,12 @@ export default function CartDrawer() {
                   <span className="text-xl text-[#18757d]">{finalPrice.toFixed(2).replace('.', ',')} €</span>
                 </div>
               </div>
+
+              <NewsletterOptIn
+                checked={newsletterOptIn}
+                onChange={setNewsletterOptIn}
+                className="my-3"
+              />
 
               <div className="space-y-2">
                 <button

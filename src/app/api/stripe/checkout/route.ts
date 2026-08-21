@@ -121,6 +121,7 @@ export async function POST(request: Request) {
           productId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
           isPreorder: isPreorder ? 'true' : 'false',
           releaseDate: releaseDate || '',
+          newsletterOptIn: body.newsletterOptIn ? 'true' : 'false',
           cartItemsJson: Array.isArray(items) && items.length > 0
             ? JSON.stringify(items.map((it: any) => ({
                 id: it.id,

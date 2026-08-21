@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
+import NewsletterOptIn from '@/components/NewsletterOptIn';
 import {
   CheckCircle2,
   Star,
@@ -40,6 +41,7 @@ export default function TunnelFormationWordpressPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [paymentOption, setPaymentOption] = useState<'1x' | '3x'>('1x');
+  const [newsletterOptIn, setNewsletterOptIn] = useState(true);
 
   const handleCheckout = async (forcedOption?: '1x' | '3x') => {
     const opt = forcedOption || paymentOption;
@@ -55,6 +57,7 @@ export default function TunnelFormationWordpressPage() {
           title: opt === '3x' ? 'Formation Vidéo : Vitrine WordPress (Paiement 3x Klarna)' : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
           price: opt === '3x' ? 225 : 199,
           paymentOption: opt,
+          newsletterOptIn,
           cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-wordpress',
           successUrl: 'https://www.guides-digitaux.com/tunnel/upsell?session_id={CHECKOUT_SESSION_ID}&productId=formation-wordpress'
         })
@@ -767,6 +770,13 @@ export default function TunnelFormationWordpressPage() {
                 <span>Accès illimité 24h/24 et 7j/7 à vie avec mises à jour offertes</span>
               </div>
             </div>
+
+            {/* NEUROMARKETING NEWSLETTER OPT-IN */}
+            <NewsletterOptIn
+              checked={newsletterOptIn}
+              onChange={setNewsletterOptIn}
+              className="my-4"
+            />
 
             {/* DUAL DIRECT ACTION BUTTONS FOR PRICING BOX */}
             <div className="space-y-3 pt-2">

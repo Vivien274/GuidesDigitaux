@@ -243,6 +243,43 @@ export async function POST(request: Request) {
       } catch (emailErr) {
         console.error('[Stripe Webhook] Erreur envoi email non-bloquante:', emailErr);
       }
+
+      // 9. Synchronisation Mailchimp avec la liste des 13 Tags exacts existants
+      try {
+        const { PRODUCT_MAILCHIMP_TAGS, subscribeOrUpdateMailchimpMember } = await import('@/lib/mailchimp');
+        const collectedTags = new Set<string>();
+
+        // Tag client exact existant dans Mailchimp
+        collectedTags.add('client');
+
+        if (Array.isArray(rawCartItems) && rawCartItems.length > 0) {
+          rawCartItems.forEach((it: any) => {
+            const pId = it.id || it.productId || it.slug;
+            const mapped = pId ? PRODUCT_MAILCHIMP_TAGS[pId] : null;
+            if (mapped) {
+              mapped.forEach(t => collectedTags.add(t));
+            }
+          });
+        } else if (productId) {
+          const mapped = PRODUCT_MAILCHIMP_TAGS[productId];
+          if (mapped) {
+            mapped.forEach(t => collectedTags.add(t));
+          }
+        }
+
+        // Tag newsletter exact existant dans Mailchimp
+        if (session.metadata?.newsletterOptIn === 'true') {
+          collectedTags.add('newsletter');
+        }
+
+        await subscribeOrUpdateMailchimpMember({
+          email: customerEmail,
+          fullName: session.customer_details?.name,
+          tags: Array.from(collectedTags)
+        });
+      } catch (mcErr) {
+        console.error('[Stripe Webhook] Notice synchronisation Mailchimp:', mcErr);
+      }
     } catch (err: unknown) {
       console.error('Erreur traitement Webhook:', err);
       return NextResponse.json({ error: 'Erreur interne Webhook' }, { status: 500 });
