@@ -8,8 +8,8 @@ export async function POST(request: Request) {
     const items = body.items;
     const courseId = body.courseId || body.productId || 'formation-wordpress';
     const matchedProduct = DEFAULT_PRODUCTS.find(p => p.id === courseId || p.slug === courseId || p.id === body.productId);
-    const paymentOption = body.paymentOption || '1x';
-    const is3x = paymentOption === '3x';
+    const paymentOption = body.paymentOption || (body.price === 225 ? '3x' : '1x');
+    const is3x = paymentOption === '3x' || Number(body.price) === 225;
     const price = is3x ? 225 : (body.price || matchedProduct?.price || 199);
     const courseTitle = is3x 
       ? 'Formation Vidéo : Vitrine WordPress (Option 3x avec Klarna)' 
