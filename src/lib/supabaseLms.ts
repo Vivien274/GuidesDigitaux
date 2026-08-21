@@ -149,7 +149,6 @@ export async function saveCourseToDb(course: Course): Promise<Course[]> {
         title: course.title,
         description: course.description,
         price: course.price,
-        image: course.image,
         status: course.status,
         duration: course.duration,
         level: course.level,
