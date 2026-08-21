@@ -49,6 +49,8 @@ export default function NewCourseWizardPage() {
   const [isPreorder, setIsPreorder] = useState(false);
   const [preorderReleaseDate, setPreorderReleaseDate] = useState('15 Novembre 2026');
   const [category, setCategory] = useState('Formation Vidéo');
+  const [status, setStatus] = useState<'Publié' | 'Brouillon' | 'Planifié'>('Brouillon');
+  const [scheduledPublishDate, setScheduledPublishDate] = useState('');
   const [description, setDescription] = useState('Formation vidéo pratique pour artisans et créateurs.');
 
   // STEP 2: CONTENU (MODULES & COURS EXPANDED)
@@ -216,7 +218,8 @@ export default function NewCourseWizardPage() {
       isPreorder,
       preorderReleaseDate,
       category,
-      status: 'Publié',
+      status,
+      scheduledPublishDate: status === 'Planifié' ? scheduledPublishDate : undefined,
       studentsCount: 0,
       modules,
       congratulationsMsg,
@@ -349,6 +352,91 @@ export default function NewCourseWizardPage() {
                       onChange={(e) => setTitle(e.target.value)}
                       className="w-full bg-[#faf8f5] border border-[#eee7da] rounded-2xl px-5 py-4 text-sm font-bold text-[#332420] focus:outline-none focus:border-[#18757d]"
                     />
+                  </div>
+
+                  {/* Status Selection Section */}
+                  <div className="p-6 bg-[#faf8f5] rounded-3xl border border-[#eee7da] space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-5 h-5 text-[#18757d]" />
+                      <h3 className="text-sm font-extrabold text-[#332420] uppercase tracking-wider">Statut & Publication</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* Publié */}
+                      <button
+                        type="button"
+                        onClick={() => setStatus('Publié')}
+                        className={`p-4 rounded-2xl border-2 transition-all text-left space-y-1 ${
+                          status === 'Publié'
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-xs'
+                            : 'border-[#eee7da] bg-white text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">● Publié</span>
+                          {status === 'Publié' && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                        </div>
+                        <p className="text-[11px] font-medium text-slate-600">Visible immédiatement sur la boutique et accessible aux élèves.</p>
+                      </button>
+
+                      {/* Brouillon */}
+                      <button
+                        type="button"
+                        onClick={() => setStatus('Brouillon')}
+                        className={`p-4 rounded-2xl border-2 transition-all text-left space-y-1 ${
+                          status === 'Brouillon'
+                            ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs'
+                            : 'border-[#eee7da] bg-white text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-extrabold uppercase tracking-wider text-amber-700">✍️ Brouillon</span>
+                          {status === 'Brouillon' && <CheckCircle2 className="w-4 h-4 text-amber-600" />}
+                        </div>
+                        <p className="text-[11px] font-medium text-slate-600">Masqué de la boutique publique. Réservé à votre édition formateur.</p>
+                      </button>
+
+                      {/* Planifié */}
+                      <button
+                        type="button"
+                        onClick={() => setStatus('Planifié')}
+                        className={`p-4 rounded-2xl border-2 transition-all text-left space-y-1 ${
+                          status === 'Planifié'
+                            ? 'border-[#18757d] bg-[#e6f4f3] text-[#18757d] shadow-xs'
+                            : 'border-[#eee7da] bg-white text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-extrabold uppercase tracking-wider text-[#18757d]">📅 Planifié</span>
+                          {status === 'Planifié' && <CheckCircle2 className="w-4 h-4 text-[#18757d]" />}
+                        </div>
+                        <p className="text-[11px] font-medium text-slate-600">Publication automatique programmée à une date & heure précises.</p>
+                      </button>
+                    </div>
+
+                    {/* Date & Time Picker for Planifié */}
+                    {status === 'Planifié' && (
+                      <div className="pt-4 border-t border-[#eee7da] grid grid-cols-1 sm:grid-cols-2 gap-6 animate-in fade-in duration-200">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-extrabold text-[#332420]">Date & Heure de publication automatique :</label>
+                          <input
+                            type="datetime-local"
+                            value={scheduledPublishDate}
+                            onChange={(e) => setScheduledPublishDate(e.target.value)}
+                            className="w-full bg-white border border-[#18757d] rounded-xl px-4 py-3 text-xs font-bold text-[#332420] focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="p-4 bg-[#e6f4f3] rounded-2xl border border-[#18757d]/30 text-xs text-[#18757d] font-bold flex items-center gap-2">
+                          <Clock className="w-5 h-5 shrink-0 text-[#18757d]" />
+                          <span>
+                            {scheduledPublishDate
+                              ? `Publication automatique programmée le ${new Date(scheduledPublishDate).toLocaleDateString('fr-FR')} à ${new Date(scheduledPublishDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}.`
+                              : 'Veuillez choisir la date et l\'heure de sortie ci-contre.'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Pricing & Offer Section */}

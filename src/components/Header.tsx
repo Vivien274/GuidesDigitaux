@@ -26,6 +26,38 @@ export default function Header() {
     return '/dashboard/eleve';
   };
 
+  // DISTRACTION-FREE SALES FUNNEL HEADER (NO NAV LINKS, NO MENUS, NO CART FOR HIGH CRO)
+  if (pathname?.startsWith('/tunnel')) {
+    return (
+      <header className="w-full bg-[#faf8f5] border-b border-[#eee7da] sticky top-0 z-40 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div className="relative h-12 w-48 sm:w-52">
+              <Image
+                src="/images/logo.png"
+                alt="Guides Digitaux"
+                fill
+                className="object-contain object-left"
+                priority
+              />
+            </div>
+          </div>
+
+          {/* Reassuring Security Badge (Zero navigation menus to optimize conversion) */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-[#e6f4f3] border border-[#18757d]/20 px-3.5 py-1.5 rounded-full text-[#18757d] text-xs font-extrabold shadow-2xs">
+              <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Commande 100% Sécurisée</span>
+            </div>
+          </div>
+
+        </div>
+      </header>
+    );
+  }
+
   return (
     <>
       <header className="w-full bg-[#faf8f5] border-b border-[#eee7da] sticky top-0 z-40 shadow-xs">
