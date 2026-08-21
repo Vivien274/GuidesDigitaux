@@ -106,7 +106,7 @@ export async function POST(request: Request) {
     if (hasRealStripeKey) {
       const stripe = new Stripe(secretKey);
       const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card', 'klarna'],
+        payment_method_types: is3x ? ['card', 'klarna'] : ['card'],
         customer_email: customerEmail ? customerEmail.toLowerCase().trim() : undefined,
         line_items: lineItems,
         mode: 'payment',
