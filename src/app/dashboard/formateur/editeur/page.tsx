@@ -876,7 +876,17 @@ function CourseEditorContent() {
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-[#eee7da] flex justify-end">
+                <div className="pt-6 border-t border-[#eee7da] flex items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    onClick={handleSaveCourse}
+                    disabled={isSaving}
+                    className="px-6 py-4 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center gap-2"
+                  >
+                    <Save className="w-4.5 h-4.5" />
+                    {isSaving ? 'ENREGISTREMENT...' : 'ENREGISTRER RAPIDEMENT'}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setCurrentStep(2)}
@@ -1542,13 +1552,23 @@ function CourseEditorContent() {
                 })}
                 </div>
 
-                <div className="pt-6 border-t border-[#eee7da] flex items-center justify-between">
+                <div className="pt-6 border-t border-[#eee7da] flex items-center justify-between gap-4">
                   <button
                     type="button"
                     onClick={() => setCurrentStep(1)}
                     className="px-6 py-4 text-xs font-extrabold text-slate-600 hover:bg-slate-100 rounded-2xl uppercase tracking-wider transition-colors"
                   >
                     ← ÉTAPE PRÉCÉDENTE
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveCourse}
+                    disabled={isSaving}
+                    className="px-6 py-4 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center gap-2"
+                  >
+                    <Save className="w-4.5 h-4.5" />
+                    {isSaving ? 'ENREGISTREMENT...' : 'ENREGISTRER RAPIDEMENT'}
                   </button>
 
                   <button

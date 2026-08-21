@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/context/AuthContext';
-import { fetchCoursesFromDb } from '@/lib/supabaseLms';
+import { fetchCoursesFromDb, saveCourseToDb } from '@/lib/supabaseLms';
 import { getRealCourseStats, fetchRealCourseStatsFromDb, Course } from '@/lib/coursesStore';
 import { 
   GraduationCap, 
@@ -40,6 +40,26 @@ export default function FormateurDashboardPage() {
   const [statsMap, setStatsMap] = useState<Record<string, { enrolledCount: number; completedCount: number; completionPercentage: number }>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'scheduled'>('all');
+
+  const handleUpdateStatus = async (course: Course, newStatus: 'Publié' | 'Brouillon' | 'Planifié', scheduledDate?: string) => {
+    setIsLoading(true);
+    try {
+      const updatedCourse: Course = {
+        ...course,
+        status: newStatus,
+        scheduledPublishDate: newStatus === 'Planifié' ? (scheduledDate || course.scheduledPublishDate) : undefined
+      };
+
+      await saveCourseToDb(updatedCourse);
+      const list = await fetchCoursesFromDb();
+      setCoursesList(list);
+    } catch (e) {
+      console.error("Failed to update status dynamically", e);
+      alert("Une erreur est survenue lors de la mise à jour du statut.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -356,6 +376,47 @@ export default function FormateurDashboardPage() {
 
                           <h3 className="text-lg font-extrabold text-[#332420]">{course.title}</h3>
                           <p className="text-xs text-[#5e4d46]">{course.description}</p>
+
+                          {/* QUICK INLINE STATUS TOGGLE */}
+                          <div className="pt-2 flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mr-1">Changer l'état :</span>
+                            <button
+                              onClick={() => handleUpdateStatus(course, 'Publié')}
+                              className={`px-3 py-1 rounded-xl text-[10px] font-black border transition-all cursor-pointer ${
+                                (course.status || 'Publié') === 'Publié'
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                                  : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                              }`}
+                            >
+                              Publié
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(course, 'Brouillon')}
+                              className={`px-3 py-1 rounded-xl text-[10px] font-black border transition-all cursor-pointer ${
+                                (course.status || 'Publié') === 'Brouillon'
+                                  ? 'bg-amber-500 text-white border-amber-500 shadow-2xs'
+                                  : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
+                              }`}
+                            >
+                              Brouillon
+                            </button>
+                            <button
+                              onClick={() => {
+                                const defaultVal = course.scheduledPublishDate || new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+                                const newDate = prompt("Date & Heure de publication automatique (AAAA-MM-JJTHH:MM) :", defaultVal);
+                                if (newDate) {
+                                  handleUpdateStatus(course, 'Planifié', newDate);
+                                }
+                              }}
+                              className={`px-3 py-1 rounded-xl text-[10px] font-black border transition-all cursor-pointer ${
+                                (course.status || 'Publié') === 'Planifié'
+                                  ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
+                                  : 'bg-white text-sky-700 border-sky-200 hover:bg-sky-50'
+                              }`}
+                            >
+                              Planifié
+                            </button>
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-4 shrink-0">
