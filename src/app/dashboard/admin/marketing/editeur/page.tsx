@@ -31,7 +31,22 @@ function CouponEditorContent() {
   const [expiryDate, setExpiryDate] = useState('');
   const [usageLimit, setUsageLimit] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [applicableProductIds, setApplicableProductIds] = useState<string[]>([]);
+  const [availableProducts, setAvailableProducts] = useState<{ id: string; title: string }[]>([]);
   const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    async function loadCatalog() {
+      const { fetchCoursesFromDb, fetchProductsFromDb } = await import('@/lib/supabaseLms');
+      const [courses, products] = await Promise.all([fetchCoursesFromDb(), fetchProductsFromDb()]);
+      const combined = [
+        ...(courses || []).map(c => ({ id: c.id, title: `[Formation] ${c.title}` })),
+        ...(products || []).map(p => ({ id: p.id, title: `[Produit/Guide] ${p.title}` }))
+      ];
+      setAvailableProducts(combined);
+    }
+    loadCatalog();
+  }, []);
 
   useEffect(() => {
     if (couponId) {
@@ -45,6 +60,7 @@ function CouponEditorContent() {
         setMinOrderAmount(found.minOrderAmount ? String(found.minOrderAmount) : '0');
         setExpiryDate(found.expiryDate || '');
         setUsageLimit(found.usageLimit ? String(found.usageLimit) : '');
+        setApplicableProductIds(found.applicableProductIds || []);
         setIsActive(found.isActive);
       }
     } else {
@@ -67,6 +83,7 @@ function CouponEditorContent() {
       expiryDate: expiryDate || undefined,
       usageLimit: usageLimit ? parseInt(usageLimit) : undefined,
       usageCount: 0,
+      applicableProductIds: applicableProductIds.length > 0 ? applicableProductIds : undefined,
       isActive
     };
 
@@ -186,6 +203,44 @@ function CouponEditorContent() {
                   onChange={(e) => setExpiryDate(e.target.value)}
                   className="w-full p-3 bg-[#faf8f5] border border-[#eee7da] rounded-xl text-xs font-bold text-[#332420] focus:outline-none"
                 />
+              </div>
+
+              {/* RESTRICTION PAR PRODUIT / FORMATION SPÉCIFIQUE */}
+              <div className="space-y-3 md:col-span-2 p-5 bg-[#faf8f5] rounded-2xl border border-[#eee7da]">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-extrabold text-[#332420] uppercase tracking-wider">
+                    🎯 Restriction par produit ou formation spécifique :
+                  </label>
+                  <span className="text-[11px] font-extrabold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                    {applicableProductIds.length === 0 ? 'Valide sur TOUS les produits' : `${applicableProductIds.length} produit(s) spécifique(s)`}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  Cochez les produits auxquels ce code promo s'applique exclusivement. Si aucune case n'est cochée, le code promo sera valable sur l'ensemble du catalogue.
+                </p>
+
+                <div className="max-h-48 overflow-y-auto space-y-2 pt-2 border-t border-[#eee7da] pr-2">
+                  {availableProducts.map((p) => {
+                    const isChecked = applicableProductIds.includes(p.id);
+                    return (
+                      <label key={p.id} className="flex items-center gap-3 p-2 bg-white rounded-xl border border-[#eee7da] hover:border-amber-400 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setApplicableProductIds([...applicableProductIds, p.id]);
+                            } else {
+                              setApplicableProductIds(applicableProductIds.filter(id => id !== p.id));
+                            }
+                          }}
+                          className="w-4 h-4 text-amber-600 rounded accent-amber-600 cursor-pointer"
+                        />
+                        <span className="text-xs font-bold text-[#332420] truncate">{p.title}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="space-y-2 md:col-span-2 pt-2">

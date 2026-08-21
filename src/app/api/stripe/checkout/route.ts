@@ -10,7 +10,10 @@ export async function POST(request: Request) {
     const matchedProduct = DEFAULT_PRODUCTS.find(p => p.id === courseId || p.slug === courseId || p.id === body.productId);
     const paymentOption = body.paymentOption || (body.price === 225 ? '3x' : '1x');
     const is3x = paymentOption === '3x' || Number(body.price) === 225;
-    const price = is3x ? 225 : (body.price || matchedProduct?.price || 199);
+    const rawPrice = is3x ? 225 : (body.price || matchedProduct?.price || 199);
+    const finalPrice = (body.discountedPrice && Number(body.discountedPrice) > 0) ? Number(body.discountedPrice) : Number(rawPrice);
+    const price = finalPrice;
+    
     const courseTitle = is3x 
       ? 'Formation Vidéo : Vitrine WordPress (Option 3x avec Klarna)' 
       : (body.courseTitle || body.title || matchedProduct?.title || 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress');
@@ -110,6 +113,7 @@ export async function POST(request: Request) {
         customer_email: customerEmail ? customerEmail.toLowerCase().trim() : undefined,
         line_items: lineItems,
         mode: 'payment',
+        allow_promotion_codes: true,
         success_url: resolvedSuccessUrl,
         cancel_url: resolvedCancelUrl,
         metadata: {

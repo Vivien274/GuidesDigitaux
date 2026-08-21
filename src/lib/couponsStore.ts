@@ -135,6 +135,20 @@ export function validateCoupon(code: string, currentTotal: number, productIds: s
     return { valid: false, discountAmount: 0, message: `Ce code promo nécessite un montant minimum de panier de ${found.minOrderAmount} €.` };
   }
 
+  if (found.applicableProductIds && found.applicableProductIds.length > 0) {
+    const hasMatchingProduct = productIds.some(pId => {
+      const pClean = (pId || '').toLowerCase().trim();
+      return found.applicableProductIds!.some(appId => {
+        const appClean = (appId || '').toLowerCase().trim();
+        return appClean === pClean || appClean === 'all' || pClean.includes(appClean) || appClean.includes(pClean);
+      });
+    });
+
+    if (!hasMatchingProduct) {
+      return { valid: false, discountAmount: 0, message: 'Ce code promo n\'est pas valide pour ce produit en particulier.' };
+    }
+  }
+
   let discountAmount = 0;
   if (found.discountType === 'percentage') {
     discountAmount = (currentTotal * found.discountValue) / 100;
