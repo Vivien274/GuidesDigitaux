@@ -92,10 +92,14 @@ export default function ProductDetailPage() {
       }
 
       if (!match) {
-        const courseMatch = (dbCourses || []).find(c => c.id === productId);
+        const courseMatch = (dbCourses || []).find(c => 
+          c.id === productId || 
+          (productId === 'creation-gmb' && (c.id === '17873181-7987-4000-a000-000000000000' || c.title.toLowerCase().includes('google')))
+        );
         if (courseMatch) {
           match = {
             id: courseMatch.id,
+            slug: courseMatch.id === '17873181-7987-4000-a000-000000000000' ? 'creation-gmb' : undefined,
             title: courseMatch.title,
             category: 'formation',
             categoryLabel: 'Formation Vidéo',

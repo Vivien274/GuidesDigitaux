@@ -84,6 +84,7 @@ export default function BoutiquePage() {
         if (!exists) {
           combined.push({
             id: c.id,
+            slug: c.id === '17873181-7987-4000-a000-000000000000' || c.title.toLowerCase().includes('google') ? 'creation-gmb' : (c.slug || c.id),
             title: c.title,
             category: 'formation',
             categoryLabel: 'Formation Vidéo',
@@ -403,7 +404,7 @@ export default function BoutiquePage() {
                     </div>
 
                     {/* Title */}
-                    <Link href={`/produit/${product.id}`} className="block">
+                    <Link href={`/produit/${product.slug || product.id}`} className="block">
                       <h3 className="text-base font-extrabold text-[#332420] line-clamp-2 leading-snug hover:text-[#18757d] transition-colors">
                         {product.title}
                       </h3>
@@ -427,7 +428,7 @@ export default function BoutiquePage() {
                   {/* Actions */}
                   <div className="pt-4 border-t border-[#eee7da] flex items-center gap-3">
                     <Link
-                      href={`/produit/${product.id}`}
+                      href={`/produit/${product.slug || product.id}`}
                       className="flex-1 px-4 py-3 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors text-center"
                     >
                       Détails

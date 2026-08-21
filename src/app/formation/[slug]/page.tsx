@@ -79,6 +79,7 @@ export default function FormationViewerPage() {
       let match = (dbCourses || []).find(c => 
         c.id === slug || 
         (c as any).slug === slug ||
+        (slug === 'creation-gmb' && (c.id === '17873181-7987-4000-a000-000000000000' || c.title.toLowerCase().includes('google'))) ||
         (slug === 'formation-woocommerce' && (c.id === 'c2' || c.title.toLowerCase().includes('woocommerce'))) ||
         (slug === 'creer-sa-vitrine-wordpress' && (c.id === 'c1' || c.title.toLowerCase().includes('wordpress')))
       );
