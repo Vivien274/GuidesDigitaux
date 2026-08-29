@@ -63,20 +63,25 @@ export async function POST(request: Request) {
     const resolvedCancelUrl = (refererHeader && refererHeader.startsWith('http'))
       ? refererHeader
       : `${siteUrl}/produit/${targetProduct.slug}?canceled=true`;
+    const paymentOption = body.paymentOption || '1x';
+    const is3x = paymentOption === '3x' || Number(body.price) === 87;
+    const unitAmountCents = is3x ? 8700 : targetProduct.price_cents;
+    const checkoutTitle = is3x ? `${targetProduct.title} (Option 3x : 3 x 87 €)` : targetProduct.title;
+    const checkoutDescription = is3x ? 'Paiement en 3 fois (1/3 de 87 € aujourd’hui + 2x 87 € mensuels)' : targetProduct.description;
 
     // 2. Création de la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      payment_method_types: is3x ? ['card', 'klarna'] : ['card'],
       customer_email: user?.email ?? undefined,
       line_items: [
         {
           price_data: {
             currency: targetProduct.currency || 'eur',
             product_data: {
-              name: targetProduct.title,
-              description: targetProduct.description || undefined,
+              name: checkoutTitle,
+              description: checkoutDescription || undefined,
             },
-            unit_amount: targetProduct.price_cents,
+            unit_amount: unitAmountCents,
           },
           quantity: 1,
         },

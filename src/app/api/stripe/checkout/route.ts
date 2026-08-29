@@ -8,14 +8,14 @@ export async function POST(request: Request) {
     const items = body.items;
     const courseId = body.courseId || body.productId || 'formation-wordpress';
     const matchedProduct = DEFAULT_PRODUCTS.find(p => p.id === courseId || p.slug === courseId || p.id === body.productId);
-    const paymentOption = body.paymentOption || (body.price === 225 ? '3x' : '1x');
-    const is3x = paymentOption === '3x' || Number(body.price) === 225;
-    const rawPrice = is3x ? 225 : (body.price || matchedProduct?.price || 199);
+    const paymentOption = body.paymentOption || (body.price === 87 || body.price === 225 || body.price === 261 ? '3x' : '1x');
+    const is3x = paymentOption === '3x' || Number(body.price) === 87 || Number(body.price) === 225;
+    const rawPrice = is3x ? 87 : (body.price || matchedProduct?.price || 199);
     const finalPrice = (body.discountedPrice && Number(body.discountedPrice) > 0) ? Number(body.discountedPrice) : Number(rawPrice);
     const price = finalPrice;
     
     const courseTitle = is3x 
-      ? 'Formation Vidéo : Vitrine WordPress (Option 3x avec Klarna)' 
+      ? (body.courseTitle || body.title ? `${body.courseTitle || body.title} (Option 3x : 3 x 87 €)` : 'Bundle Vitrine + Boutique WordPress (Option 3x : 3 x 87 €)')
       : (body.courseTitle || body.title || matchedProduct?.title || 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress');
     const isPreorder = body.isPreorder || false;
     const releaseDate = body.releaseDate || '15 septembre 2026';
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
             currency: 'eur',
             product_data: {
               name: courseTitle,
-              description: is3x ? 'Paiement en 3 fois sans frais via Klarna (3 x 75 €)' : (isPreorder ? `🚀 Précommande exclusive - Sortie le ${releaseDate}` : 'Formation Vidéo Guides Digitaux'),
+              description: is3x ? 'Paiement en 3 fois (1/3 de 87 € aujourd’hui + 2x 87 € mensuels)' : (isPreorder ? `🚀 Précommande exclusive - Sortie le ${releaseDate}` : 'Formation Vidéo Guides Digitaux'),
             },
             unit_amount: priceCents,
           },

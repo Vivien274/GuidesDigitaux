@@ -167,20 +167,26 @@ export default function ProductDetailPage() {
   }
 
   const productGallery = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image];
+  const [selectedPaymentOption, setSelectedPaymentOption] = useState<'1x' | '3x'>('1x');
+
   const relatedProducts = allProducts.filter(
     (p) => p.id !== product.id && (p.category === product.category || p.category === 'ebook')
   ).slice(0, 3);
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (overrideOption?: '1x' | '3x') => {
     setIsBuying(true);
+    const optionToUse = overrideOption || selectedPaymentOption;
+    const is3xOption = optionToUse === '3x';
     try {
-      const res = await fetch('/api/checkout', {
+      const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          courseId: product.id,
           productId: product.id,
-          title: product.title,
-          price: product.price
+          courseTitle: product.title,
+          price: is3xOption ? 87 : product.price,
+          paymentOption: optionToUse
         })
       });
       const data = await res.json();
@@ -262,7 +268,7 @@ export default function ProductDetailPage() {
                 </p>
               </div>
               <button
-                onClick={handleCheckout}
+                onClick={() => handleCheckout()}
                 disabled={isBuying}
                 className="px-8 py-4 bg-[#18757d] hover:bg-[#12595f] text-white text-xs font-black rounded-2xl shadow-xl uppercase tracking-wider transition-transform hover:scale-105 shrink-0 flex items-center gap-2 cursor-pointer"
               >
@@ -389,38 +395,104 @@ export default function ProductDetailPage() {
                 ) : null}
               </div>
 
-              {/* Carte Prix & Boutons d'Achat */}
-              <div className="bg-white p-6 rounded-2xl border border-[#eee7da] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
-                <div>
-                  <span className="text-xs text-slate-500 block">Tarif unique TTC :</span>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-extrabold text-[#18757d]">
-                      {product.price.toFixed(2).replace('.', ',')} €
+              {/* Carte Prix & Boutons d'Achat (avec option 3x pour les bundles et formations) */}
+              <div className="bg-white p-6 rounded-3xl border border-[#eee7da] shadow-sm space-y-5">
+                {product.price >= 190 ? (
+                  <div className="space-y-4">
+                    <span className="text-xs font-black text-[#18757d] uppercase tracking-wider block">
+                      💡 Choisis ta modalité de règlement :
                     </span>
-                    {product.originalPrice && (
-                      <span className="text-sm text-slate-400 line-through">
-                        {product.originalPrice.toFixed(2).replace('.', ',')} €
-                      </span>
-                    )}
-                  </div>
-                </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Option 1 : Comptant */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPaymentOption('1x')}
+                        className={`p-4 rounded-2xl border-2 text-left transition-all relative ${
+                          selectedPaymentOption === '1x'
+                            ? 'border-[#18757d] bg-[#e6f4f3]/60 shadow-xs'
+                            : 'border-[#eee7da] hover:border-[#18757d]/40 bg-[#faf8f5]'
+                        }`}
+                      >
+                        <span className="absolute -top-2.5 right-3 bg-emerald-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+                          Meilleur Tarif
+                        </span>
+                        <div className="text-xs font-black text-[#332420] uppercase tracking-wider">
+                          Paiement 1x Comptant
+                        </div>
+                        <div className="text-2xl font-black text-[#18757d] mt-1">
+                          {product.price} €
+                        </div>
+                        <span className="text-[11px] text-slate-500 font-bold block mt-1">
+                          Économise 11 € vs 3x
+                        </span>
+                      </button>
 
-                <div className="flex items-center gap-3">
+                      {/* Option 2 : 3 fois */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPaymentOption('3x')}
+                        className={`p-4 rounded-2xl border-2 text-left transition-all relative ${
+                          selectedPaymentOption === '3x'
+                            ? 'border-[#F2542D] bg-[#fff5f3] shadow-xs'
+                            : 'border-[#eee7da] hover:border-[#F2542D]/40 bg-[#faf8f5]'
+                        }`}
+                      >
+                        <span className="absolute -top-2.5 right-3 bg-[#F2542D] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+                          Option 3x Facilité
+                        </span>
+                        <div className="text-xs font-black text-[#332420] uppercase tracking-wider">
+                          Paiement en 3 Fois
+                        </div>
+                        <div className="text-2xl font-black text-[#F2542D] mt-1">
+                          3 × 87 € <span className="text-xs font-bold text-slate-500">/ mois</span>
+                        </div>
+                        <span className="text-[11px] text-emerald-700 font-bold block mt-1">
+                          🚀 Accès immédiat dès 87 € aujourd'hui
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="text-xs text-slate-500 block">Tarif unique TTC :</span>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-3xl font-extrabold text-[#18757d]">
+                        {product.price.toFixed(2).replace('.', ',')} €
+                      </span>
+                      {product.originalPrice && (
+                        <span className="text-sm text-slate-400 line-through">
+                          {product.originalPrice.toFixed(2).replace('.', ',')} €
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 pt-2 border-t border-[#eee7da]">
                   <button
                     onClick={() => addToCart(product)}
-                    className="flex-1 sm:flex-initial px-5 py-4 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
+                    className="flex-1 px-5 py-4 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
                   >
                     <ShoppingCart className="w-4 h-4" />
                     Ajouter au panier
                   </button>
 
                   <button
-                    onClick={handleCheckout}
+                    onClick={() => handleCheckout()}
                     disabled={isBuying}
-                    className="flex-1 sm:flex-initial px-6 py-4 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                    className={`flex-1 px-6 py-4 text-xs font-extrabold text-white rounded-xl shadow-md uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                      selectedPaymentOption === '3x' && product.price >= 190
+                        ? 'bg-[#F2542D] hover:bg-[#d8441f]'
+                        : 'bg-[#18757d] hover:bg-[#12595f]'
+                    }`}
                   >
                     <ShoppingBag className="w-4 h-4" />
-                    Acheter
+                    {isBuying
+                      ? 'Redirection...'
+                      : (selectedPaymentOption === '3x' && product.price >= 190
+                        ? 'Régler 87 € & Accéder'
+                        : 'Acheter Maintenant')}
                   </button>
                 </div>
               </div>
