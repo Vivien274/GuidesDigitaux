@@ -10,7 +10,7 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '', honeypot: '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,16 +24,35 @@ export default function ContactPage() {
 
     setIsSubmitting(true);
     try {
+      let recaptchaToken = '';
+      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6Lcqdp4tAAAAAMtfeNqnAOYwn7nQoTAzX7d-p6H_';
+      if (typeof window !== 'undefined' && (window as any).grecaptcha && siteKey) {
+        try {
+          recaptchaToken = await new Promise<string>((resolve) => {
+            (window as any).grecaptcha.ready(async () => {
+              try {
+                const token = await (window as any).grecaptcha.execute(siteKey, { action: 'contact_submit' });
+                resolve(token);
+              } catch (e) {
+                resolve('');
+              }
+            });
+          });
+        } catch (e) {
+          console.warn('grecaptcha execution fallback:', e);
+        }
+      }
+
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({ ...formData, recaptchaToken })
       });
 
       const data = await res.json();
       if (res.ok && data?.success) {
         setSubmitted(true);
-        setFormData({ name: '', email: '', subject: '', message: '' });
+        setFormData({ name: '', email: '', subject: '', message: '', honeypot: '' });
       } else {
         setErrorMessage(data?.error || 'Erreur lors de l’envoi de votre message.');
       }
@@ -142,6 +161,18 @@ export default function ContactPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Hidden Honeypot Field for Bot Spam Prevention */}
+                    <input
+                      type="text"
+                      name="website_url_hp"
+                      value={formData.honeypot}
+                      onChange={(e) => setFormData({ ...formData, honeypot: e.target.value })}
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      className="hidden opacity-0 pointer-events-none absolute -left-[9999px] w-0 h-0"
+                    />
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <label className="text-xs font-extrabold text-[#332420]">Nom :</label>

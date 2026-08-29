@@ -1,9 +1,58 @@
 import { NextResponse } from 'next/server';
+import { verifyReCaptchaToken } from '@/lib/recaptcha';
+
+// In-memory rate limiting map (IP -> timestamps)
+const rateLimitMap = new Map<string, number[]>();
+
+function isRateLimited(ip: string, limitCount = 5, windowMs = 5 * 60 * 1000): boolean {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(ip) || [];
+  const validTimestamps = timestamps.filter(t => now - t < windowMs);
+
+  if (validTimestamps.length >= limitCount) {
+    return true;
+  }
+
+  validTimestamps.push(now);
+  rateLimitMap.set(ip, validTimestamps);
+  return false;
+}
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+
+    // 1. Anti-Spam Rate-Limiting (max 5 submissions per 5 minutes per IP)
+    if (isRateLimited(ip, 5, 5 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives en peu de temps. Veuillez patienter 5 minutes.' },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
-    const { name, email, subject, message } = body;
+    const { name, email, subject, message, honeypot, recaptchaToken } = body;
+
+    // 2. Anti-Bot Honeypot Trap: if honeypot is filled out by automated bots, silently return success without sending email
+    if (honeypot && honeypot.trim() !== '') {
+      console.warn(`[Anti-Spam] Bot trap triggered by IP ${ip} (honeypot: "${honeypot}")`);
+      return NextResponse.json({
+        success: true,
+        message: 'Votre message a été transmis avec succès à contact@guides-digitaux.com.'
+      });
+    }
+
+    // 3. Google reCAPTCHA v3 Verification (if token or secret key configured)
+    if (recaptchaToken || process.env.RECAPTCHA_SECRET_KEY) {
+      const captchaResult = await verifyReCaptchaToken(recaptchaToken);
+      if (!captchaResult.success) {
+        console.warn(`[Anti-Spam] reCAPTCHA failed for IP ${ip}: ${captchaResult.error}`);
+        return NextResponse.json(
+          { error: captchaResult.error || 'Contrôle anti-robot échoué.' },
+          { status: 400 }
+        );
+      }
+    }
 
     if (!name || !email || !message) {
       return NextResponse.json({ error: 'Veuillez remplir tous les champs obligatoires.' }, { status: 400 });
@@ -80,7 +129,6 @@ export async function POST(req: Request) {
         });
 
         if (!res.ok) {
-          // Retry with onboarding address if domain unverified
           res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {

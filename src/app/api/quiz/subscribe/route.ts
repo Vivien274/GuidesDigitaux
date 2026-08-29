@@ -165,6 +165,13 @@ export async function POST(request: Request) {
     const email = (body.email || '').trim().toLowerCase();
     const rawProfile = (body.profile || 'B').toUpperCase();
     const profile: 'A' | 'B' | 'C' = (rawProfile === 'A' || rawProfile === 'B' || rawProfile === 'C') ? rawProfile : 'B';
+    const honeypot = body.honeypot || body.website;
+
+    // Anti-Bot Honeypot trap
+    if (honeypot && honeypot.trim() !== '') {
+      console.warn(`[Anti-Spam Quiz] Bot trap triggered (honeypot: "${honeypot}")`);
+      return NextResponse.json({ success: true, message: 'Inscription enregistrée', profile });
+    }
 
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Email invalide' }, { status: 400 });
