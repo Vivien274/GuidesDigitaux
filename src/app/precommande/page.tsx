@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import VipSubscribeModal from '@/components/VipSubscribeModal';
 import { getStoredPreorders, PreorderCampaign, getPreorderDestinationUrl } from '@/lib/preordersStore';
 import { fetchPreordersFromDb } from '@/lib/supabaseLms';
 import { 
@@ -20,6 +21,8 @@ import {
 
 export default function PrecommandesPage() {
   const [preorders, setPreorders] = useState<PreorderCampaign[]>([]);
+  const [isVipModalOpen, setIsVipModalOpen] = useState(false);
+  const [selectedVipCourse, setSelectedVipCourse] = useState('Formation Fiche Google Business Profile');
 
   useEffect(() => {
     fetchPreordersFromDb().then(setPreorders);
@@ -157,7 +160,7 @@ export default function PrecommandesPage() {
                   </div>
 
                   {/* CTA Footer */}
-                  <div className="p-6 sm:p-8 pt-0">
+                  <div className="p-6 sm:p-8 pt-0 space-y-2">
                     <Link
                       href={getPreorderDestinationUrl(po)}
                       target={getPreorderDestinationUrl(po).startsWith('http') ? '_blank' : '_self'}
@@ -167,6 +170,17 @@ export default function PrecommandesPage() {
                       PRÉCOMMANDER À {po.price} €
                       <ArrowRight className="w-4 h-4" />
                     </Link>
+
+                    <button
+                      onClick={() => {
+                        setSelectedVipCourse(po.courseTitle);
+                        setIsVipModalOpen(true);
+                      }}
+                      className="w-full py-3 bg-[#f5dfbb] hover:bg-amber-300 text-[#562C2C] font-extrabold text-xs rounded-2xl shadow-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-amber-400"
+                    >
+                      <Sparkles className="w-4 h-4 text-[#F2542D]" />
+                      ⭐ LISTE VIP (INFOS EN AVANT-PREMIÈRE)
+                    </button>
                   </div>
 
                 </div>
@@ -178,6 +192,13 @@ export default function PrecommandesPage() {
       </section>
 
       <Footer />
+
+      <VipSubscribeModal
+        isOpen={isVipModalOpen}
+        onClose={() => setIsVipModalOpen(false)}
+        defaultTag="prevente-gmb"
+        courseTitle={selectedVipCourse}
+      />
     </div>
   );
 }

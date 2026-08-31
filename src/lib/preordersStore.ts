@@ -48,13 +48,13 @@ export function getPreorderStatusDetails(campaign: PreorderCampaign) {
   const now = new Date();
   
   // Parse YYYY-MM-DD
-  const [endYear, endMonth, endDay] = (campaign.endDate || '2026-08-20').split('-').map(Number);
+  const [endYear, endMonth, endDay] = (campaign.endDate || '2026-09-15').split('-').map(Number);
   const [relYear, relMonth, relDay] = (campaign.releaseDate || '2026-09-15').split('-').map(Number);
   
-  const endDateObj = new Date(endYear, (endMonth || 8) - 1, endDay || 20, 23, 59, 59);
+  const endDateObj = new Date(endYear, (endMonth || 9) - 1, endDay || 15, 23, 59, 59);
   const releaseDateObj = new Date(relYear, (relMonth || 9) - 1, relDay || 15, 23, 59, 59);
 
-  const formattedEndDate = formatFrenchDate(campaign.endDate || '2026-08-20');
+  const formattedEndDate = formatFrenchDate(campaign.endDate || '2026-09-15');
   const formattedReleaseDate = formatFrenchDate(campaign.releaseDate || '2026-09-15');
 
   const isGoalReached = campaign.currentEnrollments >= campaign.targetEnrollments;

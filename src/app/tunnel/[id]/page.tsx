@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { fetchPreordersFromDb, incrementPreorderEnrollmentInDb } from '@/lib/supabaseLms';
 import { getEncryptedDownloadUrl } from '@/lib/downloadSecurity';
 import { event } from '@/lib/metaPixel';
+import VipSubscribeModal from '@/components/VipSubscribeModal';
 import { 
   CheckCircle2, 
   Sparkles, 
@@ -67,6 +68,7 @@ export default function SalesFunnelPage() {
 
   const [campaign, setCampaign] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isVipModalOpen, setIsVipModalOpen] = useState(false);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
 
   // Dynamic Countdown Timer to August 20th at 23:59:59
@@ -78,7 +80,7 @@ export default function SalesFunnelPage() {
   });
 
   useEffect(() => {
-    const targetDate = new Date('2026-08-20T23:59:59').getTime();
+    const targetDate = new Date('2026-09-15T23:59:59').getTime();
 
     const updateTimer = () => {
       const now = new Date().getTime();
@@ -180,7 +182,7 @@ export default function SalesFunnelPage() {
           courseTitle: titleToSend,
           price: priceToSend,
           isPreorder: true,
-          releaseDate: '20 août 2026'
+          releaseDate: '15 septembre 2026'
         })
       });
 
@@ -232,7 +234,7 @@ export default function SalesFunnelPage() {
 
           <span className="px-3.5 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-[#562C2C] border border-amber-300 flex items-center gap-1.5 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-            Prévente Privilège Fermeture le 20 Août
+            Prévente Privilège jusqu'au 15 septembre
           </span>
         </div>
       </header>
@@ -267,14 +269,25 @@ export default function SalesFunnelPage() {
 
           {/* Main Hero CTA */}
           <div className="pt-2 space-y-3">
-            <button
-              onClick={handleDirectStripeCheckout}
-              disabled={isProcessing}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-5 text-base sm:text-lg font-black text-white bg-[#F2542D] hover:bg-[#d8441f] rounded-full shadow-2xl uppercase tracking-wider transition-all transform hover:-translate-y-1 cursor-pointer border-2 border-white/20"
-            >
-              <Rocket className="w-6 h-6 text-white" />
-              {isProcessing ? 'Connexion Stripe sécurisée...' : '👉 Je réserve ma place à 29€ (au lieu de 69€)'}
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={handleDirectStripeCheckout}
+                disabled={isProcessing}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-5 text-base sm:text-lg font-black text-white bg-[#F2542D] hover:bg-[#d8441f] rounded-full shadow-2xl uppercase tracking-wider transition-all transform hover:-translate-y-1 cursor-pointer border-2 border-white/20"
+              >
+                <Rocket className="w-6 h-6 text-white" />
+                {isProcessing ? 'Connexion Stripe sécurisée...' : '👉 Je réserve ma place à 29€ (au lieu de 69€)'}
+              </button>
+
+              <button
+                onClick={() => setIsVipModalOpen(true)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-5 text-base font-extrabold text-[#562C2C] bg-[#F5DFBB] hover:bg-amber-300 rounded-full shadow-xl uppercase tracking-wider transition-all transform hover:-translate-y-1 cursor-pointer border-2 border-amber-400"
+              >
+                <Sparkles className="w-5 h-5 text-[#F2542D]" />
+                ⭐ M'inscrire sur la Liste VIP
+              </button>
+            </div>
+
             <p className="text-xs text-teal-200 font-bold flex items-center justify-center gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-300" />
               Paiement 100% Sécurisé via Stripe • Accès Immédiat aux Bonus PDF
@@ -503,7 +516,7 @@ export default function SalesFunnelPage() {
               </p>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 space-y-3">
               <button
                 onClick={handleDirectStripeCheckout}
                 disabled={isProcessing}
@@ -512,6 +525,16 @@ export default function SalesFunnelPage() {
                 <Rocket className="w-5 h-5 text-white" />
                 {isProcessing ? 'Connexion Stripe sécurisée...' : '👉 Je réserve mon accès complet à 29€'}
               </button>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => setIsVipModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#e6f4f3] hover:bg-[#d4ecea] text-[#18757d] font-black text-xs rounded-full uppercase tracking-wider transition-colors cursor-pointer border border-[#18757d]/30"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  ⭐ Rejoindre la Liste VIP (Gratuit)
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-600 font-semibold">
@@ -619,7 +642,7 @@ export default function SalesFunnelPage() {
                 <span className="text-[#18757d] group-open:rotate-180 transition-transform">▼</span>
               </summary>
               <p className="text-xs text-slate-600 leading-relaxed mt-3 pt-3 border-t border-[#eee7da]">
-                Vos 3 Bonus PDF sont téléchargeables immédiatement dès la validation de votre commande aujourd'hui. L'accès complet à l'espace vidéo de formation ouvre le 20 août !
+                Vos 3 Bonus PDF sont téléchargeables immédiatement dès la validation de votre commande aujourd'hui. L'accès complet à l'espace vidéo de formation ouvre le 15 septembre !
               </p>
             </details>
 
@@ -670,6 +693,12 @@ export default function SalesFunnelPage() {
         </div>
       </footer>
 
+      <VipSubscribeModal
+        isOpen={isVipModalOpen}
+        onClose={() => setIsVipModalOpen(false)}
+        defaultTag="prevente-gmb"
+        courseTitle="Formation Fiche Google Business Profile"
+      />
     </div>
   );
 }
