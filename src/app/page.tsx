@@ -79,6 +79,20 @@ export default function HomePage() {
   const [productsList, setProductsList] = useState<ProductItem[]>(PRODUCTS);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const targetId = window.location.hash.replace('#', '');
+      if (targetId) {
+        setTimeout(() => {
+          const element = document.getElementById(targetId);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 300);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     async function syncDynamicCourses() {
       const dbCourses = await fetchCoursesFromDb();
       if (dbCourses && dbCourses.length > 0) {
@@ -392,7 +406,8 @@ export default function HomePage() {
       </section>
 
       {/* 2.5. STRATEGIC NEUROMARKETING QUIZ SECTION */}
-      <section id="quiz" className="py-14 md:py-20 bg-gradient-to-b from-[#faf8f5] via-[#f7f3eb] to-[#faf8f5] border-y border-[#eee7da]">
+      <section id="quiz-site" className="py-14 md:py-20 bg-gradient-to-b from-[#faf8f5] via-[#f7f3eb] to-[#faf8f5] border-y border-[#eee7da] scroll-mt-24">
+        <div id="quiz" className="scroll-mt-24" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center space-y-3 mb-6">
             <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-extrabold bg-[#e6f4f3] text-[#18757d] uppercase tracking-wider border border-[#18757d]/20 shadow-2xs">
