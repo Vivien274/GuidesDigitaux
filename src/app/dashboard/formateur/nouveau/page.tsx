@@ -31,13 +31,16 @@ import {
   Calendar,
   Link as LinkIcon,
   Paperclip,
-  Plus
+  Plus,
+  Upload
 } from 'lucide-react';
 
 export default function NewCourseWizardPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingFileId, setUploadingFileId] = useState<string | null>(null);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
 
   // STEP 1: INFORMATIONS DE BASE, TARIF REMISÉ & PRÉCOMMANDE
   const [title, setTitle] = useState('');
@@ -134,7 +137,7 @@ export default function NewCourseWizardPage() {
               const newFile: LessonResourceFile = {
                 id: `file-${Date.now()}`,
                 name: `Support PDF N°${currentFiles.length + 1}`,
-                url: 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp'
+                url: ''
               };
               return { ...l, files: [...currentFiles, newFile] };
             }
@@ -144,6 +147,62 @@ export default function NewCourseWizardPage() {
       }
       return m;
     }));
+  };
+
+  const handleFileUpload = async (modId: string, lesId: string, fileId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    try {
+      setUploadingFileId(fileId);
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const res = await fetch('/api/admin/upload-media', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+      if (data.success && data.url) {
+        setModules(prev => prev.map(m => {
+          if (m.id === modId) {
+            return {
+              ...m,
+              lessons: m.lessons.map(l => {
+                if (l.id === lesId) {
+                  return {
+                    ...l,
+                    files: (l.files || []).map(f => {
+                      if (f.id === fileId) {
+                        const cleanName = !f.name.trim() || f.name.includes('Support PDF N°')
+                          ? selectedFile.name.replace(/\.[^/.]+$/, "")
+                          : f.name;
+                        return {
+                          ...f,
+                          name: cleanName,
+                          url: data.url
+                        };
+                      }
+                      return f;
+                    })
+                  };
+                }
+                return l;
+              })
+            };
+          }
+          return m;
+        }));
+      } else {
+        alert(data.error || 'Erreur lors du téléversement du fichier');
+      }
+    } catch (err) {
+      console.error('File upload error:', err);
+      alert('Erreur réseau lors du téléversement du fichier.');
+    } finally {
+      setUploadingFileId(null);
+    }
   };
 
   const handleRemoveFileFromLesson = (modId: string, lesId: string, fileId: string) => {
@@ -203,9 +262,11 @@ export default function NewCourseWizardPage() {
     }));
   };
 
-  // PERSIST NEW FORMATION TO SUPABASE DB & LOCALSTORAGE & REDIRECT
-  const handleSaveCourse = async () => {
+  // PERSIST NEW FORMATION TO SUPABASE DB & LOCALSTORAGE & OPTIONAL REDIRECT
+  const handleSaveCourse = async (shouldRedirect: boolean = false) => {
     setIsSaving(true);
+    setSaveSuccessMessage(null);
+
     const newCourseObj: Course = {
       id: `course-${Date.now()}`,
       title: title || 'Nouvelle Formation sans titre',
@@ -231,7 +292,16 @@ export default function NewCourseWizardPage() {
 
     await saveCourseToDb(newCourseObj);
     setIsSaving(false);
-    router.push('/dashboard/formateur');
+
+    if (shouldRedirect) {
+      router.push('/dashboard/formateur');
+    } else {
+      const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      setSaveSuccessMessage(`✅ Formation enregistrée avec succès à ${timeStr} ! Vos pièces jointes et leçons sont sauvegardées.`);
+      setTimeout(() => {
+        setSaveSuccessMessage(null);
+      }, 7000);
+    }
   };
 
   return (
@@ -327,6 +397,23 @@ export default function NewCourseWizardPage() {
       {/* FORM BODY CONTAINER (FULL WIDE MAX-W-7XL) */}
       <section className="py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          {/* SUCCESS BANNER NOTIFICATION */}
+          {saveSuccessMessage && (
+            <div className="mb-6 p-4 bg-emerald-50 border-2 border-emerald-500 rounded-2xl flex items-center justify-between shadow-lg text-emerald-900 animate-in fade-in slide-in-from-top duration-300">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                <span className="text-xs sm:text-sm font-extrabold">{saveSuccessMessage}</span>
+              </div>
+              <button
+                onClick={() => setSaveSuccessMessage(null)}
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-950 px-2 py-1 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          )}
+
           <div className="bg-white p-8 sm:p-12 rounded-3xl border border-[#eee7da] shadow-sm space-y-10">
             
             {/* STEP 1 CONTENT: INFORMATIONS DE BASE, TARIF REMISÉ & PRÉCOMMANDE */}
@@ -568,16 +655,27 @@ export default function NewCourseWizardPage() {
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-[#eee7da] flex items-center justify-between gap-4">
-                  <button
-                    type="button"
-                    onClick={handleSaveCourse}
-                    disabled={isSaving}
-                    className="px-6 py-4 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center gap-2"
-                  >
-                    <Save className="w-4.5 h-4.5" />
-                    {isSaving ? 'CREATION EN COURS...' : 'ENREGISTRER LA FORMATION'}
-                  </button>
+                <div className="pt-6 border-t border-[#eee7da] flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCourse(false)}
+                      disabled={isSaving}
+                      className="px-6 py-4 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center gap-2"
+                    >
+                      <Save className="w-4.5 h-4.5" />
+                      {isSaving ? 'CREATION EN COURS...' : 'ENREGISTRER MAINTENANT'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCourse(true)}
+                      disabled={isSaving}
+                      className="px-5 py-4 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-colors uppercase tracking-wider"
+                    >
+                      ENREGISTRER & QUITTER
+                    </button>
+                  </div>
 
                   <button
                     type="button"
@@ -748,41 +846,14 @@ export default function NewCourseWizardPage() {
                               {(!les.files || les.files.length === 0) ? (
                                 <p className="text-[11px] text-slate-400 italic">Aucun fichier rattaché à ce cours pour le moment.</p>
                               ) : (
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                   {les.files.map((file) => (
-                                    <div key={file.id} className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-[#eee7da] items-center">
-                                      <input
-                                        type="text"
-                                        placeholder="Nom du fichier ex: Fiche pratique PDF"
-                                        value={file.name}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setModules(modules.map(m => {
-                                            if (m.id === mod.id) {
-                                              return {
-                                                ...m,
-                                                lessons: m.lessons.map(l => {
-                                                  if (l.id === les.id) {
-                                                    return {
-                                                      ...l,
-                                                      files: (l.files || []).map(f => f.id === file.id ? { ...f, name: val } : f)
-                                                    };
-                                                  }
-                                                  return l;
-                                                })
-                                              };
-                                            }
-                                            return m;
-                                          }));
-                                        }}
-                                        className="bg-[#faf8f5] border border-[#eee7da] rounded-lg px-3 py-1.5 text-xs font-bold text-[#332420]"
-                                      />
-
-                                      <div className="flex items-center gap-2">
+                                    <div key={file.id} className="p-3 bg-white rounded-xl border border-[#eee7da] space-y-2">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                                         <input
                                           type="text"
-                                          placeholder="URL du fichier (https://.../fiche.pdf)"
-                                          value={file.url}
+                                          placeholder="Nom / Libellé du fichier ex: Fiche pratique PDF"
+                                          value={file.name}
                                           onChange={(e) => {
                                             const val = e.target.value;
                                             setModules(modules.map(m => {
@@ -793,7 +864,7 @@ export default function NewCourseWizardPage() {
                                                     if (l.id === les.id) {
                                                       return {
                                                         ...l,
-                                                        files: (l.files || []).map(f => f.id === file.id ? { ...f, url: val } : f)
+                                                        files: (l.files || []).map(f => f.id === file.id ? { ...f, name: val } : f)
                                                       };
                                                     }
                                                     return l;
@@ -803,16 +874,68 @@ export default function NewCourseWizardPage() {
                                               return m;
                                             }));
                                           }}
-                                          className="bg-[#faf8f5] border border-[#eee7da] rounded-lg px-3 py-1.5 text-xs text-[#332420] w-full"
+                                          className="bg-[#faf8f5] border border-[#eee7da] rounded-lg px-3 py-2 text-xs font-bold text-[#332420]"
                                         />
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveFileFromLesson(mod.id, les.id, file.id)}
-                                          className="p-1.5 text-slate-400 hover:text-[#e05a47]"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
+
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="text"
+                                            placeholder="URL du fichier (https://.../fiche.pdf)"
+                                            value={file.url}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              setModules(modules.map(m => {
+                                                if (m.id === mod.id) {
+                                                  return {
+                                                    ...m,
+                                                    lessons: m.lessons.map(l => {
+                                                      if (l.id === les.id) {
+                                                        return {
+                                                          ...l,
+                                                          files: (l.files || []).map(f => f.id === file.id ? { ...f, url: val } : f)
+                                                        };
+                                                      }
+                                                      return l;
+                                                    })
+                                                  };
+                                                }
+                                                return m;
+                                              }));
+                                            }}
+                                            className="bg-[#faf8f5] border border-[#eee7da] rounded-lg px-3 py-2 text-xs text-[#332420] w-full"
+                                          />
+
+                                          <label className="px-3 py-2 text-xs font-bold text-white bg-[#18757d] hover:bg-[#12595f] rounded-lg cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors shadow-sm">
+                                            <Upload className="w-3.5 h-3.5" />
+                                            <span>{uploadingFileId === file.id ? 'Téléversement...' : 'Parcourir & Uploader'}</span>
+                                            <input
+                                              type="file"
+                                              onChange={(e) => handleFileUpload(mod.id, les.id, file.id, e)}
+                                              className="hidden"
+                                              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.png,.jpg,.jpeg,.webp"
+                                            />
+                                          </label>
+
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRemoveFileFromLesson(mod.id, les.id, file.id)}
+                                            className="p-2 text-slate-400 hover:text-[#e05a47] shrink-0"
+                                            title="Supprimer le fichier"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        </div>
                                       </div>
+
+                                      {file.url && (
+                                        <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                          <span>Fichier prêt :</span>
+                                          <a href={file.url} target="_blank" rel="noreferrer" className="underline truncate max-w-md hover:text-emerald-900">
+                                            {file.url}
+                                          </a>
+                                        </div>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
@@ -918,7 +1041,7 @@ export default function NewCourseWizardPage() {
                   ))}
                 </div>
 
-                <div className="pt-6 border-t border-[#eee7da] flex items-center justify-between gap-4">
+                <div className="pt-6 border-t border-[#eee7da] flex flex-wrap items-center justify-between gap-4">
                   <button
                     type="button"
                     onClick={() => setCurrentStep(1)}
@@ -927,15 +1050,26 @@ export default function NewCourseWizardPage() {
                     ← ÉTAPE PRÉCÉDENTE
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={handleSaveCourse}
-                    disabled={isSaving}
-                    className="px-6 py-4 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center gap-2"
-                  >
-                    <Save className="w-4.5 h-4.5" />
-                    {isSaving ? 'CREATION EN COURS...' : 'ENREGISTRER LA FORMATION'}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCourse(false)}
+                      disabled={isSaving}
+                      className="px-6 py-4 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md uppercase tracking-wider transition-colors flex items-center gap-2"
+                    >
+                      <Save className="w-4.5 h-4.5" />
+                      {isSaving ? 'CREATION EN COURS...' : 'ENREGISTRER MAINTENANT'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCourse(true)}
+                      disabled={isSaving}
+                      className="px-5 py-4 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-colors uppercase tracking-wider"
+                    >
+                      ENREGISTRER & QUITTER
+                    </button>
+                  </div>
 
                   <button
                     type="button"
@@ -1028,7 +1162,7 @@ export default function NewCourseWizardPage() {
                 </div>
 
                 {/* SAVE ACTIONS */}
-                <div className="pt-6 border-t border-[#eee7da] flex items-center justify-between">
+                <div className="pt-6 border-t border-[#eee7da] flex flex-wrap items-center justify-between gap-4">
                   <button
                     type="button"
                     onClick={() => setCurrentStep(2)}
@@ -1037,15 +1171,26 @@ export default function NewCourseWizardPage() {
                     ← ÉTAPE PRÉCÉDENTE
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={handleSaveCourse}
-                    disabled={isSaving}
-                    className="px-8 py-4 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center gap-2"
-                  >
-                    <Save className="w-5 h-5" />
-                    {isSaving ? 'ENREGISTREMENT EN COURS...' : 'ENREGISTRER & PUBLIER'}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCourse(false)}
+                      disabled={isSaving}
+                      className="px-8 py-4 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center gap-2"
+                    >
+                      <Save className="w-5 h-5" />
+                      {isSaving ? 'ENREGISTREMENT...' : 'ENREGISTRER MAINTENANT'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCourse(true)}
+                      disabled={isSaving}
+                      className="px-5 py-4 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-colors uppercase tracking-wider"
+                    >
+                      ENREGISTRER & QUITTER
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

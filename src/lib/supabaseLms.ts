@@ -81,6 +81,8 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
                 title: m.title,
                 lessons: (m.lessons || []).map((l: any) => {
                   const localLes = localMod?.lessons?.find((ll: any) => ll.id === l.id || ll.title === l.title);
+                  const effectiveFiles = l.files || (Array.isArray(localLes?.files) && localLes.files.length > 0 ? localLes.files : (l.pdf_url ? [{ id: `file-${l.id}`, name: 'Support de cours PDF', url: l.pdf_url }] : []));
+                  const effectiveLinks = l.links || (Array.isArray(localLes?.links) && localLes.links.length > 0 ? localLes.links : (l.external_link ? [{ id: `link-${l.id}`, title: 'Ressource utile', url: l.external_link }] : []));
                   return {
                     id: l.id,
                     title: l.title,
@@ -88,7 +90,9 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
                     notes: l.notes || localLes?.notes || '',
                     pdfUrl: l.pdf_url || localLes?.pdfUrl || '',
                     externalLink: l.external_link || localLes?.externalLink || '',
-                    duration: l.duration || localLes?.duration || '10:00'
+                    duration: l.duration || localLes?.duration || '10:00',
+                    files: effectiveFiles,
+                    links: effectiveLinks
                   };
                 })
               };
@@ -174,17 +178,26 @@ export async function saveCourseToDb(course: Course): Promise<Course[]> {
           for (let lIdx = 0; lIdx < mod.lessons.length; lIdx++) {
             const les = mod.lessons[lIdx];
             const lesUuid = toUuid(les.id);
-            await supabase.from('lessons').upsert({
+            const lesPayload: any = {
               id: lesUuid,
               module_id: targetModId,
               title: les.title,
               video_url: les.videoUrl,
               notes: les.notes,
-              pdf_url: les.pdfUrl,
-              external_link: les.externalLink,
+              pdf_url: les.pdfUrl || (les.files && les.files.length > 0 ? les.files[0].url : ''),
+              external_link: les.externalLink || (les.links && les.links.length > 0 ? les.links[0].url : ''),
               duration: les.duration || '10:00',
               order_index: lIdx + 1
-            });
+            };
+            if (les.files) lesPayload.files = les.files;
+            if (les.links) lesPayload.links = les.links;
+
+            const { error: lesErr } = await supabase.from('lessons').upsert(lesPayload);
+            if (lesErr) {
+              delete lesPayload.files;
+              delete lesPayload.links;
+              await supabase.from('lessons').upsert(lesPayload);
+            }
           }
         }
       }
