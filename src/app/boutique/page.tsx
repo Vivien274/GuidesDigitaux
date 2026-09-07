@@ -76,15 +76,25 @@ export default function BoutiquePage() {
       const combined: Product[] = [...(dbProducts || [])];
 
       publishedDbCourses.forEach(c => {
+        const titleLower = c.title.toLowerCase().trim();
+        let canonicalSlug = c.slug || c.id;
+        if (c.id === '11111111-1111-4111-a111-111111111111' || titleLower.includes('vitrine')) {
+          canonicalSlug = 'formation-wordpress';
+        } else if (c.id === '22222222-2222-4222-a222-222222222222' || titleLower.includes('woocommerce')) {
+          canonicalSlug = 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce';
+        } else if (c.id === '17873181-7987-4000-a000-000000000000' || titleLower.includes('google')) {
+          canonicalSlug = 'checklist-google-business-profile';
+        }
+
         const exists = combined.some(p => 
           p.id === c.id || 
-          p.slug === c.id || 
-          p.title.toLowerCase().trim() === c.title.toLowerCase().trim()
+          p.slug === canonicalSlug || 
+          p.title.toLowerCase().trim() === titleLower
         );
         if (!exists) {
           combined.push({
             id: c.id,
-            slug: c.id === '17873181-7987-4000-a000-000000000000' || c.title.toLowerCase().includes('google') ? 'creation-gmb' : (c.slug || c.id),
+            slug: canonicalSlug,
             title: c.title,
             category: 'formation',
             categoryLabel: 'Formation Vidéo',

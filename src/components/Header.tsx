@@ -13,6 +13,11 @@ export default function Header() {
   const pathname = usePathname();
   const { totalItems, setIsCartOpen } = useCart();
   const { role, user, isLoggedIn, logout } = useAuth();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isActive = (path: string) => {
     if (path === '/' && pathname === '/') return true;
@@ -133,7 +138,7 @@ export default function Header() {
               Contact
             </Link>
 
-            {isLoggedIn && user ? (
+            {mounted && isLoggedIn && user ? (
               <>
                 {role === 'superadmin' && (
                   <Link 
@@ -183,7 +188,7 @@ export default function Header() {
 
           {/* Cart & Logout Buttons */}
           <div className="flex items-center gap-3">
-            {role !== 'formateur' && !pathname.startsWith('/dashboard/formateur') && (
+            {(mounted ? role !== 'formateur' : true) && !pathname.startsWith('/dashboard/formateur') && (
               <button 
                 onClick={() => setIsCartOpen(true)}
                 className={`px-4 py-2 text-sm font-bold rounded-full transition-all flex items-center gap-2 relative ${
@@ -202,7 +207,7 @@ export default function Header() {
               </button>
             )}
 
-            {isLoggedIn && (
+            {mounted && isLoggedIn && (
               <button
                 onClick={() => {
                   logout();

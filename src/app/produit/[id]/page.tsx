@@ -21,10 +21,10 @@ import {
   Sparkles,
   ArrowRight,
   ShoppingCart,
-  Calendar
+  Calendar,
+  AlertCircle
 } from 'lucide-react';
 
-import { notFound } from 'next/navigation';
 import { fetchCoursesFromDb, fetchProductsFromDb } from '@/lib/supabaseLms';
 
 interface Product {
@@ -52,54 +52,145 @@ interface Product {
 
 import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
 
+function normalizeStr(str: string): string {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+const ALIAS_MAP: Record<string, string> = {
+  '11111111-1111-4111-a111-111111111111': 'formation-wordpress',
+  'formation-creer-sa-vitrine-en-ligne-avec-wordpress': 'formation-wordpress',
+  '22222222-2222-4222-a222-222222222222': 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+  'formation-boutique-woocommerce': 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+  '17873181-7987-4000-a000-000000000000': 'checklist-google-business-profile',
+  'creation-gmb': 'checklist-google-business-profile',
+  'fiche-google': 'checklist-google-business-profile',
+  'checklist-optimisation-google-business-profile': 'checklist-google-business-profile',
+  'checklist-optimisation-google-my-business': 'checklist-google-business-profile',
+  'checklist-verification-avant-le-lancement-du-site': 'checklist-verification-lancement-site',
+  'checklist-verification-lancement': 'checklist-verification-lancement-site',
+  'checklist-les-principes-cles-de-l-experience-utilisateur': 'checklist-les-principes-ux',
+  'checklist-ux': 'checklist-les-principes-ux',
+  'checklist-profil-pro-pour-les-reseaux-sociaux': 'checklist-profil-reseaux-sociaux',
+  'checklist-securite-et-anti-spam-wordpress': 'checklist-securite-anti-spam-wordpress',
+  'mini-guide-seo-local-etre-trouve-par-les-clients-pres-de-chez-toi': 'mini-guide-seo-local',
+};
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const productId = params?.id as string;
+  const rawParamId = params?.id as string;
+  const productId = rawParamId ? decodeURIComponent(rawParamId).trim() : '';
+
   const [isBuying, setIsBuying] = useState(false);
   const { addToCart } = useCart();
+  const { user } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [notFoundState, setNotFoundState] = useState(false);
+
+  const [activeImage, setActiveImage] = useState<string>('');
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [coachingStatus, setCoachingStatus] = useState<any>(null);
+  const [selectedPaymentOption, setSelectedPaymentOption] = useState<'1x' | '3x'>('1x');
 
   useEffect(() => {
     async function syncProductFromDb() {
       setIsLoading(true);
+      setNotFoundState(false);
+
       const [dbProducts, dbCourses] = await Promise.all([
         fetchProductsFromDb(),
         fetchCoursesFromDb()
       ]);
 
-      setAllProducts(dbProducts || []);
-      let match = (dbProducts || []).find(p => p.id === productId || p.slug === productId);
-      
-      const defaultMatch = DEFAULT_PRODUCTS.find(p => 
-        p.id === productId || 
-        p.slug === productId || 
-        (match && (p.id === match.id || p.slug === match.slug || p.title.toLowerCase().trim() === match.title.toLowerCase().trim()))
-      );
+      const normalizedTarget = normalizeStr(productId);
+      const aliasedCanonicalId = ALIAS_MAP[productId] || ALIAS_MAP[normalizedTarget];
 
-      if (match) {
-        if (defaultMatch) {
-          match.longDescription = defaultMatch.longDescription || match.longDescription;
-          match.description = defaultMatch.description || match.description;
-          match.image = defaultMatch.image || match.image;
-          match.imageAlt = defaultMatch.imageAlt || match.imageAlt;
+      setAllProducts(dbProducts || []);
+
+      let match: Product | null = null;
+
+      if (aliasedCanonicalId) {
+        const canonicalMatch = DEFAULT_PRODUCTS.find(p => p.id === aliasedCanonicalId || p.slug === aliasedCanonicalId)
+          || (dbProducts || []).find(p => p.id === aliasedCanonicalId || p.slug === aliasedCanonicalId);
+        if (canonicalMatch) {
+          match = { ...canonicalMatch };
         }
-      } else if (defaultMatch) {
-        match = defaultMatch as any;
+      }
+
+      if (!match) {
+        match = (dbProducts || []).find(p => 
+          p.id === productId || 
+          p.slug === productId || 
+          normalizeStr(p.id) === normalizedTarget || 
+          normalizeStr(p.slug || '') === normalizedTarget ||
+          normalizeStr(p.title) === normalizedTarget
+        ) || null;
+      }
+
+      if (!match) {
+        const defMatch = DEFAULT_PRODUCTS.find(p => 
+          p.id === productId || 
+          p.slug === productId || 
+          normalizeStr(p.id) === normalizedTarget || 
+          normalizeStr(p.slug || '') === normalizedTarget ||
+          normalizeStr(p.title) === normalizedTarget
+        );
+        if (defMatch) match = { ...defMatch };
+      }
+
+      if (!match) {
+        if (normalizedTarget.includes('google') || normalizedTarget.includes('gmb')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'checklist-google-business-profile') || null;
+        } else if (normalizedTarget.includes('stats') || normalizedTarget.includes('data-scientist')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'mini-guide-comprendre-ses-stats-sans-etre-data-scientist') || null;
+        } else if (normalizedTarget.includes('photo') || normalizedTarget.includes('image')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'mini-guide-optimiser-ses-photos') || null;
+        } else if (normalizedTarget.includes('ecrire') || normalizedTarget.includes('rediger')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'mini-guide-ecrire-web-artisan') || null;
+        } else if (normalizedTarget.includes('securite') || normalizedTarget.includes('spam')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'checklist-securite-anti-spam-wordpress') || null;
+        } else if (normalizedTarget.includes('ux') || normalizedTarget.includes('experience')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'checklist-les-principes-ux') || null;
+        } else if (normalizedTarget.includes('reseaux') || normalizedTarget.includes('social')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'checklist-profil-reseaux-sociaux') || null;
+        } else if (normalizedTarget.includes('lancement') || normalizedTarget.includes('verification')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'checklist-verification-lancement-site') || null;
+        } else if (normalizedTarget.includes('woocommerce')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce') || null;
+        } else if (normalizedTarget.includes('wordpress') || normalizedTarget.includes('vitrine')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'formation-wordpress') || null;
+        } else if (normalizedTarget.includes('coaching')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'coaching-site') || null;
+        } else if (normalizedTarget.includes('pack')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'pack-guides') || null;
+        } else if (normalizedTarget.includes('bundle')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'bundle-vitrine-boutique-wordpress-le-combo-pour-vendre-en-ligne') || null;
+        } else if (normalizedTarget.includes('ebook') || normalizedTarget.includes('visibilite')) {
+          match = DEFAULT_PRODUCTS.find(p => p.id === 'ebook-visibilite-ligne-artisan') || null;
+        }
       }
 
       if (!match) {
         const courseMatch = (dbCourses || []).find(c => 
           c.id === productId || 
-          (productId === 'creation-gmb' && (c.id === '17873181-7987-4000-a000-000000000000' || c.title.toLowerCase().includes('google')))
+          normalizeStr(c.id) === normalizedTarget ||
+          normalizeStr(c.title).includes(normalizedTarget)
         );
         if (courseMatch) {
+          const matchingDefault = DEFAULT_PRODUCTS.find(p => normalizeStr(p.title) === normalizeStr(courseMatch.title) || p.category === 'formation');
           match = {
             id: courseMatch.id,
-            slug: courseMatch.id === '17873181-7987-4000-a000-000000000000' ? 'creation-gmb' : undefined,
+            slug: courseMatch.id === '17873181-7987-4000-a000-000000000000' ? 'checklist-google-business-profile' : courseMatch.id,
             title: courseMatch.title,
             category: 'formation',
             categoryLabel: 'Formation Vidéo',
@@ -107,9 +198,10 @@ export default function ProductDetailPage() {
             originalPrice: courseMatch.originalPrice,
             rating: 5,
             reviewsCount: 0,
-            image: courseMatch.image || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp',
-            description: courseMatch.description || 'Formation vidéo complète pas-à-pas.',
-            features: [
+            image: courseMatch.image || matchingDefault?.image || '/images/products/coaching-site.webp',
+            description: courseMatch.description || matchingDefault?.description || 'Formation vidéo complète pas-à-pas.',
+            longDescription: matchingDefault?.longDescription || courseMatch.description,
+            features: matchingDefault?.features || [
               'Accès illimité 24/7',
               `${courseMatch.modules?.length || 0} Modules vidéo pas-à-pas`,
               'Support et exercices pratiques'
@@ -118,21 +210,32 @@ export default function ProductDetailPage() {
         }
       }
 
-      if (!match) {
-        notFound();
-        return;
+      if (match) {
+        const defaultFallback = DEFAULT_PRODUCTS.find(p => 
+          p.id === match?.id || 
+          p.slug === match?.slug || 
+          normalizeStr(p.title) === normalizeStr(match?.title || '')
+        );
+
+        if (defaultFallback) {
+          match.longDescription = match.longDescription && match.longDescription.length > 200 ? match.longDescription : defaultFallback.longDescription;
+          match.description = match.description || defaultFallback.description;
+          match.image = match.image || defaultFallback.image;
+          match.imageAlt = match.imageAlt || defaultFallback.imageAlt;
+          match.gallery = match.gallery && match.gallery.length > 0 ? match.gallery : defaultFallback.gallery;
+          match.features = match.features && match.features.length > 0 ? match.features : defaultFallback.features;
+          match.categoryLabel = match.categoryLabel || defaultFallback.categoryLabel;
+        }
+
+        setProduct(match);
+      } else {
+        setNotFoundState(true);
       }
 
-      setProduct(match);
       setIsLoading(false);
     }
     syncProductFromDb();
   }, [productId]);
-
-  const [activeImage, setActiveImage] = useState<string>('');
-  const [hasPurchased, setHasPurchased] = useState(false);
-  const [coachingStatus, setCoachingStatus] = useState<any>(null);
-  const { user } = useAuth();
 
   useEffect(() => {
     if (product) {
@@ -158,7 +261,7 @@ export default function ProductDetailPage() {
     }
   }, [product?.id, user?.email]);
 
-  if (isLoading || !product) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#18757d] border-t-transparent"></div>
@@ -166,8 +269,33 @@ export default function ProductDetailPage() {
     );
   }
 
+  if (notFoundState || !product) {
+    return (
+      <div className="min-h-screen bg-[#faf8f5] text-[#332420] flex flex-col justify-between">
+        <Header />
+        <div className="max-w-3xl mx-auto px-4 py-20 text-center space-y-6">
+          <div className="w-16 h-16 bg-[#e6f4f3] text-[#18757d] rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <h1 className="text-3xl font-extrabold text-[#332420]">Produit non trouvé</h1>
+          <p className="text-sm text-[#5e4d46] max-w-md mx-auto">
+            La ressource numérique que vous recherchez semble introuvable ou a été déplacée. Retrouvez l'ensemble de nos guides et formations sur notre boutique.
+          </p>
+          <div className="pt-4 flex items-center justify-center gap-4">
+            <Link href="/boutique" className="px-6 py-3 bg-[#18757d] hover:bg-[#12595f] text-white text-xs font-extrabold rounded-xl shadow-sm transition-colors">
+              Retourner à la boutique
+            </Link>
+            <Link href="/contact" className="px-6 py-3 bg-white border border-[#eee7da] text-[#332420] text-xs font-extrabold rounded-xl hover:bg-[#faf8f5] transition-colors">
+              Nous contacter
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   const productGallery = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image];
-  const [selectedPaymentOption, setSelectedPaymentOption] = useState<'1x' | '3x'>('1x');
 
   const relatedProducts = allProducts.filter(
     (p) => p.id !== product.id && (p.category === product.category || p.category === 'ebook')
