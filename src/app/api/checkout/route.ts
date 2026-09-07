@@ -64,10 +64,11 @@ export async function POST(request: Request) {
       ? refererHeader
       : `${siteUrl}/produit/${targetProduct.slug}?canceled=true`;
     const paymentOption = body.paymentOption || '1x';
-    const is3x = paymentOption === '3x' || Number(body.price) === 87;
-    const unitAmountCents = is3x ? 8700 : targetProduct.price_cents;
-    const checkoutTitle = is3x ? `${targetProduct.title} (Option 3x : 3 x 87 €)` : targetProduct.title;
-    const checkoutDescription = is3x ? 'Paiement en 3 fois (1/3 de 87 € aujourd’hui + 2x 87 € mensuels)' : targetProduct.description;
+    const is3x = paymentOption === '3x' || Number(body.price) === 87 || Number(body.price) === 75;
+    const priceAmount = body.price ? Number(body.price) : (is3x ? 75 : Math.round(targetProduct.price_cents / 100));
+    const unitAmountCents = is3x ? Math.round(priceAmount * 100) : targetProduct.price_cents;
+    const checkoutTitle = is3x ? `${targetProduct.title} (Option 3x : 3 x ${priceAmount} €)` : targetProduct.title;
+    const checkoutDescription = is3x ? `Paiement en 3 fois (1/3 de ${priceAmount} € aujourd’hui + 2x ${priceAmount} € mensuels)` : targetProduct.description;
 
     // 2. Création de la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({

@@ -301,6 +301,11 @@ export default function ProductDetailPage() {
     (p) => p.id !== product.id && (p.category === product.category || p.category === 'ebook')
   ).slice(0, 3);
 
+  const isHighValueBundle = product.price >= 240;
+  const installmentAmount = isHighValueBundle ? 87 : 75;
+  const totalInstallments = installmentAmount * 3;
+  const savingsVs3x = totalInstallments - product.price;
+
   const handleCheckout = async (overrideOption?: '1x' | '3x') => {
     setIsBuying(true);
     const optionToUse = overrideOption || selectedPaymentOption;
@@ -313,7 +318,7 @@ export default function ProductDetailPage() {
           courseId: product.id,
           productId: product.id,
           courseTitle: product.title,
-          price: is3xOption ? 87 : product.price,
+          price: is3xOption ? installmentAmount : product.price,
           paymentOption: optionToUse
         })
       });
@@ -552,7 +557,7 @@ export default function ProductDetailPage() {
                           {product.price} €
                         </div>
                         <span className="text-[11px] text-slate-500 font-bold block mt-1">
-                          Économise 11 € vs 3x
+                          Économise {savingsVs3x} € vs 3x
                         </span>
                       </button>
 
@@ -573,10 +578,10 @@ export default function ProductDetailPage() {
                           Paiement en 3 Fois
                         </div>
                         <div className="text-2xl font-black text-[#F2542D] mt-1">
-                          3 × 87 € <span className="text-xs font-bold text-slate-500">/ mois</span>
+                          3 × {installmentAmount} € <span className="text-xs font-bold text-slate-500">/ mois</span>
                         </div>
                         <span className="text-[11px] text-emerald-700 font-bold block mt-1">
-                          🚀 Accès immédiat dès 87 € aujourd'hui
+                          🚀 Accès immédiat dès {installmentAmount} € aujourd'hui
                         </span>
                       </button>
                     </div>
@@ -619,7 +624,7 @@ export default function ProductDetailPage() {
                     {isBuying
                       ? 'Redirection...'
                       : (selectedPaymentOption === '3x' && product.price >= 190
-                        ? 'Régler 87 € & Accéder'
+                        ? `Régler ${installmentAmount} € & Accéder`
                         : 'Acheter Maintenant')}
                   </button>
                 </div>
