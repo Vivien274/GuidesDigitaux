@@ -187,36 +187,44 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: flex-end;
-      gap: 12px;
+      gap: 10px;
     }
     .btn-action {
       display: inline-flex;
-      items-center: center;
+      align-items: center;
+      justify-content: center;
       gap: 6px;
       background-color: #18757d;
       color: white;
       text-decoration: none;
       border: none;
-      padding: 12px 20px;
+      padding: 12px 18px;
       border-radius: 12px;
       font-size: 12px;
       font-weight: 800;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      box-shadow: 0 4px 12px rgba(24, 117, 125, 0.2);
+      box-shadow: 0 4px 12px rgba(24, 117, 125, 0.15);
       transition: all 0.2s ease;
     }
     .btn-action:hover {
       background-color: #12595f;
       transform: translateY(-1px);
     }
-    .btn-secondary {
+    .btn-red {
       background-color: #e05a47;
-      box-shadow: 0 4px 12px rgba(224, 90, 71, 0.2);
+      box-shadow: 0 4px 12px rgba(224, 90, 71, 0.15);
     }
-    .btn-secondary:hover {
+    .btn-red:hover {
       background-color: #c44735;
+    }
+    .btn-amber {
+      background-color: #d97706;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.15);
+    }
+    .btn-amber:hover {
+      background-color: #b45309;
     }
     .toast-msg {
       display: none;
@@ -229,6 +237,7 @@
       border: 1px solid #a7f3d0;
       font-size: 13px;
       font-weight: 700;
+      text-align: center;
     }
 
     @media print {
@@ -252,18 +261,19 @@
   <!-- BARRE D'ACTIONS ADMIN -->
   <div class="print-actions">
     <button onclick="window.print()" class="btn-action">
-      🖨️ Imprimer / Sauvegarder PDF
+      🖨️ Imprimer / PDF
+    </button>
+
+    <button onclick="openGmail()" class="btn-action btn-red">
+      ✉️ Ouvrir dans Gmail
     </button>
     
-    <a 
-      href="mailto:marinedegreef.pro@gmail.com?subject=Votre%20facture%20Guides%20Digitaux%20GD-2026-0819&body=Bonjour%20Marine,%0A%0AVeuillez%20trouver%20votre%20facture%20d%27acquittement%20N%C2%B0%20GD-2026-0819%20d%27un%20montant%20de%2029%2C00%20%E2%82%AC%20TTC%20pour%20votre%20pr%C3%A9commande%20de%20la%20Formation%20Fiche%20Google.%0A%0AAdresse%20de%20consultation%20en%20ligne%20%3A%20https%3A%2F%2Fwww.guides-digitaux.com%2Ffacture-marine-degreef.html%0A%0ABien%20cordialement,%0ASt%C3%A9phanie%20ROCQ%20-%20Guides%20Digitaux" 
-      class="btn-action btn-secondary"
-    >
-      ✉️ Renvoyer par E-mail à Marine Degreef
-    </a>
+    <button onclick="copyEmailText()" class="btn-action btn-amber">
+      📋 Copier l'e-mail pré-rédigé
+    </button>
 
     <button onclick="sendDirectEmail()" class="btn-action">
-      🚀 Renvoyer automatiquement via l'API
+      🚀 Envoi Auto Server
     </button>
   </div>
 
@@ -356,31 +366,68 @@
   </div>
 
   <script>
-    async function sendDirectEmail() {
+    const customerEmail = "marinedegreef.pro@gmail.com";
+    const customerName = "Marine Degreef";
+    const invoiceNum = "GD-2026-0819";
+    const invoiceUrl = "https://www.guides-digitaux.com/facture-marine-degreef.html";
+
+    const emailSubject = "Votre facture Guides Digitaux N° " + invoiceNum;
+    const emailBody = "Bonjour " + customerName + ",\n\nVeuillez trouver ci-joint votre facture d'acquittement N° " + invoiceNum + " d'un montant de 29,00 € TTC pour votre précommande de la Formation Fiche Google Business Profile.\n\nVous pouvez également consulter et télécharger votre facture à tout moment via ce lien :\n" + invoiceUrl + "\n\nBien cordialement,\nStéphanie ROCQ - Guides Digitaux\ncontact@guides-digitaux.com";
+
+    function showToast(msg, isError = false) {
       const toast = document.getElementById('toastMsg');
       toast.style.display = 'block';
-      toast.innerText = "⏳ Envoi de l'e-mail de facture en cours...";
+      toast.style.backgroundColor = isError ? '#fee2e2' : '#d1fae5';
+      toast.style.color = isError ? '#991b1b' : '#065f46';
+      toast.style.borderColor = isError ? '#fca5a5' : '#a7f3d0';
+      toast.innerText = msg;
+    }
+
+    // 1. Open directly in Gmail Web
+    function openGmail() {
+      const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(customerEmail) + "&su=" + encodeURIComponent(emailSubject) + "&body=" + encodeURIComponent(emailBody);
+      window.open(gmailUrl, '_blank');
+      showToast("✉️ Ouverture de Gmail pour " + customerEmail + " !");
+    }
+
+    // 2. Copy email content to clipboard
+    function copyEmailText() {
+      const fullText = "À : " + customerEmail + "\nObjet : " + emailSubject + "\n\n" + emailBody;
+      navigator.clipboard.writeText(fullText).then(() => {
+        showToast("📋 E-mail et lien de facture copiés dans le presse-papier ! Tu peux les coller dans ton mail.");
+      }).catch(err => {
+        showToast("⚠️ Impossible de copier automatiquement : ouvre Gmail directement.", true);
+      });
+    }
+
+    // 3. Send direct via backend API
+    async function sendDirectEmail() {
+      showToast("⏳ Envoi de l'e-mail de facture via le serveur...");
       try {
-        const res = await fetch('/api/admin/send-manual-email', {
+        const apiUrl = window.location.origin.startsWith('http') 
+          ? window.location.origin + '/api/admin/send-manual-email'
+          : 'https://www.guides-digitaux.com/api/admin/send-manual-email';
+
+        const res = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            customerEmail: 'marinedegreef.pro@gmail.com',
-            customerName: 'Marine Degreef',
+            customerEmail: customerEmail,
+            customerName: customerName,
             productId: 'precommande-fiche-google',
             productTitle: 'Précommande : Formation Vidéo Fiche Google Business Profile',
             amount: 29,
-            orderId: 'GD-2026-0819'
+            orderId: invoiceNum
           })
         });
         const data = await res.json();
-        if (data.success) {
-          toast.innerText = "✅ E-mail de confirmation & facture transmis avec succès à marinedegreef.pro@gmail.com !";
+        if (res.ok && data.success) {
+          showToast("✅ E-mail de confirmation & facture transmis avec succès à " + customerEmail + " !");
         } else {
-          toast.innerText = "⚠️ Notification : " + (data.error || "Problème d'envoi");
+          showToast("⚠️ Notification serveur : " + (data.error || "Problème d'envoi. Utilise le bouton Gmail ou Copier."), true);
         }
       } catch (err) {
-        toast.innerText = "✅ Lien de l'e-mail prêt pour votre client !";
+        showToast("💡 Conseil : Utilise le bouton 'Ouvrir dans Gmail' ou 'Copier l'e-mail' pour l'envoyer directement.", true);
       }
     }
   </script>
