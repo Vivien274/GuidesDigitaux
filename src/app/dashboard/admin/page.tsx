@@ -28,7 +28,8 @@ import {
   Package,
   Mail,
   Send,
-  CheckCircle2
+  CheckCircle2,
+  FileText
 } from 'lucide-react';
 
 export interface UserPurchaseDetail {
@@ -1284,15 +1285,28 @@ export default function SuperadminDashboardPage() {
                                 </div>
                               </td>
                               <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                                <button
-                                  onClick={() => handleSendManualEmail(ord.userEmail, ord.id || 'precommande-fiche-google', ord.price)}
-                                  disabled={isSendingEmail}
-                                  className="px-2 py-1 bg-[#e6f4f3] hover:bg-[#18757d] text-[#18757d] hover:text-white rounded-lg text-[10px] font-extrabold transition-colors inline-flex items-center gap-1 cursor-pointer"
-                                  title="Renvoyer l'e-mail de confirmation"
-                                >
-                                  <Mail className="w-3 h-3" />
-                                  <span>Email</span>
-                                </button>
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <button
+                                    onClick={() => handleSendManualEmail(ord.userEmail, ord.id || 'precommande-fiche-google', ord.price)}
+                                    disabled={isSendingEmail}
+                                    className="px-2 py-1 bg-[#e6f4f3] hover:bg-[#18757d] text-[#18757d] hover:text-white rounded-lg text-[10px] font-extrabold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                    title="Renvoyer l'e-mail de confirmation"
+                                  >
+                                    <Mail className="w-3 h-3" />
+                                    <span>Email</span>
+                                  </button>
+
+                                  <a
+                                    href={`/api/invoice/download?email=${encodeURIComponent(ord.userEmail)}&name=${encodeURIComponent(ord.userName)}&product=${encodeURIComponent(ord.id)}&price=${ord.price}&num=${encodeURIComponent(ord.id)}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2 py-1 bg-amber-100 hover:bg-amber-600 text-amber-900 hover:text-white rounded-lg text-[10px] font-extrabold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                    title="Voir ou télécharger la facture"
+                                  >
+                                    <FileText className="w-3 h-3" />
+                                    <span>Facture</span>
+                                  </a>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -1386,6 +1400,17 @@ export default function SuperadminDashboardPage() {
                         </span>
 
                         <div className="flex items-center gap-1.5">
+                          <a
+                            href={`/api/invoice/download?email=${encodeURIComponent(selectedUserForDetails.email)}&name=${encodeURIComponent(selectedUserForDetails.name)}&product=${encodeURIComponent(item.id)}&price=${item.price}&num=${encodeURIComponent(item.id)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 bg-amber-100 hover:bg-amber-600 text-amber-900 hover:text-white rounded-lg text-[10px] font-extrabold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                            title="Télécharger / Imprimer la facture"
+                          >
+                            <FileText className="w-3 h-3" />
+                            <span>Facture</span>
+                          </a>
+
                           <Link
                             href={item.slug ? `/produit/${item.slug}` : '/boutique'}
                             target="_blank"
