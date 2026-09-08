@@ -449,6 +449,7 @@ export default function ProductDetailPage() {
                   src={activeImage || product.image}
                   alt={product.imageAlt || `${product.title} - Guides digitaux - Nord (59)`}
                   fill
+                  priority
                   className="object-cover transition-all duration-300"
                 />
                 {product.badge && (

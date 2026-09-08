@@ -74,11 +74,11 @@ export default function RootLayout({
         )}
         <Script
           src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6Lcqdp4tAAAAAMtfeNqnAOYwn7nQoTAzX7d-p6H_'}`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
         <Script
           id="meta-pixel-script"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `
               !function(f,b,e,v,n,t,s)

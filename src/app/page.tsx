@@ -270,7 +270,7 @@ export default function HomePage() {
                   width={500}
                   height={500}
                   priority
-                  className="rounded-3xl object-cover drop-shadow-xl"
+                  className="rounded-[32px] object-cover shadow-2xl transition-transform duration-500 hover:scale-105 border-4 border-white"
                 />
 
                 <div className="absolute top-12 -left-6 sm:-left-10 bg-white p-4 rounded-2xl shadow-xl card-shadow-soft border border-slate-100 flex items-center gap-3 animate-float-slow z-20">
