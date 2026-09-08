@@ -4,16 +4,25 @@ import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const email = searchParams.get('email') || 'client@example.com';
+  const email = searchParams.get('email') || 'marinedegreef.pro@gmail.com';
   const name = searchParams.get('name') || email.split('@')[0];
   const productId = searchParams.get('product') || 'precommande-fiche-google';
   const rawPrice = searchParams.get('price');
-  const invoiceNum = searchParams.get('num') || `GD-${Date.now().toString().substring(5)}`;
-  const dateStr = searchParams.get('date') || new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  
+  let invoiceNum = searchParams.get('num') || '2026-0819';
+  if (invoiceNum.startsWith('GD-') || invoiceNum.includes('MANUAL-') || invoiceNum.includes('ADMIN-')) {
+    invoiceNum = `2026-${invoiceNum.replace(/[^0-9]/g, '').slice(-4) || '0819'}`;
+  }
 
-  const productMatch = DEFAULT_PRODUCTS.find(p => p.id === productId || p.slug === productId);
-  const title = productMatch ? productMatch.title : 'Formation Vidéo / E-book Guides Digitaux';
-  const price = rawPrice ? parseFloat(rawPrice) : (productMatch ? productMatch.price : 29);
+  const dateStr = searchParams.get('date') || '19 août 2026';
+
+  let title = 'Formation Vidéo : Optimiser sa Fiche Google Business Profile';
+  if (productId !== 'precommande-fiche-google') {
+    const productMatch = DEFAULT_PRODUCTS.find(p => p.id === productId || p.slug === productId);
+    if (productMatch) title = productMatch.title;
+  }
+  
+  const price = rawPrice ? parseFloat(rawPrice) : 29;
 
   const invoiceData: InvoiceData = {
     invoiceNumber: invoiceNum,
