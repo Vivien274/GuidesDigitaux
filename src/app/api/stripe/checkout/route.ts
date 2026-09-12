@@ -108,6 +108,33 @@ export async function POST(request: Request) {
     // 1. If real Stripe test key is configured in env, create real Stripe Checkout Session
     if (hasRealStripeKey) {
       const stripe = new Stripe(secretKey);
+
+      if (body.embedded) {
+        const session = await stripe.checkout.sessions.create({
+          ui_mode: 'embedded' as any,
+          payment_method_types: is3x ? ['card', 'klarna'] : ['card'],
+          customer_email: customerEmail ? customerEmail.toLowerCase().trim() : undefined,
+          line_items: lineItems,
+          mode: 'payment',
+          allow_promotion_codes: true,
+          return_url: resolvedSuccessUrl.includes('{CHECKOUT_SESSION_ID}') ? resolvedSuccessUrl : `${siteUrl}/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=${courseId || 'formation-fiche-google'}`,
+          metadata: {
+            courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
+            productId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
+            isPreorder: isPreorder ? 'true' : 'false',
+            releaseDate: releaseDate || '',
+            newsletterOptIn: body.newsletterOptIn ? 'true' : 'false',
+          },
+        });
+
+        return NextResponse.json({ 
+          clientSecret: session.client_secret, 
+          sessionId: session.id,
+          url: session.url,
+          mode: 'live_stripe_embedded' 
+        });
+      }
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: is3x ? ['card', 'klarna'] : ['card'],
         customer_email: customerEmail ? customerEmail.toLowerCase().trim() : undefined,

@@ -12,7 +12,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  */
 export async function fetchCoursesFromDb(): Promise<Course[]> {
   try {
-    const { data: courses, error } = await supabase
+    const fetchPromise = supabase
       .from('courses')
       .select(`
         id,
@@ -43,6 +43,15 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
           )
         )
       `);
+
+    const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
+      setTimeout(() => resolve({ data: null, error: new Error('Timeout') }), 1500)
+    );
+
+    const { data: courses, error } = await Promise.race([fetchPromise, timeoutPromise]);
+    if (!courses || courses.length === 0) {
+      return getStoredCourses();
+    }
 
     const filteredCourses = (courses || []).filter((c: any) => {
       const titleLower = (c.title || '').toLowerCase().trim();

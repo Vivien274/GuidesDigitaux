@@ -74,46 +74,90 @@ export default function FormationViewerPage() {
 
   useEffect(() => {
     async function syncCourse() {
-      setIsLoading(true);
-      const dbCourses = await fetchCoursesFromDb();
-      let match = (dbCourses || []).find(c => 
-        c.id === slug || 
-        (c as any).slug === slug ||
-        (slug === 'creation-gmb' && (c.id === '17873181-7987-4000-a000-000000000000' || c.title.toLowerCase().includes('google'))) ||
-        (slug === 'formation-woocommerce' && (c.id === 'c2' || c.title.toLowerCase().includes('woocommerce'))) ||
-        (slug === 'creer-sa-vitrine-wordpress' && (c.id === 'c1' || c.title.toLowerCase().includes('wordpress')))
-      );
-
-      if (!match) {
+      try {
         const localCourses = getStoredCourses();
-        match = localCourses.find(c => c.id === slug || (c as any).slug === slug);
-      }
 
-      if (!match || !match.modules || match.modules.length === 0) {
-        notFound();
-        return;
-      }
+        const findMatch = (list: any[]) => {
+          const cleanSlug = slug.toLowerCase();
 
-      const formatted = {
-        id: match.id,
-        title: match.title,
-        instructor: 'Stéphanie ROCQ',
-        congratulationsMsg: match.congratulationsMsg || 'Félicitations pour l’accomplissement de cette formation !',
-        bonusDocTitle: match.bonusDocTitle || 'Fiche bonus de conclusion',
-        bonusDocUrl: match.bonusDocUrl || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp',
-        communityLink: match.communityLink,
-        liveStreamUrl: match.liveStreamUrl,
-        liveStreamDate: match.liveStreamDate,
-        liveStreamTitle: match.liveStreamTitle,
-        modules: match.modules
-      };
+          // 1. Match direct ID / slug
+          const exact = list.find(c => (c.id && c.id.toLowerCase() === cleanSlug) || (c.slug && c.slug.toLowerCase() === cleanSlug));
+          if (exact) return exact;
 
-      setCourseData(formatted);
-      if (formatted.modules[0]?.lessons?.length > 0) {
-        setActiveLesson(formatted.modules[0].lessons[0]);
+          // 2. Combo / Bundle
+          if (cleanSlug.includes('bundle') || cleanSlug.includes('combo')) {
+            const wpCourse = list.find(c => (c.slug && c.slug.includes('wordpress')) || c.id === '11111111-1111-4111-a111-111111111111');
+            const wcCourse = list.find(c => (c.slug && c.slug.includes('woocommerce')) || c.id === '22222222-2222-4222-a222-222222222222');
+            if (wpCourse && wcCourse) {
+              return {
+                id: 'bundle-combo-vitrine-boutique',
+                slug: slug,
+                title: 'Bundle : Vitrine + Boutique WordPress (Le Combo Intégral)',
+                modules: [...(wpCourse.modules || []), ...(wcCourse.modules || [])],
+                congratulationsMsg: 'Félicitations ! Vous avez terminé l’intégralité du Bundle Vitrine + Boutique WooCommerce !'
+              };
+            }
+          }
+
+          // 3. Formation Fiche Google
+          if (cleanSlug.includes('google') || cleanSlug.includes('gmb')) {
+            const gCourse = list.find(c => (c.slug && c.slug.includes('google')) || c.id === '33333333-3333-4333-a333-333333333333' || (c.title && c.title.toLowerCase().includes('google')));
+            if (gCourse) return gCourse;
+          }
+
+          // 4. Formation WooCommerce
+          if (cleanSlug.includes('woocommerce') || cleanSlug.includes('boutique')) {
+            const wcCourse = list.find(c => (c.slug && c.slug.includes('woocommerce')) || c.id === '22222222-2222-4222-a222-222222222222' || (c.title && c.title.toLowerCase().includes('woocommerce')));
+            if (wcCourse) return wcCourse;
+          }
+
+          // 5. Formation WordPress
+          if (cleanSlug.includes('wordpress') || cleanSlug.includes('vitrine')) {
+            const wpCourse = list.find(c => (c.slug && c.slug.includes('wordpress')) || c.id === '11111111-1111-4111-a111-111111111111' || (c.title && c.title.toLowerCase().includes('wordpress')));
+            if (wpCourse) return wpCourse;
+          }
+
+          return null;
+        };
+
+        let match = findMatch(localCourses);
+
+        if (!match) {
+          try {
+            const dbCourses = await fetchCoursesFromDb();
+            match = findMatch(dbCourses || []);
+          } catch (dbErr) {
+            console.warn('DB course fetch error:', dbErr);
+          }
+        }
+
+        if (match && match.modules && match.modules.length > 0) {
+          const formatted = {
+            id: match.id,
+            title: match.title,
+            instructor: 'Stéphanie ROCQ',
+            congratulationsMsg: match.congratulationsMsg || 'Félicitations pour l’accomplissement de cette formation !',
+            bonusDocTitle: match.bonusDocTitle || 'Fiche bonus de conclusion',
+            bonusDocUrl: match.bonusDocUrl || 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp',
+            communityLink: match.communityLink,
+            liveStreamUrl: match.liveStreamUrl,
+            liveStreamDate: match.liveStreamDate,
+            liveStreamTitle: match.liveStreamTitle,
+            modules: match.modules
+          };
+
+          setCourseData(formatted);
+          if (formatted.modules[0]?.lessons?.length > 0) {
+            setActiveLesson(formatted.modules[0].lessons[0]);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading formation:', err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
+
     syncCourse();
   }, [slug]);
 

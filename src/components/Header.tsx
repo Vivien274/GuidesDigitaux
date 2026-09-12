@@ -141,17 +141,30 @@ export default function Header() {
             {mounted && isLoggedIn && user ? (
               <>
                 {role === 'superadmin' && (
-                  <Link 
-                    href="/dashboard/formateur" 
-                    className={`transition-colors flex items-center gap-1.5 pb-1 ${
-                      isActive('/dashboard/formateur')
-                        ? 'text-[#18757d] font-bold border-b-2 border-[#18757d]' 
-                        : 'hover:text-[#18757d]'
-                    }`}
-                  >
-                    <GraduationCap className="w-3.5 h-3.5 text-[#18757d]" />
-                    <span>Studio Formations</span>
-                  </Link>
+                  <>
+                    <Link 
+                      href="/dashboard/eleve" 
+                      className={`transition-colors flex items-center gap-1.5 pb-1 ${
+                        isActive('/dashboard/eleve')
+                          ? 'text-[#18757d] font-bold border-b-2 border-[#18757d]' 
+                          : 'hover:text-[#18757d]'
+                      }`}
+                    >
+                      <UserCheck className="w-3.5 h-3.5 text-[#18757d]" />
+                      <span>Espace Élève (Tous les cours)</span>
+                    </Link>
+                    <Link 
+                      href="/dashboard/formateur" 
+                      className={`transition-colors flex items-center gap-1.5 pb-1 ${
+                        isActive('/dashboard/formateur')
+                          ? 'text-[#18757d] font-bold border-b-2 border-[#18757d]' 
+                          : 'hover:text-[#18757d]'
+                      }`}
+                    >
+                      <GraduationCap className="w-3.5 h-3.5 text-[#18757d]" />
+                      <span>Studio Formations</span>
+                    </Link>
+                  </>
                 )}
                 <Link 
                   href={getDashboardLink()} 

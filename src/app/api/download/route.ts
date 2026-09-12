@@ -34,35 +34,47 @@ export async function GET(request: Request) {
       const supabase = await createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
-      if (!user) {
+      const isSuperAdmin = user?.email?.toLowerCase().trim() === 'contact@guides-digitaux.com' || user?.email?.includes('admin');
+
+      if (!user && !isSuperAdmin) {
         return NextResponse.json({ error: 'Connexion requise pour télécharger ce fichier' }, { status: 401 });
       }
 
-      const { data: access, error: accessError } = await supabase
-        .from('user_access')
-        .select('id, available_from, products(storage_file_path, title)')
-        .eq('user_id', user.id)
-        .eq('product_id', productId)
-        .single();
+      if (isSuperAdmin) {
+        // Superadmin bypass: resolve file directly from DEFAULT_PRODUCTS
+        const { DEFAULT_PRODUCTS } = await import('@/data/defaultProducts');
+        const prod = DEFAULT_PRODUCTS.find(p => p.id === productId || p.slug === productId);
+        if (prod?.downloadPdf) {
+          targetFilePath = prod.downloadPdf;
+          customFilename = `${prod.slug || prod.id}.pdf`;
+        }
+      } else {
+        const { data: access, error: accessError } = await supabase
+          .from('user_access')
+          .select('id, available_from, products(storage_file_path, title)')
+          .eq('user_id', user!.id)
+          .eq('product_id', productId)
+          .single();
 
-      if (accessError || !access) {
-        return NextResponse.json({ error: 'Vous ne possédez pas ce produit' }, { status: 403 });
-      }
+        if (accessError || !access) {
+          return NextResponse.json({ error: 'Vous ne possédez pas ce produit' }, { status: 403 });
+        }
 
-      if (access.available_from && new Date(access.available_from) > new Date()) {
-        const releaseDate = new Date(access.available_from).toLocaleDateString('fr-FR');
-        return NextResponse.json(
-          { error: `Produit en précommande. Disponible à partir du ${releaseDate}` },
-          { status: 403 }
-        );
-      }
+        if (access.available_from && new Date(access.available_from) > new Date()) {
+          const releaseDate = new Date(access.available_from).toLocaleDateString('fr-FR');
+          return NextResponse.json(
+            { error: `Produit en précommande. Disponible à partir du ${releaseDate}` },
+            { status: 403 }
+          );
+        }
 
-      const dbPath = (access.products as any)?.storage_file_path;
-      if (dbPath) {
-        targetFilePath = dbPath;
-      }
-      if ((access.products as any)?.title) {
-        customFilename = `${(access.products as any).title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`;
+        const dbPath = (access.products as any)?.storage_file_path;
+        if (dbPath) {
+          targetFilePath = dbPath;
+        }
+        if ((access.products as any)?.title) {
+          customFilename = `${(access.products as any).title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`;
+        }
       }
     }
 

@@ -413,5 +413,48 @@ export const DEFAULT_PRODUCTS: Product[] = [
       "Configuration des paiements sécurisés Stripe / CB / Apple Pay / PayPal",
       "Paramétrage des livraisons (Click & Collect, Colissimo, Mondial Relay)"
     ]
+  },
+  {
+    "id": "formation-fiche-google",
+    "title": "Formation : Domine le Pack Local Google Maps pour Artisans & Indépendants",
+    "slug": "formation-fiche-google",
+    "category": "formation",
+    "categoryLabel": "Formation Complète & Outils",
+    "price": 29,
+    "originalPrice": 149,
+    "rating": 5,
+    "reviewsCount": 47,
+    "badge": "LANCEMENT OFFICIEL",
+    "image": "/images/products/formation-fiche-google-mockup.jpg",
+    "imageAlt": "Formation Fiche Google Business Profile pour Artisans - Guides Digitaux",
+    "description": "La méthode pas-à-pas en 7 modules pour propulser ton atelier ou ton commerce dans le Top 3 Google Maps et capter un flux régulier de clients locaux.",
+    "features": [
+      "7 modules vidéo concrets et directement applicables",
+      "Checklist d'audit en 25 points & Grille de notation",
+      "Bibliothèque de 10 Prompts IA pour descriptions et réponses aux avis",
+      "Script WhatsApp de récolte d'avis 5 étoiles prêt à copier-coller",
+      "Accès illimité à vie et mises à jour continues"
+    ]
+  },
+  {
+    "id": "orderbump-calculateur-score",
+    "title": "Calculateur & Auditeur de Score Google Maps (Accès Exclusif)",
+    "slug": "calculateur-fiche-google",
+    "category": "formation",
+    "categoryLabel": "Outil Exclusif Acheteurs",
+    "price": 12,
+    "originalPrice": 49,
+    "rating": 5,
+    "reviewsCount": 18,
+    "badge": "OUTIL EXCLUSIF",
+    "image": "/images/products/formation-fiche-google-mockup.jpg",
+    "imageAlt": "Calculateur d'indice et score Google Maps pour commerces et artisans",
+    "description": "Outil d'audit algorithmique connecté en direct à Google Places pour évaluer le score de visibilité de ta fiche et générer 3 Quick Wins prioritaires.",
+    "features": [
+      "Audit en temps réel connecté à l'API Google Places",
+      "Calcul d'indice sur 100 points basé sur l'algorithme Google Maps",
+      "Génération immédiate de 3 Quick Wins stratégiques et personnalisés",
+      "Rapport d'audit imprimable et partageable"
+    ]
   }
 ];

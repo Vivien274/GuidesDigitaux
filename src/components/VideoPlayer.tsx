@@ -19,17 +19,19 @@ export default function VideoPlayer({ url, poster }: VideoPlayerProps) {
   // YouTube URL Converter
   const getYouTubeEmbedUrl = (rawUrl: string): string | null => {
     try {
+      let videoId = '';
       if (rawUrl.includes('youtube.com/embed/')) {
-        return rawUrl;
-      }
-      if (rawUrl.includes('youtube.com/watch')) {
+        videoId = rawUrl.split('youtube.com/embed/')[1]?.split('?')[0];
+      } else if (rawUrl.includes('youtube.com/watch')) {
         const urlParams = new URLSearchParams(rawUrl.split('?')[1]);
-        const v = urlParams.get('v');
-        if (v) return `https://www.youtube-nocookie.com/embed/${v}?autoplay=0&rel=0`;
+        videoId = urlParams.get('v') || '';
+      } else if (rawUrl.includes('youtu.be/')) {
+        videoId = rawUrl.split('youtu.be/')[1]?.split('?')[0] || '';
       }
-      if (rawUrl.includes('youtu.be/')) {
-        const id = rawUrl.split('youtu.be/')[1]?.split('?')[0];
-        if (id) return `https://www.youtube-nocookie.com/embed/${id}?autoplay=0&rel=0`;
+
+      if (videoId) {
+        // Paramètres stricts pour masquer le logo, les recommandations et supprimer les mentions YouTube
+        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&playsinline=1&controls=1&fs=1&color=white`;
       }
     } catch (e) {
       console.error('Error parsing YouTube URL', e);
@@ -45,7 +47,7 @@ export default function VideoPlayer({ url, poster }: VideoPlayerProps) {
       }
       if (rawUrl.includes('vimeo.com/')) {
         const id = rawUrl.split('vimeo.com/')[1]?.split('?')[0];
-        if (id) return `https://player.vimeo.com/video/${id}`;
+        if (id) return `https://player.vimeo.com/video/${id}?title=0&byline=0&portrait=0`;
       }
     } catch (e) {
       console.error('Error parsing Vimeo URL', e);
@@ -59,10 +61,10 @@ export default function VideoPlayer({ url, poster }: VideoPlayerProps) {
   // If YouTube link
   if (youtubeUrl) {
     return (
-      <div className="w-full aspect-video bg-black rounded-3xl overflow-hidden shadow-xl border border-slate-800">
+      <div className="w-full aspect-video bg-black rounded-3xl overflow-hidden shadow-xl border border-slate-800 relative group">
         <iframe
           src={youtubeUrl}
-          title="Lecteur Vidéo YouTube"
+          title="Lecteur Vidéo Formation"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           className="w-full h-full border-0"

@@ -6,7 +6,7 @@ import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { Suspense } from "react";
 import MetaPixel from "@/components/MetaPixel";
-import { FB_PIXEL_ID_1, FB_PIXEL_ID_2 } from "@/lib/metaPixel";
+import { FB_PIXEL_ID_1, FB_PIXEL_IDS } from "@/lib/metaPixel";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import AccessibilityWidget from "@/components/AccessibilityWidget";
@@ -89,27 +89,22 @@ export default function RootLayout({
               t.src=v;s=b.getElementsByTagName(e)[0];
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '${FB_PIXEL_ID_1}');
-              fbq('init', '${FB_PIXEL_ID_2}');
+              ${FB_PIXEL_IDS.map((id) => `fbq('init', '${id}');`).join('\n              ')}
               fbq('track', 'PageView');
             `,
           }}
         />
         <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: 'none' }}
-            src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID_1}&ev=PageView&noscript=1`}
-            alt="Meta Pixel 1"
-          />
-          <img
-            height="1"
-            width="1"
-            style={{ display: 'none' }}
-            src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID_2}&ev=PageView&noscript=1`}
-            alt="Meta Pixel 2"
-          />
+          {FB_PIXEL_IDS.map((id) => (
+            <img
+              key={id}
+              height="1"
+              width="1"
+              style={{ display: 'none' }}
+              src={`https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1`}
+              alt={`Meta Pixel ${id}`}
+            />
+          ))}
         </noscript>
         <Suspense fallback={null}>
           <MetaPixel />

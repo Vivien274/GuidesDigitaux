@@ -342,8 +342,40 @@ function ConfirmationContent() {
             <span>Un e-mail contenant votre reçu, vos accès et vos liens de téléchargement PDF a été envoyé à <strong>{activeEmail}</strong></span>
           </div>
 
+          {/* ORDER BUMP UNLOCKED TOOL BOX */}
+          {isMounted && (searchParams.get('orderbump') === '1' || resolvedPrice >= 40) && (
+            <div className="p-6 bg-gradient-to-r from-amber-50 to-amber-100/70 rounded-3xl border-2 border-amber-300 text-left space-y-4 shadow-md">
+              <div className="flex items-center justify-between gap-2 border-b border-amber-200 pb-3">
+                <div className="flex items-center gap-2 text-amber-950 font-extrabold text-sm">
+                  <Sparkles className="w-5 h-5 text-amber-600 shrink-0" />
+                  <h3>Option Order Bump Débloquée : Calculateur de Score &amp; 3 Quick Wins</h3>
+                </div>
+                <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-extrabold uppercase rounded-full tracking-wider">
+                  Accès Immédiat
+                </span>
+              </div>
+              <div className="p-4 bg-white rounded-2xl border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+                <div className="space-y-1">
+                  <h4 className="text-xs font-black text-[#332420]">
+                    Calculateur de Score Fiche Google &amp; Audit Express
+                  </h4>
+                  <p className="text-[11px] text-[#5e4d46]">
+                    Calculez la note de votre fiche de 0 à 100 et débloquez vos 3 actions correctives prioritaires sur-mesure.
+                  </p>
+                </div>
+                <Link
+                  href="/outils/calculateur-fiche-google"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  Lancer mon Calculateur de Score →
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* PREORDER 3 BONUS DOWNLOAD BOX */}
-          {isMounted && isPreorder && (
+          {isMounted && (isPreorder || courseId.includes('formation-fiche-google')) && (
             <div className="p-6 bg-[#e6f4f3] rounded-3xl border-2 border-[#18757d]/40 text-left space-y-4 shadow-md">
               <div className="flex items-center justify-between gap-2 border-b border-[#bce3e0] pb-3">
                 <div className="flex items-center gap-2 text-[#18757d] font-extrabold text-sm">

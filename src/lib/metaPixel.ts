@@ -1,8 +1,9 @@
-export const FB_PIXEL_ID_1 = process.env.NEXT_PUBLIC_META_PIXEL_ID || '9330486780351572';
-export const FB_PIXEL_ID_2 = process.env.NEXT_PUBLIC_META_PIXEL_ID_2 || '52580458670170';
+export const FB_PIXEL_ID_1 = process.env.NEXT_PUBLIC_META_PIXEL_ID || '1531523095044984';
+export const FB_PIXEL_ID_2 = process.env.NEXT_PUBLIC_META_PIXEL_ID_2 || '9330486780351572';
+export const FB_PIXEL_ID_3 = '52580458670170';
 
 export const FB_PIXEL_ID = FB_PIXEL_ID_1;
-export const FB_PIXEL_IDS = [FB_PIXEL_ID_1, FB_PIXEL_ID_2].filter(Boolean);
+export const FB_PIXEL_IDS = [FB_PIXEL_ID_1, FB_PIXEL_ID_2, FB_PIXEL_ID_3].filter(Boolean);
 
 declare global {
   interface Window {

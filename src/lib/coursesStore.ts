@@ -79,6 +79,7 @@ export interface Course {
 const DEFAULT_COURSES: Course[] = [
   {
     id: '11111111-1111-4111-a111-111111111111',
+    slug: 'formation-wordpress',
     title: 'Formation : créer sa vitrine en ligne avec WordPress',
     description: 'Le cursus vidéo pas-à-pas pour concevoir un site vitrine professionnel de A à Z avec WordPress et Elementor sans coder.',
     duration: '3h30',
@@ -357,6 +358,7 @@ const DEFAULT_COURSES: Course[] = [
   },
   {
     id: '22222222-2222-4222-a222-222222222222',
+    slug: 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
     title: 'Formation ajouter une boutique en ligne avec WooCommerce',
     description: 'La formation pratique pour intégrer une boutique en ligne e-commerce complète à ton site WordPress et encaisser par carte bancaire.',
     duration: '2h15',
@@ -398,102 +400,102 @@ const DEFAULT_COURSES: Course[] = [
       },
       {
         id: 'mod-wc-2',
-        title: '📦 Module 2 – Fiches Produits & Gestion des Stocks',
+        title: '📦 Module 2 – Créer ses Fiches Produits & Variantes',
         lessons: [
           {
             id: 'les-wc-2-1',
-            title: '2.1 Créer une fiche produit simple avec galerie photos HD',
+            title: '2.1 Création d’un produit simple avec photos optimisées',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '14:20',
-            notes: 'Rédaction du descriptif, fixation du prix, ajout des catégories et visuels sous plusieurs angles.'
+            duration: '10:20',
+            notes: 'Mettre en valeur son savoir-faire artisanal avec un descriptif clair et des visuels soignés.'
           },
           {
             id: 'les-wc-2-2',
-            title: '2.2 Créer des produits à variations (tailles, couleurs, déclinaisons)',
+            title: '2.2 Produits variables (tailles, coloris, options sur-mesure)',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '16:50',
-            notes: 'Mise en place des attributs de produits pour permettre au client de choisir sa déclinaison.'
+            duration: '12:45',
+            notes: 'Création d’attributs et de variations de stock et prix pour les déclinaisons.'
           },
           {
             id: 'les-wc-2-3',
-            title: '2.3 Vendre des produits téléchargeables & e-books',
+            title: '2.3 Gestion des catégories de produits et étiquettes',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '10:15',
-            notes: 'Configuration de la livraison automatique sécurisée par lien de téléchargement PDF.'
+            duration: '08:10',
+            notes: 'Organisation claire du catalogue pour faciliter la navigation des visiteurs.'
           },
           {
             id: 'les-wc-2-4',
-            title: '2.4 Gestion automatisée des stocks et alertes de rupture',
+            title: '2.4 Mise en place des ventes croisées et produits suggérés',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '08:30',
-            notes: 'Définition des seuils de stock et réception d’alertes e-mail quand le stock faiblit.'
+            duration: '07:50',
+            notes: 'Booster son panier moyen grâce au cross-sell et up-sell.'
           }
         ]
       },
       {
         id: 'mod-wc-3',
-        title: '💳 Module 3 – Configuration des Passerelles de Paiement',
+        title: '🚚 Module 3 – Configurer les Modes de Livraison',
         lessons: [
           {
             id: 'les-wc-3-1',
-            title: '3.1 Connecter Stripe pour accepter les cartes bancaires & Apple Pay',
+            title: '3.1 Zones d’expédition et tarifs personnalisés',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '13:45',
-            notes: 'Association de ton compte Stripe avec les clés d’API sécurisées.'
+            duration: '11:00',
+            notes: 'Configuration des frais de port pour la France métropolitaine et l’international.'
           },
           {
             id: 'les-wc-3-2',
-            title: '3.2 Connecter PayPal Express Checkout',
+            title: '3.2 Livraison Colissimo, Mondial Relay et Click & Collect à l’atelier',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '09:20',
-            notes: 'Ajout de la possibilité de régler avec son solde ou compte PayPal en 1 clic.'
+            duration: '13:30',
+            notes: 'Offrir le retrait gratuit à l’atelier et les points relais les plus avantageux.'
           },
           {
             id: 'les-wc-3-3',
-            title: '3.3 Passer commande en mode test pour tout valider',
+            title: '3.3 Livraison offerte à partir d’un montant d’achat',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '07:50',
-            notes: 'Exécution d’une vraie commande de test avec des numéros de carte factices.'
+            duration: '06:45',
+            notes: 'Mettre en place le franco de port pour inciter à commander davantage.'
           }
         ]
       },
       {
         id: 'mod-wc-4',
-        title: '🚚 Module 4 – Modes de Livraison & Retrait Atelier',
+        title: '💳 Module 4 – Encaisser par Carte Bancaire avec Stripe & PayPal',
         lessons: [
           {
             id: 'les-wc-4-1',
-            title: '4.1 Configurer le Click & Collect (retrait atelier)',
+            title: '4.1 Création et liaison du compte Stripe professionnel',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '08:40',
-            notes: 'Option idéale pour les artisans locaux permettant un retrait sur place sans frais de port.'
+            duration: '10:15',
+            notes: 'Configuration du compte bancaire pour recevoir automatiquement les virements de ventes.'
           },
           {
             id: 'les-wc-4-2',
-            title: '4.2 Paramétrer Colissimo & Mondial Relay',
+            title: '4.2 Intégration du paiement Apple Pay et Google Pay en 1 clic',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '12:30',
-            notes: 'Calcul des frais de port au poids ou tarif forfaitaire selon la destination.'
+            duration: '08:40',
+            notes: 'Permettre aux acheteurs mobiles de commander en 5 secondes sans saisir leur numéro de carte.'
           },
           {
             id: 'les-wc-4-3',
-            title: '4.3 Offrir la livraison gratuite selon le montant du panier',
+            title: '4.3 Tests de paiement en mode Sandbox avant le lancement',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '06:50',
-            notes: 'Création d’un code promo ou règle de franco de port à partir de 50 €.'
+            duration: '07:20',
+            notes: 'Passer une commande test réelle pour valider l’ensemble du tunnel de vente.'
           }
         ]
       },
       {
         id: 'mod-wc-5',
-        title: '📊 Module 5 – Traitement des Commandes & Factures',
+        title: '📊 Module 5 – Traitement des Commandes & Facturation',
         lessons: [
           {
             id: 'les-wc-5-1',
-            title: '5.1 Traiter une commande et générer l’étiquette d’expédition',
+            title: '5.1 Tableau de bord des commandes et suivi des statuts',
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-            duration: '10:10',
-            notes: 'Suivi des statuts (En attente, En cours de traitement, Terminé).'
+            duration: '09:10',
+            notes: 'Passer les commandes de « En cours » à « Terminée » et envoyer le numéro de suivi au client.'
           },
           {
             id: 'les-wc-5-2',
@@ -508,6 +510,137 @@ const DEFAULT_COURSES: Course[] = [
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
             duration: '09:30',
             notes: 'Dernière vérification avant la communication officielle sur tes réseaux et newsletter.'
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: '33333333-3333-4333-a333-333333333333',
+    slug: 'formation-fiche-google',
+    title: 'Formation : Domine le Pack Local Google Maps pour Artisans & Indépendants',
+    description: 'La méthode pas-à-pas en 7 modules vidéo pour propulser ton atelier ou ton commerce dans le Top 3 Google Maps et capter un flux régulier de clients locaux.',
+    duration: '2h45',
+    level: 'Tous niveaux',
+    prerequisites: 'Avoir ou vouloir créer une Fiche Google Business Profile pour son activité.',
+    price: 29,
+    originalPrice: 149,
+    image: '/images/products/formation-fiche-google-mockup.jpg',
+    status: 'Publié',
+    category: 'formation',
+    congratulationsMsg: 'Félicitations ! Tu as complété l’ensemble des 7 modules de la Formation Fiche Google. Ta visibilité locale est maintenant blindée pour le Top 3 !',
+    bonusDocTitle: 'Checklist d\'Audit en 25 Points & Scripts Avis WhatsApp',
+    bonusDocUrl: '/downloads/support-formation-woocommerce.pdf',
+    modules: [
+      {
+        id: 'mod-gmb-1',
+        title: '📍 Module 1 – Les Fondations de l\'Algorithme Google Maps',
+        lessons: [
+          {
+            id: 'les-gmb-1-1',
+            title: '1.1 Comment fonctionne le Pack Local Google et les 3 facteurs de classement',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '08:30',
+            notes: 'Comprendre la pertinence, la distance et la proéminence pour dominer la concurrence locale.'
+          },
+          {
+            id: 'les-gmb-1-2',
+            title: '1.2 Audit express de sa fiche actuelle et détection des pénalités',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '10:15',
+            notes: 'Utilisation de la grille d’audit en 25 points pour identifier vos fuites de visibilité.'
+          }
+        ]
+      },
+      {
+        id: 'mod-gmb-2',
+        title: '🛠️ Module 2 – Configuration & Catégorisation Stratégique',
+        lessons: [
+          {
+            id: 'les-gmb-2-1',
+            title: '2.1 Choisir la catégorie principale qui draine 80% du trafic',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '09:20',
+            notes: 'La différence cruciale entre catégorie principale et catégories secondaires.'
+          },
+          {
+            id: 'les-gmb-2-2',
+            title: '2.2 Définir sa zone de chalandise pour artisans et ateliers sans vitrine',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '11:45',
+            notes: 'Comment configurer correctement une entreprise de zone de service (SAB) sans risque de suspension.'
+          }
+        ]
+      },
+      {
+        id: 'mod-gmb-3',
+        title: '✍️ Module 3 – Description Vendeuse & Prompts IA',
+        lessons: [
+          {
+            id: 'les-gmb-3-1',
+            title: '3.1 Rédiger les 750 caractères parfaits avec les 10 Prompts IA',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '12:10',
+            notes: 'Intégrer vos mots-clés de savoir-faire artisanal couplés à vos villes cibles.'
+          }
+        ]
+      },
+      {
+        id: 'mod-gmb-4',
+        title: '📸 Module 4 – Photos Vendeuses & Google Vision AI',
+        lessons: [
+          {
+            id: 'les-gmb-4-1',
+            title: '4.1 Optimisation des photos d\'atelier et lecture par l\'IA de Google',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '10:50',
+            notes: 'Comment Google Vision analyse vos images pour classer votre fiche.'
+          }
+        ]
+      },
+      {
+        id: 'mod-gmb-5',
+        title: '🛍️ Module 5 – Produits, Prestations & Menus Interactifs',
+        lessons: [
+          {
+            id: 'les-gmb-5-1',
+            title: '5.1 Ajouter ses créations et services avec boutons d\'action directe',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '13:00',
+            notes: 'Transformer sa fiche Google en catalogue e-commerce miniature qui génère des appels.'
+          }
+        ]
+      },
+      {
+        id: 'mod-gmb-6',
+        title: '⭐ Module 6 – La Machine à Avis 5 Étoiles & Réponses SEO',
+        lessons: [
+          {
+            id: 'les-gmb-6-1',
+            title: '6.1 Les scripts WhatsApp, SMS et e-mail à envoyer après chaque prestation',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '14:20',
+            notes: 'Modèles de messages prêts à copier-coller pour obtenir un avis 5 étoiles en moins de 48h.'
+          },
+          {
+            id: 'les-gmb-6-2',
+            title: '6.2 Répondre aux avis avec les mots-clés stratégiques pour doper le NLP Google',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '11:15',
+            notes: 'Kit des 10 réponses types (avis élogieux et avis délicats).'
+          }
+        ]
+      },
+      {
+        id: 'mod-gmb-7',
+        title: '🚀 Module 7 – Routine 5 min/Semaine & Posts Google',
+        lessons: [
+          {
+            id: 'les-gmb-7-1',
+            title: '7.1 La routine hebdomadaire en 5 minutes pour maintenir sa position Top 3',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '09:40',
+            notes: 'Publication de posts Google, analyse des statistiques et suivi de la concurrence.'
           }
         ]
       }

@@ -20,6 +20,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/tunnel/formation-fiche-google`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.95,
+    },
+    {
       url: `${baseUrl}/tunnel/precommande-fiche-google`,
       lastModified: new Date(),
       changeFrequency: 'daily',
@@ -70,12 +76,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // 2. Fiches Produits & Guides PDF
-  const productPages: MetadataRoute.Sitemap = DEFAULT_PRODUCTS.map((prod) => ({
-    url: `${baseUrl}/produit/${prod.slug || prod.id}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.8,
-  }));
+  const productPages: MetadataRoute.Sitemap = DEFAULT_PRODUCTS
+    .filter((prod) => prod.id !== 'orderbump-calculateur-score')
+    .map((prod) => ({
+      url: `${baseUrl}/produit/${prod.slug || prod.id}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    }));
 
   // 3. Formations vidéo
   const formationPages: MetadataRoute.Sitemap = [
