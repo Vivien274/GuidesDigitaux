@@ -260,51 +260,74 @@ export default function TunnelFormationFicheGooglePage() {
 
   const modules = [
     {
-      title: "📍 Module 1 – Les Fondations de l'Algorithme Google Maps",
+      title: "Bienvenue et mise en route sans stress",
+      coursesCount: 3,
       lessons: [
-        "1.1 Comment fonctionne le Pack Local Google et les 3 facteurs de classement : Comprendre la pertinence, la distance et la proéminence pour dominer la concurrence locale.",
-        "1.2 Audit express de sa fiche actuelle et détection des pénalités : Utilisation de la grille d’audit en 25 points pour identifier vos fuites de visibilité."
+        "Comprendre l'anatomie exacte d'une fiche Google à fort impact pour capter les regards dès la première seconde.",
+        "Identifier et préparer vos éléments indispensables pour avancer sereinement, sans stress technique ni perte de temps.",
+        "Poser des fondations solides pour sécuriser la propriété et l'autorité de votre profil d'établissement dès le départ."
       ]
     },
     {
-      title: "🛠️ Module 2 – Configuration & Catégorisation Stratégique",
+      title: "Créer et valider sa fiche dans les règles de l'art",
+      coursesCount: 6,
+      badge: "⭐ Validation Vidéo Incluse",
       lessons: [
-        "2.1 Choisir la catégorie principale qui draine 80% du trafic : La différence cruciale entre catégorie principale et catégories secondaires.",
-        "2.2 Définir sa zone de chalandise pour artisans et ateliers sans vitrine : Comment configurer correctement une entreprise de zone de service (SAB) sans risque de suspension.",
-        "2.6 Validation de sa fiche par vidéo : Le protocole en 3 piliers pour faire valider son atelier du premier coup sans blocage."
+        "Détecter et révoquer les doublons dormants pour vous prémunir contre les pénalités et suspensions d'algorithme.",
+        "Paramétrer le nom exact et la zone géographique stratégique (idéal pour artisans et ateliers avec ou sans vitrine / SAB).",
+        "Renseigner vos plages horaires réelles et congés exceptionnels pour instaurer une confiance immédiate.",
+        "Maîtriser le protocole complet de validation officielle (y compris la validation vidéo pas-à-pas en 3 piliers) sans jamais rester bloqué.",
+        "Éviter les pièges des options payantes superflues et exploiter 100% de la puissance gratuite de Google."
       ]
     },
     {
-      title: "✍️ Module 3 – Description Vendeuse & Prompts IA",
-      badge: "🔥 10 Prompts IA Inclus",
+      title: "Optimiser sa fiche pour le référencement local (SEO)",
+      coursesCount: 6,
+      badge: "🔥 Prompts IA Inclus",
       lessons: [
-        "3.1 Rédiger les 750 caractères parfaits avec les 10 Prompts IA : Intégrer vos mots-clés de savoir-faire artisanal couplés à vos villes cibles."
+        "Verrouiller la catégorie principale qui concentre 80% des recherches de clients chauds et qualifiés dans votre ville.",
+        "Rédiger une description vendeuse et magnétique grâce à notre bibliothèque de 10 Prompts IA (ChatGPT / Claude).",
+        "Intégrer un bouton d'action directe (réservation / devis) pour transformer les simples visiteurs en clients payants.",
+        "Structurer une offre de services claire et transparente pour lever instantanément tous les freins à l'achat.",
+        "Activer les attributs différenciants de l'onglet « Plus » pour surpasser vos concurrents locaux sur Google Maps."
       ]
     },
     {
-      title: "📸 Module 4 – Photos Vendeuses & Google Vision AI",
+      title: "Visuels et vitrine produits",
+      coursesCount: 3,
       lessons: [
-        "4.1 Optimisation des photos d'atelier et lecture par l'IA de Google : Comment Google Vision analyse vos images pour classer votre fiche."
+        "Sélectionner et nommer vos photos selon les critères décodés par l'IA Google Cloud Vision.",
+        "Publier des vidéos immersives mettant en valeur votre savoir-faire artisanal pour déclencher le coup de cœur client.",
+        "Créer une vitrine produits attractive qui convertit votre fiche Google en véritable catalogue générateur d'appels."
       ]
     },
     {
-      title: "🛍️ Module 5 – Produits, Prestations & Menus Interactifs",
-      lessons: [
-        "5.1 Ajouter ses créations et services avec boutons d'action directe : Transformer sa fiche Google en catalogue e-commerce miniature qui génère des appels."
-      ]
-    },
-    {
-      title: "⭐ Module 6 – La Machine à Avis 5 Étoiles & Réponses SEO",
+      title: "La stratégie avis clients (le levier de confiance)",
+      coursesCount: 3,
       badge: "⭐ Scripts & Kit Inclus",
       lessons: [
-        "6.1 Les scripts WhatsApp, SMS et e-mail à envoyer après chaque prestation : Modèles de messages prêts à copier-coller pour obtenir un avis 5 étoiles en moins de 48h.",
-        "6.2 Répondre aux avis avec les mots-clés stratégiques pour doper le NLP Google : Kit des 10 réponses types (avis élogieux et avis délicats)."
+        "Déployer la méthode douce (WhatsApp, SMS, e-mail) pour récolter 5x plus d'avis 5 étoiles sans jamais insister.",
+        "Automatiser la récolte d'avis au moment émotionnel parfait après chaque vente ou prestation.",
+        "Désamorcer les retours délicats et booster votre SEO local grâce à notre Kit de 10 réponses types prêtes à l'emploi."
       ]
     },
     {
-      title: "🚀 Module 7 – Routine 5 min/Semaine & Posts Google",
+      title: "Animer sa fiche en 10 minutes par mois",
+      coursesCount: 4,
       lessons: [
-        "7.1 La routine hebdomadaire en 5 minutes pour maintenir sa position Top 3 : Publication de posts Google, analyse des statistiques et suivi de la concurrence."
+        "Appliquer la routine express de 10 minutes par mois pour envoyer des signaux de fraîcheur continus à Google.",
+        "Publier des posts d'actualités et offres irrésistibles qui incitent à l'action immédiate.",
+        "Activer la messagerie directe pour échanger en temps réel avec vos prospects sur smartphone.",
+        "Enrichir la Foire Aux Questions (FAQ) pour répondre d'avance aux objections de vos futurs clients."
+      ]
+    },
+    {
+      title: "Suivre ses résultats et aller plus loin",
+      coursesCount: 2,
+      lessons: [
+        "Décrypter vos statistiques concrètes (appels reçus, itinéraires lancés, clics vers le site) sans aucun jargon technique.",
+        "Connecter vos réseaux sociaux pour bâtir un écosystème local cohérent et maximiser votre notoriété.",
+        "Piloter votre visibilité en toute autonomie et consolider durablement votre place dans le Top 3 du Pack Local."
       ]
     }
   ];
@@ -789,7 +812,7 @@ export default function TunnelFormationFicheGooglePage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-slate-400 font-bold">•</span>
-                  <span>Tu fais exclusivement du dropshipping international sans aucune attache ni zone géographique en France.</span>
+                  <span>Tu fais exclusivement du dropshipping international ou tu vends exclusivement en ligne, sans présence locale requise.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-slate-400 font-bold">•</span>
@@ -842,7 +865,7 @@ export default function TunnelFormationFicheGooglePage() {
                             </span>
                           )}
                         </div>
-                        <span className="text-xs text-slate-500 font-semibold">{mod.lessons.length} leçons vidéo concrètes</span>
+                        <span className="text-xs text-slate-500 font-semibold">{mod.coursesCount} cours • Ce que vous allez maîtriser</span>
                       </div>
                     </div>
                     {isOpen ? <ChevronUp className="w-5 h-5 text-[#18757d]" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
@@ -1219,8 +1242,8 @@ export default function TunnelFormationFicheGooglePage() {
                 <h3 className="text-xl font-black text-[#332420] mt-1">Cap Visibilité Google : Le GPS pour Artisans & Créateurs</h3>
                 <p className="text-xs text-slate-500 font-semibold">
                   {hasOrderBump
-                    ? '7 Modules Vidéo HD • Prompts IA • 3 Bonus PDF • Calculateur de Score & 3 Quick Wins'
-                    : '7 Modules Vidéo HD • Prompts IA Inclus • 3 Bonus PDF • Accès Immédiat à vie'}
+                    ? '7 Modules (27 Cours Vidéo) • Prompts IA • 3 Bonus PDF • Calculateur de Score & 3 Quick Wins'
+                    : '7 Modules (27 Cours Vidéo) • Prompts IA Inclus • 3 Bonus PDF • Accès Immédiat à vie'}
                 </p>
               </div>
               <div className="text-right">
