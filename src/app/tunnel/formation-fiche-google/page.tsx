@@ -88,7 +88,7 @@ export default function TunnelFormationFicheGooglePage() {
   useEffect(() => {
     // Tracking Meta Pixel ViewContent
     event('ViewContent', {
-      content_name: 'Formation Fiche Google Business Profile - Lancement Officiel',
+      content_name: 'Cap Visibilité Google - Le GPS du Digital',
       content_ids: ['formation-fiche-google'],
       content_type: 'product',
       value: 29,
@@ -133,8 +133,8 @@ export default function TunnelFormationFicheGooglePage() {
 
     event('InitiateCheckout', {
       content_name: hasOrderBump
-        ? 'Formation Fiche Google + Calculateur de Score Order Bump'
-        : 'Formation Fiche Google Business Profile - Lancement Officiel',
+        ? 'Cap Visibilité Google + Calculateur de Score Order Bump'
+        : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
       content_ids: hasOrderBump ? ['formation-fiche-google', 'orderbump-calculateur-score'] : ['formation-fiche-google'],
       content_type: 'product',
       value: totalAmount,
@@ -146,7 +146,7 @@ export default function TunnelFormationFicheGooglePage() {
         const existing = JSON.parse(localStorage.getItem('gd_enrolled_courses') || '[]');
         const newEnrolled = {
           id: 'formation-fiche-google',
-          title: 'Formation : Dominer le référencement local avec sa Fiche Google',
+          title: 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
           slug: 'formation-fiche-google',
           type: 'formation',
           typeLabel: '⭐ LANCEMENT OFFICIEL (7 Modules + Prompts IA + Bonus)',
@@ -182,8 +182,8 @@ export default function TunnelFormationFicheGooglePage() {
 
     event('InitiateCheckout', {
       content_name: hasOrderBump
-        ? 'Formation Fiche Google + Calculateur de Score Order Bump'
-        : 'Formation Fiche Google Business Profile - Lancement Officiel',
+        ? 'Cap Visibilité Google + Calculateur de Score Order Bump'
+        : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
       content_ids: hasOrderBump ? ['formation-fiche-google', 'orderbump-calculateur-score'] : ['formation-fiche-google'],
       content_type: 'product',
       value: totalAmount,
@@ -196,7 +196,7 @@ export default function TunnelFormationFicheGooglePage() {
         const existing = JSON.parse(localStorage.getItem('gd_enrolled_courses') || '[]');
         const newEnrolled = {
           id: 'formation-fiche-google',
-          title: 'Formation : Dominer le référencement local avec sa Fiche Google',
+          title: 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
           slug: 'formation-fiche-google',
           type: 'formation',
           typeLabel: '⭐ LANCEMENT OFFICIEL (7 Modules + Prompts IA + Bonus)',
@@ -222,11 +222,11 @@ export default function TunnelFormationFicheGooglePage() {
           courseId: 'formation-fiche-google',
           productId: 'formation-fiche-google',
           courseTitle: hasOrderBump
-            ? 'Formation Vidéo (7 Modules) + Calculateur de Score & 3 Quick Wins'
-            : 'Formation Vidéo (7 Modules) : Dominer le référencement local avec sa Fiche Google Business Profile',
+            ? 'Cap Visibilité Google + Calculateur de Score & 3 Quick Wins'
+            : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
           title: hasOrderBump
-            ? 'Formation Vidéo (7 Modules) + Calculateur de Score & 3 Quick Wins'
-            : 'Formation Vidéo (7 Modules) : Dominer le référencement local avec sa Fiche Google Business Profile',
+            ? 'Cap Visibilité Google + Calculateur de Score & 3 Quick Wins'
+            : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
           price: totalAmount,
           hasOrderBump,
           customerEmail: emailInput.trim() || undefined,
@@ -260,75 +260,51 @@ export default function TunnelFormationFicheGooglePage() {
 
   const modules = [
     {
-      title: "Module 1 : Fondations & Création sans blocage de ta Fiche Google",
-      duration: "20 min",
+      title: "📍 Module 1 – Les Fondations de l'Algorithme Google Maps",
       lessons: [
-        "Créer ou revendiquer ta fiche d'établissement sans risquer la suspension",
-        "Le choix du titre exact de ton entreprise (règles strictes anti-pénalité)",
-        "Validation officielle Google : méthodes instantanées vs vidéo/courrier",
-        "Vérification des coordonnées, horaires normaux et congés exceptionnels"
+        "1.1 Comment fonctionne le Pack Local Google et les 3 facteurs de classement : Comprendre la pertinence, la distance et la proéminence pour dominer la concurrence locale.",
+        "1.2 Audit express de sa fiche actuelle et détection des pénalités : Utilisation de la grille d’audit en 25 points pour identifier vos fuites de visibilité."
       ]
     },
     {
-      title: "Module 2 : Catégories Stratégiques & Zone de Chalandise Délimitée",
-      duration: "15 min",
+      title: "🛠️ Module 2 – Configuration & Catégorisation Stratégique",
       lessons: [
-        "Sélectionner la catégorie principale exacte qui déclenche les recherches locales",
-        "Ajouter les catégories secondaires pour capter les requêtes connexes",
-        "Artisans à domicile / chantiers : comment définir ta zone de desserte sans afficher ton adresse privée",
-        "Optimiser ton rayon kilométrique d'intervention locale"
+        "2.1 Choisir la catégorie principale qui draine 80% du trafic : La différence cruciale entre catégorie principale et catégories secondaires.",
+        "2.2 Définir sa zone de chalandise pour artisans et ateliers sans vitrine : Comment configurer correctement une entreprise de zone de service (SAB) sans risque de suspension.",
+        "2.6 Validation de sa fiche par vidéo : Le protocole en 3 piliers pour faire valider son atelier du premier coup sans blocage."
       ]
     },
     {
-      title: "Module 3 : Description Neuromarketing & Bibliothèque de Prompts IA Clé en Main",
-      duration: "25 min",
-      badge: "🔥 Prompts IA Inclus",
+      title: "✍️ Module 3 – Description Vendeuse & Prompts IA",
+      badge: "🔥 10 Prompts IA Inclus",
       lessons: [
-        "Structure neuromarketing d'une description percutante de 750 caractères",
-        "Bibliothèque de Prompts IA prêts à l'emploi (ChatGPT / Claude) pour rédiger ta description et tes offres en 30 secondes chrono",
-        "Intégration naturelle des mots-clés métiers + nom de ta ville / région",
-        "Mise en valeur de tes valeurs, savoir-faire artisanal et engagements uniques"
+        "3.1 Rédiger les 750 caractères parfaits avec les 10 Prompts IA : Intégrer vos mots-clés de savoir-faire artisanal couplés à vos villes cibles."
       ]
     },
     {
-      title: "Module 4 : Stratégie Visuelle Vendeuse & Signaux Google Vision AI",
-      duration: "20 min",
+      title: "📸 Module 4 – Photos Vendeuses & Google Vision AI",
       lessons: [
-        "Photo de couverture ultra-attractive (format paysage 1024x576px minimum)",
-        "Logo haute définition et photos de toi en action (création du lien de confiance immédiat)",
-        "Les 5 types de photos indispensables : ateliers, réalisations phares, vitrine ou véhicule",
-        "Comment l'IA de Google (Google Cloud Vision) scanne et classe tes photos pour te faire remonter"
+        "4.1 Optimisation des photos d'atelier et lecture par l'IA de Google : Comment Google Vision analyse vos images pour classer votre fiche."
       ]
     },
     {
-      title: "Module 5 : Catalogue Produits, Services & Tarifs Clairs",
-      duration: "15 min",
+      title: "🛍️ Module 5 – Produits, Prestations & Menus Interactifs",
       lessons: [
-        "Créer des fiches produits/services irrésistibles avec descripteurs précis et tarifs indicatifs",
-        "Utiliser les Prompts IA fournis pour générer les textes de chaque prestation en un clin d'œil",
-        "Insérer les liens directs vers ton formulaire de devis ou ton calendrier de réservation",
-        "Activer les attributs différenciants (ex: 'Géré par une femme', 'Accès PMR', 'Rendez-vous en ligne')"
+        "5.1 Ajouter ses créations et services avec boutons d'action directe : Transformer sa fiche Google en catalogue e-commerce miniature qui génère des appels."
       ]
     },
     {
-      title: "Module 6 : La Machine à Avis 5 Étoiles & Réponses Stratégiques",
-      duration: "20 min",
-      badge: "⭐ Système Automatique",
+      title: "⭐ Module 6 – La Machine à Avis 5 Étoiles & Réponses SEO",
+      badge: "⭐ Scripts & Kit Inclus",
       lessons: [
-        "Générer ton lien direct raccourci d'avis 5 étoiles en 1 clic",
-        "La méthode d'envoi douce (WhatsApp, SMS, Facture) pour récolter 5x plus d'avis sans insister",
-        "Appliquer le Kit 10 Modèles de réponses : valoriser les 5 étoiles et désamorcer les retours délicats",
-        "Réinsérer stratégiquement tes mots-clés locaux dans 100% de tes réponses pour doper ton SEO"
+        "6.1 Les scripts WhatsApp, SMS et e-mail à envoyer après chaque prestation : Modèles de messages prêts à copier-coller pour obtenir un avis 5 étoiles en moins de 48h.",
+        "6.2 Répondre aux avis avec les mots-clés stratégiques pour doper le NLP Google : Kit des 10 réponses types (avis élogieux et avis délicats)."
       ]
     },
     {
-      title: "Module 7 : Routine d'Animation 5 min/semaine, Posts Google & Messagerie Directe",
-      duration: "15 min",
+      title: "🚀 Module 7 – Routine 5 min/Semaine & Posts Google",
       lessons: [
-        "Publier 1 Post Google impactant toutes les 2 semaines avec les prompts d'actualités fournis",
-        "Activer la messagerie instantanée Google sur ton smartphone pour répondre aux prospects en direct",
-        "Enrichir la Foire Aux Questions (FAQ) pour lever les objections de tes futurs clients",
-        "Analyser tes statistiques mensuelles (appels, itinéraires, recherches) et rester indétrônable"
+        "7.1 La routine hebdomadaire en 5 minutes pour maintenir sa position Top 3 : Publication de posts Google, analyse des statistiques et suivi de la concurrence."
       ]
     }
   ];
@@ -348,7 +324,7 @@ export default function TunnelFormationFicheGooglePage() {
     },
     {
       q: "En combien de temps vais-je voir des résultats concrets ?",
-      a: "La mise en place de toutes les optimisations prend environ 1h30. Une fois validée par Google, ta fiche remonte généralement dans le classement local sous quelques jours à quelques semaines selon le niveau de concurrence de ta ville."
+      a: "La formation vidéo dure 2 heures et la mise en place de toutes les optimisations se fait pas-à-pas en parallèle. Une fois validée par Google, ta fiche remonte généralement dans le classement local sous quelques jours à quelques semaines selon le niveau de concurrence de ta ville."
     },
     {
       q: "Le paiement est-il sécurisé et quelles sont les modalités ?",
@@ -591,7 +567,7 @@ export default function TunnelFormationFicheGooglePage() {
               <div>
                 <h4 className="text-base font-black text-[#332420]">Pas besoin d'y passer tes soirées</h4>
                 <p className="text-xs sm:text-sm text-[#5e4d46] leading-relaxed">
-                  Compte 1h30 pour appliquer l'ensemble des modules, puis 10 à 15 minutes par mois pour maintenir ta fiche active.
+                  Compte 2h de vidéo guidée pour appliquer l'ensemble des modules à ton rythme, puis 10 à 15 minutes par mois pour maintenir ta fiche active.
                 </p>
               </div>
             </div>
@@ -619,7 +595,7 @@ export default function TunnelFormationFicheGooglePage() {
                   La Solution Complète Clé en Main
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-black text-[#332420] mt-2">
-                  Formation Vidéo : Dominer sa Fiche Google Business Profile
+                  Cap Visibilité Google : Le GPS pour Guider vos Clients Locaux
                 </h3>
               </div>
               <div className="text-right">
@@ -727,7 +703,7 @@ export default function TunnelFormationFicheGooglePage() {
                 </p>
               </div>
               <div className="pt-3 text-xs font-bold text-amber-800 bg-amber-100 py-2 rounded-xl">
-                🛠️ Transformation guidée (1h30)
+                🛠️ Transformation guidée (2h de vidéo)
               </div>
             </div>
 
@@ -809,7 +785,7 @@ export default function TunnelFormationFicheGooglePage() {
               <ul className="space-y-3 text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
                 <li className="flex items-start gap-2">
                   <span className="text-slate-400 font-bold">•</span>
-                  <span>Tu cherches une recette magique sans vouloir consacrer 1 heure pour appliquer les recommandations.</span>
+                  <span>Tu cherches une recette magique sans vouloir consacrer 2 heures de vidéo guidée pour appliquer les recommandations.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-slate-400 font-bold">•</span>
@@ -866,7 +842,7 @@ export default function TunnelFormationFicheGooglePage() {
                             </span>
                           )}
                         </div>
-                        <span className="text-xs text-slate-500 font-semibold">{mod.duration} • {mod.lessons.length} leçons vidéo concrètes</span>
+                        <span className="text-xs text-slate-500 font-semibold">{mod.lessons.length} leçons vidéo concrètes</span>
                       </div>
                     </div>
                     {isOpen ? <ChevronUp className="w-5 h-5 text-[#18757d]" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
@@ -1107,7 +1083,7 @@ export default function TunnelFormationFicheGooglePage() {
               <div className="flex items-center justify-between text-sm sm:text-base font-bold text-[#332420]">
                 <span className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-[#18757d]" />
-                  Formation Vidéo Complète 7 Modules (2h)
+                  Formation Vidéo Complète 7 Modules
                 </span>
                 <span className="text-slate-400 line-through text-sm">69 €</span>
               </div>
@@ -1240,7 +1216,7 @@ export default function TunnelFormationFicheGooglePage() {
                   <ShieldCheck className="w-3.5 h-3.5 text-[#18757d]" />
                   Paiement 100% Sécurisé Stripe
                 </span>
-                <h3 className="text-xl font-black text-[#332420] mt-1">Formation Fiche Google Business Profile</h3>
+                <h3 className="text-xl font-black text-[#332420] mt-1">Cap Visibilité Google : Le GPS pour Artisans & Créateurs</h3>
                 <p className="text-xs text-slate-500 font-semibold">
                   {hasOrderBump
                     ? '7 Modules Vidéo HD • Prompts IA • 3 Bonus PDF • Calculateur de Score & 3 Quick Wins'

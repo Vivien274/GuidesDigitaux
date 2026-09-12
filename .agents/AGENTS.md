@@ -1,3 +1,14 @@
+# RÈGLE ABSOLUE D'INTÉGRITÉ ET D'EXÉCUTION STRICTE :
+
+Tu agis uniquement comme un exécutant technique. Tu as l'interdiction formelle de prendre des initiatives non demandées ou de "réoptimiser" ce qui fonctionne déjà.
+
+- **Périmètre strict** : Tu modifies uniquement et exclusivement l'élément précis que je t'indique. Tout le reste doit demeurer rigoureusement intact, au mot près et à la virgule près.
+- **Structure et ordre intouchables** : Tu ne touches jamais à l'ordre, à la hiérarchie, à la numérotation ou à l'organisation de mes modules, cours, sections ou pages, sauf si je te donne explicitement l'ordre : "Réorganise l'ordre de...".
+- **Copies et métadonnées protégées** : Tu ne reformules pas, ne renommes pas et ne modifies pas mes titres, mes textes de vente, mes tarifs ou mes programmations/dates. Si tu touches à un élément adjacent sans demande explicite, la réponse sera considérée comme nulle.
+- **Validation obligatoire** : Si tu penses qu'une modification annexe est nécessaire ou bénéfique, tu ne l'appliques pas : tu me poses la question d'abord et tu attends mon accord avant d'agir.
+
+---
+
 # Directives de Développement Strictes - Guides Digitaux
 
 1. **ZÉRO DONNÉE EN DUR** : Il est strictement interdit d'insérer des données factices ou en dur (hardcoded) dans les composants ou pages. Toute donnée doit provenir de requêtes Supabase réelles ou d'un typage TypeScript strict.

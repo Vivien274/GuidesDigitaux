@@ -518,9 +518,9 @@ const DEFAULT_COURSES: Course[] = [
   {
     id: '33333333-3333-4333-a333-333333333333',
     slug: 'formation-fiche-google',
-    title: 'Formation : Domine le Pack Local Google Maps pour Artisans & Indépendants',
-    description: 'La méthode pas-à-pas en 7 modules vidéo pour propulser ton atelier ou ton commerce dans le Top 3 Google Maps et capter un flux régulier de clients locaux.',
-    duration: '2h45',
+    title: 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
+    description: 'Le GPS pas-à-pas en 7 modules vidéo pour propulser votre atelier dans le Top 3 Google Maps et guider vos clients locaux sans jargon ni budget pub.',
+    duration: '2h00',
     level: 'Tous niveaux',
     prerequisites: 'Avoir ou vouloir créer une Fiche Google Business Profile pour son activité.',
     price: 29,
@@ -569,6 +569,62 @@ const DEFAULT_COURSES: Course[] = [
             videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
             duration: '11:45',
             notes: 'Comment configurer correctement une entreprise de zone de service (SAB) sans risque de suspension.'
+          },
+          {
+            id: 'les-gmb-2-6',
+            title: '2.6 Validation de sa fiche par vidéo',
+            videoUrl: 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
+            duration: '12:30',
+            notes: `<h3>🎥 Guide Complet : Comment Réussir la Validation Vidéo de sa Fiche Google Business Profile</h3>
+
+<p>La validation par vidéo est devenue la méthode de vérification standard et la plus exigeante imposée par Google pour authentifier les entreprises locales. Finie l'époque du simple code reçu par courrier postal : pour lutter contre les faux établissements, les usurpations d'identité et le spam sur Google Maps, l'algorithme vous demande désormais d'enregistrer une vidéo continue attestant de l'existence réelle de votre activité, de votre localisation et de votre autorité de gestion.</p>
+
+<div class="p-4 bg-[#e6f4f3] rounded-2xl border border-[#bce3e0] my-4 text-[#18757d] font-semibold">
+  💡 <strong>Règle d'or Google :</strong> La vidéo doit être tournée en un seul plan-séquence continu d'une durée de 1 à 2 minutes maximum (zéro coupure, zéro montage, zéro filtre). Vous devez impérativement filmer depuis l'application Google sur votre smartphone avec la géolocalisation GPS activée.
+</div>
+
+<h3>1. Les 3 Piliers Obligatoires à Filmer (La Checklist Incontournable)</h3>
+<p>Pour que votre vidéo soit validée du premier coup par les équipes et les algorithmes de Google, elle doit obligatoirement apporter 3 niveaux de preuves visuelles irréfutables :</p>
+
+<ul>
+  <li>
+    <strong>Pilier 1 : La Localisation et l'Environnement Extérieur</strong><br />
+    Démarrez votre vidéo à l'extérieur de votre établissement ou de votre lieu de travail. Filmez clairement la plaque de rue avec le nom de la voie, le numéro civique de votre bâtiment, les commerces adjacents reconnaissables, l'enseigne de votre atelier ou votre nom officiel visible sur la boîte aux lettres ou l'interphone. Si vous êtes un artisan sans vitrine (SAB), filmez votre véhicule utilitaire avec son marquage professionnel ou sa plaque d'immatriculation garé devant votre adresse de domiciliation.
+  </li>
+  <li>
+    <strong>Pilier 2 : Le Matériel Professionnel et les Preuves d'Activité</strong><br />
+    Pénétrez à l'intérieur de vos locaux pour prouver que vous n'êtes pas une simple boîte aux lettres fictive. Montrez vos équipements métiers en action : machines d'artisanat, établis, outillage spécialisé, stocks de matières premières, produits finis étiquetés, caisse enregistreuse, terminal de paiement CB ou espace d'accueil de la clientèle.
+  </li>
+  <li>
+    <strong>Pilier 3 : La Preuve d'Autorité et de Gestion Exclusif</strong><br />
+    Google doit vérifier que vous êtes bien le propriétaire ou le gestionnaire légitime de l'entreprise. Montrez-vous en train de déverrouiller la porte d'entrée ou l'atelier avec vos clés, d'ouvrir un logiciel de gestion ou de caisse sur votre ordinateur, ou présentez à la caméra un document officiel original (Extrait Kbis de moins de 3 mois, avis de situation INSEE/SIRENE, attestation de la Chambre des Métiers ou facture d'électricité/téléphone au nom de l'entreprise et à l'adresse exacte).
+  </li>
+</ul>
+
+<h3>2. Protocole de Tournage Pas-à-Pas sur Smartphone</h3>
+<p>Avant de lancer l'enregistrement depuis le lien de vérification Google, préparez minutieusement votre parcours :</p>
+<ol>
+  <li><strong>Répétition à blanc :</strong> Marchez le long de votre itinéraire pour vous assurer que tout est fluide et réalisable en 90 secondes.</li>
+  <li><strong>Luminosité optimale :</strong> Ouvrez les volets, allumez tous les éclairages intérieurs et tournez de préférence en pleine journée pour éviter les zones d'ombre illisibles.</li>
+  <li><strong>Lancement :</strong> Ouvrez l'interface Google Business Profile sur votre téléphone, cliquez sur <em>« Valider par vidéo »</em> et autorisez l'accès à la caméra et à la position GPS.</li>
+  <li><strong>Mouvement stable :</strong> Déplacez-vous lentement sans mouvements brusques pour que l'autofocus capture nettement chaque texte, logo et document.</li>
+</ol>
+
+<h3>3. Cas Particulier : Artisans & Prestataires à Domicile (Sans Local Commercial)</h3>
+<p>Si vous travaillez depuis votre domicile ou directement sur chantier (Zone de desserte sans accueil du public), vous n'avez pas d'enseigne commerciale sur rue. Pas de panique : Google a prévu ce cas de figure. Filmez votre boîte aux lettres avec votre nom et prénom ou raison sociale, votre véhicule professionnel avec ses outils à l'intérieur, votre pièce d'atelier ou bureau dédié chez vous avec votre matériel de travail, ainsi que vos documents juridiques (SIRET/Kbis) posés sur votre table de travail.</p>
+
+<h3>4. Les 5 Erreurs Éliminatoires à Éviter Absolument</h3>
+<ul>
+  <li>❌ <strong>Couper la vidéo ou tenter de monter des clips :</strong> Google refuse automatiquement tout fichier qui n'est pas une prise directe continue.</li>
+  <li>❌ <strong>Filmer des visages de clients ou de passants :</strong> Pour des raisons de confidentialité RGPD, évitez de cadrer des tiers sans leur accord.</li>
+  <li>❌ <strong>Dépasser 2 minutes :</strong> La vidéo risque d'échouer lors du téléversement en raison du poids du fichier.</li>
+  <li>❌ <strong>Désactiver le GPS du téléphone :</strong> Google compare les métadonnées de géolocalisation de la vidéo avec l'adresse déclarée sur la fiche.</li>
+  <li>❌ <strong>Présenter des documents non concordants :</strong> L'orthographe du nom d'entreprise et l'adresse doivent être strictement identiques à ceux indiqués sur votre profil Google.</li>
+</ul>
+
+<h3>5. Délais de Traitement et Que Faire en Cas de Rejet</h3>
+<p>Une fois la vidéo envoyée, le délai moyen de validation varie entre <strong>24 heures et 5 jours ouvrés</strong>. Google analyse la vidéo au moyen d'algorithmes de reconnaissance visuelle appuyés par une vérification manuelle si nécessaire. Dès validation, votre statut passe à <em>« Validé »</em> et votre fiche devient immédiatement visible publiquement sur Google Maps et le moteur de recherche.</p>
+<p>Si votre vidéo est rejetée, Google vous indiquera généralement quel élément manquait (souvent la preuve de localisation extérieure ou la preuve de gestion). Il vous suffira de relancer une nouvelle tentative en insistant davantage sur le point soulevé ou de solliciter une validation assistée par visioconférence avec un conseiller Google Support.</p>`
           }
         ]
       },

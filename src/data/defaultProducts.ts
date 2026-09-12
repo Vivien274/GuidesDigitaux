@@ -416,7 +416,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
   },
   {
     "id": "formation-fiche-google",
-    "title": "Formation : Domine le Pack Local Google Maps pour Artisans & Indépendants",
+    "title": "Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu'à votre atelier",
     "slug": "formation-fiche-google",
     "category": "formation",
     "categoryLabel": "Formation Complète & Outils",
@@ -426,8 +426,8 @@ export const DEFAULT_PRODUCTS: Product[] = [
     "reviewsCount": 47,
     "badge": "LANCEMENT OFFICIEL",
     "image": "/images/products/formation-fiche-google-mockup.jpg",
-    "imageAlt": "Formation Fiche Google Business Profile pour Artisans - Guides Digitaux",
-    "description": "La méthode pas-à-pas en 7 modules pour propulser ton atelier ou ton commerce dans le Top 3 Google Maps et capter un flux régulier de clients locaux.",
+    "imageAlt": "Cap Visibilité Google - Formation Fiche Google Business Profile pour Artisans",
+    "description": "Le GPS pas-à-pas en 7 modules vidéo pour propulser votre atelier dans le Top 3 Google Maps et guider vos clients locaux sans jargon ni budget pub.",
     "features": [
       "7 modules vidéo concrets et directement applicables",
       "Checklist d'audit en 25 points & Grille de notation",
