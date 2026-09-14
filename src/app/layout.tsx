@@ -78,7 +78,7 @@ export default function RootLayout({
         />
         <Script
           id="meta-pixel-script"
-          strategy="lazyOnload"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               !function(f,b,e,v,n,t,s)
