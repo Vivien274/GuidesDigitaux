@@ -45,7 +45,9 @@ export async function sendServerPurchaseEvent({
     const hashedEmail = hashSha256(email);
     const eventTime = Math.floor(Date.now() / 1000);
 
-    const payload = {
+    const testEventCode = process.env.META_TEST_EVENT_CODE || undefined;
+
+    const payload: Record<string, any> = {
       data: [
         {
           event_name: 'Purchase',
@@ -64,6 +66,7 @@ export async function sendServerPurchaseEvent({
           },
         },
       ],
+      ...(testEventCode ? { test_event_code: testEventCode } : {}),
     };
 
     const requests = targetPixelIds.map(async (pixelId) => {

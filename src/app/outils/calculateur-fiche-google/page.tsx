@@ -71,20 +71,9 @@ function CalculateurFicheGoogleContent() {
   const [unlockError, setUnlockError] = useState<string>('');
   const [unlockSuccess, setUnlockSuccess] = useState<boolean>(false);
 
-  // Onglet de saisie actif : 'url' | 'search' | 'manual'
-  const [searchMode, setSearchMode] = useState<'url' | 'search' | 'manual'>('url');
-
-  // Champs de saisie
+  // Champs de saisie (URL uniquement)
   const [urlInput, setUrlInput] = useState('');
-  const [businessName, setBusinessName] = useState('');
-  const [city, setCity] = useState('');
-  const [category, setCategory] = useState('artisanat');
-  const [reviewCount, setReviewCount] = useState<number | ''>('');
-  const [rating, setRating] = useState<number | ''>('');
-  const [photoCount, setPhotoCount] = useState<number | ''>('');
-  const [hasDescription, setHasDescription] = useState<boolean>(true);
-  const [hasRecentPost, setHasRecentPost] = useState<boolean>(true);
-  const [hasWebsite, setHasWebsite] = useState<boolean>(true);
+  const [auditError, setAuditError] = useState<string>('');
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisStep, setAnalysisStep] = useState(0);
@@ -205,18 +194,14 @@ function CalculateurFicheGoogleContent() {
     }
   };
 
-  // Exécution de l'audit
+  // Exécution de l'audit 100% réel par API Google Places
   const handleRunAudit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuditError('');
 
-    // Validation selon le mode choisi
-    if (searchMode === 'url' && !urlInput.trim()) {
-      alert('Veuillez coller le lien de votre fiche Google Maps.');
-      return;
-    }
-
-    if (searchMode === 'search' && !businessName.trim()) {
-      alert('Veuillez renseigner le nom de votre établissement.');
+    const cleanUrl = urlInput.trim();
+    if (!cleanUrl) {
+      setAuditError('Veuillez coller le lien de votre fiche Google Maps (ex: https://maps.app.goo.gl/...).');
       return;
     }
 
@@ -227,42 +212,22 @@ function CalculateurFicheGoogleContent() {
     const step3Timer = setTimeout(() => setAnalysisStep(3), 1200);
 
     try {
-      let liveData = null;
+      const response = await fetch('/api/google-places/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: cleanUrl,
+          query: cleanUrl,
+          clientToken: 'authorized-buyer-token',
+          userEmail: user?.email || unlockEmailInput || 'buyer'
+        })
+      });
 
-      // En mode URL ou Recherche Nom, on appelle l'API Google Places en direct
-      if (searchMode === 'url' || searchMode === 'search') {
-        const query = searchMode === 'url' ? urlInput.trim() : `${businessName} ${city}`.trim();
-        
-        const response = await fetch('/api/google-places/audit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query,
-            url: urlInput.trim(),
-            businessName: businessName.trim(),
-            city: city.trim(),
-            manualRating: rating,
-            manualReviewCount: reviewCount,
-            clientToken: 'authorized-buyer-token',
-            userEmail: user?.email || unlockEmailInput || 'buyer'
-          })
-        });
+      const resJson = await response.json();
+      await new Promise(resolve => setTimeout(resolve, 1400));
 
-        const resJson = await response.json();
-        if (resJson.found && resJson.data) {
-          liveData = resJson.data;
-        }
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 1600));
-
-      if (liveData) {
-        setReviewCount(liveData.ratingCount ?? '');
-        setRating(liveData.rating ?? '');
-        setPhotoCount(liveData.photoCount ?? 15);
-        if (liveData.name) setBusinessName(liveData.name);
-        if (liveData.address) setCity(liveData.address);
-
+      if (resJson.found && resJson.data) {
+        const liveData = resJson.data;
         setResult({
           score: liveData.score,
           grade: liveData.grade,
@@ -275,158 +240,18 @@ function CalculateurFicheGoogleContent() {
           pillars: liveData.pillars,
           quickWins: liveData.quickWins
         });
+        setAuditError('');
       } else {
-        // CALCUL ALGORTIHMQIUE EXACT POUR LE MODE MANUEL / SIMULATION
-        const reviews = Number(reviewCount) || 0;
-        const rate = Number(rating) || 5.0;
-        const photos = Number(photoCount) || 15;
-
-        // 1. Pilier Fondations & Complétude (sur 25)
-        let pillar1Score = hasWebsite ? 25 : 18;
-
-        // 2. Pilier Preuve Sociale & Avis Clients (sur 25)
-        let pillar2Score = 0;
-        if (reviews >= 20) pillar2Score = 20;
-        else if (reviews >= 10) pillar2Score = 16;
-        else if (reviews >= 5) pillar2Score = 12;
-        else if (reviews >= 1) pillar2Score = 8;
-        else pillar2Score = 0;
-
-        if (reviews > 0) {
-          if (rate >= 4.8) pillar2Score += 5;
-          else if (rate >= 4.4) pillar2Score += 3;
-          else if (rate >= 4.0) pillar2Score += 1;
-        }
-        pillar2Score = Math.min(25, pillar2Score);
-
-        // 3. Pilier Visuels & Photos (sur 25)
-        let pillar3Score = 8;
-        if (photos >= 15) pillar3Score = 25;
-        else if (photos >= 8) pillar3Score = 18;
-        else if (photos >= 3) pillar3Score = 12;
-
-        // 4. Pilier Description & Sémantique (sur 25)
-        let pillar4Score = hasDescription ? (hasRecentPost ? 25 : 21) : 10;
-
-        const finalScore = Math.min(Math.max(pillar1Score + pillar2Score + pillar3Score + pillar4Score, 20), 99);
-
-        let grade = 'Critique (Risque élevé d\'invisibilité)';
-        let statusColor = '#ef4444'; // rouge
-
-        if (finalScore >= 85) {
-          grade = 'Excellent (Top 3 Google Maps)';
-          statusColor = '#10b981'; // vert
-        } else if (finalScore >= 70) {
-          grade = 'Bon potentiel (Optimisation recommandée)';
-          statusColor = '#18757d'; // teal
-        } else if (finalScore >= 50) {
-          grade = 'Moyen (Perte importante de clients locaux)';
-          statusColor = '#f59e0b'; // orange
-        }
-
-        const quickWinsList = [];
-
-        if (reviews < 15 || rate < 4.8) {
-          quickWinsList.push({
-            id: 1,
-            icon: '⭐',
-            title: `Activer la récolte d'avis WhatsApp (${reviews} avis enregistrés)`,
-            impact: 'Très élevé' as const,
-            time: '3 minutes',
-            action: `Votre fiche totalise ${reviews} avis (${rate}★). Envoyez notre modèle WhatsApp post-prestation à vos 5 derniers clients pour franchir le palier algorithmique supérieur.`,
-            moduleLink: 'Module 6 : La Machine à Avis 5 Étoiles'
-          });
-        } else {
-          quickWinsList.push({
-            id: 1,
-            icon: '💬',
-            title: 'Répondre aux avis avec les mots-clés SEO de votre métier',
-            impact: 'Élevé' as const,
-            time: '3 minutes',
-            action: `Excellente réputation avec ${reviews} avis (${rate}★) ! Intégrez vos mots-clés d'activité et votre ville dans chaque réponse aux avis pour doper votre indexation Google Maps.`,
-            moduleLink: 'Module 6 : Réponses Stratégiques & SEO Avis'
-          });
-        }
-
-        if (!hasDescription || finalScore < 85) {
-          quickWinsList.push({
-            id: 2,
-            icon: '✍️',
-            title: 'Injecter les prompts IA dans la description (750 caractères)',
-            impact: 'Critique' as const,
-            time: '2 minutes',
-            action: `Régénérez votre bio en insérant vos mots-clés de savoir-faire couplés à "${city || 'votre zone géographique'}" pour remonter dans le Pack Local.`,
-            moduleLink: 'Module 3 : Description & Bibliothèque de Prompts IA'
-          });
-        }
-
-        if (photos < 15) {
-          quickWinsList.push({
-            id: 3,
-            icon: '📸',
-            title: 'Ajouter 5 photos géolocalisées de vos ateliers et créations',
-            impact: 'Élevé' as const,
-            time: '5 minutes',
-            action: 'Google Vision AI privilégie les fiches avec photos réelles d\'ateliers, de réalisations récentes et de l\'artisane en action.',
-            moduleLink: 'Module 4 : Photos Vendeuses & Google Vision AI'
-          });
-        }
-
-        if (quickWinsList.length < 3 || !hasRecentPost) {
-          quickWinsList.push({
-            id: 4,
-            icon: '📢',
-            title: 'Publier 1 Post Google avec bouton d\'appel direct',
-            impact: 'Élevé' as const,
-            time: '2 minutes',
-            action: 'Les fiches qui publient une actualité tous les 15 jours reçoivent un signal de fraîcheur algorithmique prioritaire.',
-            moduleLink: 'Module 7 : Routine 5 min & Posts Google'
-          });
-        }
-
-        setResult({
-          score: finalScore,
-          grade,
-          statusColor,
-          summary: `Score global calculé : ${finalScore}/100 pour ${businessName || 'votre établissement'} à ${city || 'votre commune'} (${reviews} avis enregistrés, note de ${rate}★). En appliquant les 3 actions ci-dessous, vous maximisez votre visibilité locale.`,
-          isLiveApi: false,
-          placeName: businessName || 'Votre Établissement',
-          placeAddress: city || 'Localisation',
-          pillars: [
-            {
-              title: 'Fondations & Coordonnées',
-              score: pillar1Score,
-              max: 25,
-              status: pillar1Score >= 20 ? 'good' : 'warning',
-              feedback: hasWebsite ? 'Site web et coordonnées correctement paramétrés.' : 'Ajoutez un site ou formulaire direct pour convertir vos visiteurs.'
-            },
-            {
-              title: 'Preuve Sociale & Avis Clients',
-              score: pillar2Score,
-              max: 25,
-              status: pillar2Score >= 20 ? 'good' : pillar2Score >= 12 ? 'warning' : 'bad',
-              feedback: `${reviews} avis enregistrés avec une note de ${rate}★. ${reviews >= 20 ? 'Excellente réputation et réassurance client solide.' : 'Volume d\'avis encore perfectible pour distancer vos concurrents.'}`
-            },
-            {
-              title: 'Visuels & Couverture Photo',
-              score: pillar3Score,
-              max: 25,
-              status: pillar3Score >= 20 ? 'good' : pillar3Score >= 12 ? 'warning' : 'bad',
-              feedback: `${photos} photos estimées. ${photos >= 15 ? 'Très bonne présence photo.' : 'Ajoutez régulièrement des clichés de vos ateliers et créations.'}`
-            },
-            {
-              title: 'Sémantique & Fraîcheur des signaux',
-              score: pillar4Score,
-              max: 25,
-              status: pillar4Score >= 20 ? 'good' : 'warning',
-              feedback: hasDescription ? 'Description complète et signaux de fraîcheur actifs.' : 'Description incomplète : vous perdez des requêtes de recherche locale.'
-            }
-          ],
-          quickWins: quickWinsList.slice(0, 3)
-        });
+        setResult(null);
+        setAuditError(
+          resJson.message || 
+          'Impossible de récupérer les données réelles de cette fiche Google Maps. Assurez-vous d\'utiliser le lien de partage officiel (sur Google Maps : bouton Partager > Copier le lien).'
+        );
       }
     } catch (err) {
-      console.error('Erreur calcul audit:', err);
+      console.error('Erreur audit Places API:', err);
+      setResult(null);
+      setAuditError('Une erreur de connexion est survenue lors de l\'interrogation de l\'API Google Places.');
     } finally {
       clearTimeout(step2Timer);
       clearTimeout(step3Timer);
@@ -434,157 +259,10 @@ function CalculateurFicheGoogleContent() {
     }
   };
 
-  const handleQuickRecalculate = () => {
-    const reviews = Number(reviewCount) || 0;
-    const rate = Number(rating) || 5.0;
-    const photos = Number(photoCount) || 15;
-
-    let pillar1Score = hasWebsite ? 25 : 18;
-
-    let pillar2Score = 0;
-    if (reviews >= 20) pillar2Score = 20;
-    else if (reviews >= 10) pillar2Score = 16;
-    else if (reviews >= 5) pillar2Score = 12;
-    else if (reviews >= 1) pillar2Score = 8;
-    else pillar2Score = 0;
-
-    if (reviews > 0) {
-      if (rate >= 4.8) pillar2Score += 5;
-      else if (rate >= 4.4) pillar2Score += 3;
-      else if (rate >= 4.0) pillar2Score += 1;
-    }
-    pillar2Score = Math.min(25, pillar2Score);
-
-    let pillar3Score = 8;
-    if (photos >= 15) pillar3Score = 25;
-    else if (photos >= 8) pillar3Score = 18;
-    else if (photos >= 3) pillar3Score = 12;
-
-    let pillar4Score = hasDescription ? (hasRecentPost ? 25 : 21) : 10;
-
-    const finalScore = Math.min(Math.max(pillar1Score + pillar2Score + pillar3Score + pillar4Score, 20), 99);
-
-    let grade = 'Critique (Risque élevé d\'invisibilité)';
-    let statusColor = '#ef4444';
-
-    if (finalScore >= 85) {
-      grade = 'Excellent (Top 3 Google Maps)';
-      statusColor = '#10b981';
-    } else if (finalScore >= 70) {
-      grade = 'Bon potentiel (Optimisation recommandée)';
-      statusColor = '#18757d';
-    } else if (finalScore >= 50) {
-      grade = 'Moyen (Perte importante de clients locaux)';
-      statusColor = '#f59e0b';
-    }
-
-    const quickWinsList: AuditResult['quickWins'] = [];
-    if (reviews < 15 || rate < 4.8) {
-      quickWinsList.push({
-        id: 1,
-        icon: '⭐',
-        title: `Activer la récolte d'avis WhatsApp (${reviews} avis enregistrés)`,
-        impact: 'Très élevé' as const,
-        time: '3 minutes',
-        action: `Votre fiche totalise ${reviews} avis (${rate}★). Envoyez notre modèle WhatsApp post-prestation à vos 5 derniers clients pour franchir le palier algorithmique supérieur.`,
-        moduleLink: 'Module 6 : La Machine à Avis 5 Étoiles'
-      });
-    } else {
-      quickWinsList.push({
-        id: 1,
-        icon: '💬',
-        title: 'Répondre aux avis avec les mots-clés SEO de votre métier',
-        impact: 'Élevé' as const,
-        time: '3 minutes',
-        action: `Excellente réputation avec ${reviews} avis (${rate}★) ! Intégrez vos mots-clés d'activité et votre ville dans chaque réponse aux avis pour doper votre indexation Google Maps.`,
-        moduleLink: 'Module 6 : Réponses Stratégiques & SEO Avis'
-      });
-    }
-
-    if (!hasDescription || finalScore < 85) {
-      quickWinsList.push({
-        id: 2,
-        icon: '✍️',
-        title: 'Injecter les prompts IA dans la description (750 caractères)',
-        impact: 'Critique' as const,
-        time: '2 minutes',
-        action: `Régénérez votre bio en insérant vos mots-clés de savoir-faire couplés à "${city || 'votre zone géographique'}" pour remonter dans le Pack Local.`,
-        moduleLink: 'Module 3 : Description & Bibliothèque de Prompts IA'
-      });
-    }
-
-    if (photos < 15) {
-      quickWinsList.push({
-        id: 3,
-        icon: '📸',
-        title: 'Ajouter 5 photos géolocalisées de vos ateliers et créations',
-        impact: 'Élevé' as const,
-        time: '5 minutes',
-        action: 'Google Vision AI privilégie les fiches avec photos réelles d\'ateliers, de réalisations récentes et de l\'artisane en action.',
-        moduleLink: 'Module 4 : Photos Vendeuses & Google Vision AI'
-      });
-    }
-
-    if (quickWinsList.length < 3 || !hasRecentPost) {
-      quickWinsList.push({
-        id: 4,
-        icon: '📢',
-        title: 'Publier 1 Post Google avec bouton d\'appel direct',
-        impact: 'Élevé' as const,
-        time: '2 minutes',
-        action: 'Les fiches qui publient une actualité tous les 15 jours reçoivent un signal de fraîcheur algorithmique prioritaire.',
-        moduleLink: 'Module 7 : Routine 5 min & Posts Google'
-      });
-    }
-
-    setResult(prev => ({
-      ...prev!,
-      score: finalScore,
-      grade,
-      statusColor,
-      summary: `Score global actualisé : ${finalScore}/100 pour ${result?.placeName || businessName || 'votre établissement'} (${reviews} avis pris en compte, note de ${rate}★).`,
-      pillars: [
-        {
-          title: 'Fondations & Coordonnées',
-          score: pillar1Score,
-          max: 25,
-          status: pillar1Score >= 20 ? 'good' : 'warning',
-          feedback: hasWebsite ? 'Site web et coordonnées correctement paramétrés.' : 'Ajoutez un site ou formulaire direct pour convertir vos visiteurs.'
-        },
-        {
-          title: 'Preuve Sociale & Avis Clients',
-          score: pillar2Score,
-          max: 25,
-          status: pillar2Score >= 20 ? 'good' : pillar2Score >= 12 ? 'warning' : 'bad',
-          feedback: `${reviews} avis enregistrés avec une note de ${rate}★. ${reviews >= 20 ? 'Excellente réputation et réassurance client solide.' : 'Volume d\'avis encore perfectible pour distancer vos concurrents.'}`
-        },
-        {
-          title: 'Visuels & Couverture Photo',
-          score: pillar3Score,
-          max: 25,
-          status: pillar3Score >= 20 ? 'good' : pillar3Score >= 12 ? 'warning' : 'bad',
-          feedback: `${photos} photos estimées. ${photos >= 15 ? 'Très bonne présence photo.' : 'Ajoutez régulièrement des clichés de vos ateliers et créations.'}`
-        },
-        {
-          title: 'Sémantique & Fraîcheur des signaux',
-          score: pillar4Score,
-          max: 25,
-          status: pillar4Score >= 20 ? 'good' : 'warning',
-          feedback: hasDescription ? 'Description complète et signaux de fraîcheur actifs.' : 'Description incomplète : vous perdez des requêtes de recherche locale.'
-        }
-      ],
-      quickWins: quickWinsList.slice(0, 3)
-    }));
-  };
-
   const handleReset = () => {
     setResult(null);
     setUrlInput('');
-    setBusinessName('');
-    setCity('');
-    setReviewCount('');
-    setRating('');
-    setPhotoCount('');
+    setAuditError('');
   };
 
   if (isCheckingAccess) {
@@ -725,9 +403,9 @@ function CalculateurFicheGoogleContent() {
       {/* BANNIÈRE HERO */}
       <section className="py-10 sm:py-14 bg-gradient-to-b from-[#eef7f6] to-[#faf8f5] border-b border-[#eee7da]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider border border-amber-200">
-            <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-            <span>Audit Algorithmique Connecté à Google Places</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-900 text-xs font-black uppercase tracking-wider border border-emerald-200">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+            <span>Audit 100% Données Réelles • Google Places API</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#332420] tracking-tight">
@@ -735,7 +413,7 @@ function CalculateurFicheGoogleContent() {
           </h1>
 
           <p className="text-base sm:text-lg text-[#5e4d46] max-w-2xl mx-auto font-medium leading-relaxed">
-            Scannez en direct les signaux de votre fiche Google Maps pour obtenir votre score sur 100 et vos <strong>3 Quick Wins prioritaires</strong>.
+            Collez le lien direct de votre fiche Google Maps pour auditer en temps réel vos avis réels, vos photos publiques et vos <strong>3 Quick Wins prioritaires</strong>.
           </p>
         </div>
       </section>
@@ -743,243 +421,46 @@ function CalculateurFicheGoogleContent() {
       {/* MAIN CONTAINER */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-10">
 
-        {/* FORMULAIRE DE CALCUL & SCAN */}
+        {/* FORMULAIRE UNIQUE PAR LIEN GOOGLE MAPS */}
         {!result && !isAnalyzing && (
-          <div className="bg-white rounded-3xl border-2 border-[#18757d]/20 p-6 sm:p-10 shadow-xl space-y-8">
+          <div className="bg-white rounded-3xl border-2 border-[#18757d]/20 p-6 sm:p-10 shadow-xl space-y-6">
             
-            {/* SÉLECTEUR D'ONGLETS POUR LE MODE DE SAISIE */}
-            <div className="flex flex-wrap bg-[#faf8f5] p-1.5 rounded-2xl border border-[#eee7da] gap-1">
-              <button
-                type="button"
-                onClick={() => setSearchMode('url')}
-                className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  searchMode === 'url'
-                    ? 'bg-[#18757d] text-white shadow-sm'
-                    : 'text-slate-600 hover:text-[#18757d] hover:bg-white/60'
-                }`}
-              >
-                <LinkIcon className="w-4 h-4" />
-                <span>1. Lien Google Maps (Recommandé)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSearchMode('search')}
-                className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  searchMode === 'search'
-                    ? 'bg-[#18757d] text-white shadow-sm'
-                    : 'text-slate-600 hover:text-[#18757d] hover:bg-white/60'
-                }`}
-              >
-                <Search className="w-4 h-4" />
-                <span>2. Nom & Ville</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSearchMode('manual')}
-                className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  searchMode === 'manual'
-                    ? 'bg-[#18757d] text-white shadow-sm'
-                    : 'text-slate-600 hover:text-[#18757d] hover:bg-white/60'
-                }`}
-              >
-                <Sliders className="w-4 h-4" />
-                <span>3. Simulation Manuelle</span>
-              </button>
-            </div>
-
             <form onSubmit={handleRunAudit} className="space-y-6">
               
-              {/* ONGLET 1 : LIEN GOOGLE MAPS DIRECT */}
-              {searchMode === 'url' && (
-                <div className="space-y-3 bg-[#f7faf9] p-6 rounded-2xl border border-[#bce3e0]">
-                  <div className="space-y-1">
-                    <label className="text-xs font-black uppercase tracking-wider text-[#18757d] flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-emerald-600" />
-                      Lien direct de votre fiche Google Maps
-                    </label>
-                    <p className="text-xs text-slate-500">
-                      Collez le lien de votre fiche (ex: <code>https://maps.app.goo.gl/...</code> ou <code>https://google.com/maps/place/...</code>).
-                    </p>
-                  </div>
-                  <input
-                    type="text"
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    placeholder="https://maps.app.goo.gl/..."
-                    className="w-full text-sm px-4 py-3.5 rounded-2xl border border-[#bce3e0] focus:outline-none focus:ring-2 focus:ring-[#18757d] bg-white font-medium"
-                  />
-                  <p className="text-[11px] text-slate-500">
-                    💡 Astuce : Sur Google Maps, cliquez sur <strong>Partager</strong> &gt; <strong>Copier le lien</strong> puis collez-le ici.
+              <div className="space-y-3 bg-[#f7faf9] p-6 rounded-2xl border border-[#bce3e0]">
+                <div className="space-y-1">
+                  <label className="text-xs font-black uppercase tracking-wider text-[#18757d] flex items-center gap-1.5">
+                    <LinkIcon className="w-4 h-4 text-[#18757d]" />
+                    Lien direct de votre fiche Google Maps
+                  </label>
+                  <p className="text-xs text-slate-600">
+                    Collez l'URL de votre établissement (ex: <code>https://maps.app.goo.gl/...</code> ou <code>https://www.google.com/maps/place/...</code>).
                   </p>
                 </div>
-              )}
+                
+                <input
+                  type="text"
+                  value={urlInput}
+                  onChange={(e) => {
+                    setUrlInput(e.target.value);
+                    if (auditError) setAuditError('');
+                  }}
+                  placeholder="https://maps.app.goo.gl/..."
+                  className="w-full text-sm px-4 py-3.5 rounded-2xl border border-[#bce3e0] focus:outline-none focus:ring-2 focus:ring-[#18757d] bg-white font-medium"
+                />
 
-              {/* ONGLET 2 : RECHERCHE PAR NOM ET VILLE */}
-              {searchMode === 'search' && (
-                <div className="space-y-4 bg-[#faf8f5] p-6 rounded-2xl border border-[#eee7da]">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-black uppercase tracking-wider text-slate-700">
-                        Nom commercial de l'établissement *
-                      </label>
-                      <input
-                        type="text"
-                        value={businessName}
-                        onChange={(e) => setBusinessName(e.target.value)}
-                        placeholder="Ex: Savonnerie Cyaness"
-                        className="w-full text-sm px-4 py-3 rounded-2xl border border-[#eee7da] focus:outline-none focus:ring-2 focus:ring-[#18757d] bg-white font-medium"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-black uppercase tracking-wider text-slate-700">
-                        Ville / Commune (ou Code Postal) *
-                      </label>
-                      <input
-                        type="text"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        placeholder="Ex: Comines, Lille, Roubaix..."
-                        className="w-full text-sm px-4 py-3 rounded-2xl border border-[#eee7da] focus:outline-none focus:ring-2 focus:ring-[#18757d] bg-white font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Détails réels de la fiche pour les artisans / ateliers */}
-                  <div className="space-y-3 pt-3 border-t border-[#eee7da]">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-black uppercase tracking-wider text-[#18757d] flex items-center gap-1.5">
-                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                        Données visibles sur votre fiche Google :
-                      </label>
-                      <span className="text-[11px] text-slate-400 font-medium">Recommandé pour un calcul au point près</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-600">
-                          Nombre d'avis Google
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={reviewCount}
-                          onChange={(e) => setReviewCount(e.target.value === '' ? '' : Number(e.target.value))}
-                          placeholder="Ex: 26"
-                          className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-[#eee7da] bg-white font-medium focus:ring-2 focus:ring-[#18757d]"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-600">
-                          Note moyenne (/5)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="1"
-                          max="5"
-                          value={rating}
-                          onChange={(e) => setRating(e.target.value === '' ? '' : Number(e.target.value))}
-                          placeholder="Ex: 4.9"
-                          className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-[#eee7da] bg-white font-medium focus:ring-2 focus:ring-[#18757d]"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-600">
-                          Photos publiées
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={photoCount}
-                          onChange={(e) => setPhotoCount(e.target.value === '' ? '' : Number(e.target.value))}
-                          placeholder="Ex: 15"
-                          className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-[#eee7da] bg-white font-medium focus:ring-2 focus:ring-[#18757d]"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                <div className="flex items-start gap-2 pt-1 text-[11px] text-slate-500">
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Comment trouver ce lien ?</strong> Sur Google Maps, ouvrez votre fiche, cliquez sur le bouton <strong>Partager</strong> puis <strong>Copier le lien</strong>.
+                  </span>
                 </div>
-              )}
+              </div>
 
-              {/* ONGLET 3 : SIMULATION MANUELLE / AJUSTEMENTS */}
-              {searchMode === 'manual' && (
-                <div className="space-y-4 bg-[#faf8f5] p-6 rounded-2xl border border-[#eee7da]">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-black uppercase tracking-wider text-slate-700">
-                        Nombre d'avis Google
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={reviewCount}
-                        onChange={(e) => setReviewCount(e.target.value === '' ? '' : Number(e.target.value))}
-                        placeholder="Ex: 26"
-                        className="w-full text-sm px-4 py-2.5 rounded-xl border border-[#eee7da] bg-white font-medium"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-black uppercase tracking-wider text-slate-700">
-                        Note moyenne (/5)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="1"
-                        max="5"
-                        value={rating}
-                        onChange={(e) => setRating(e.target.value === '' ? '' : Number(e.target.value))}
-                        placeholder="Ex: 4.9"
-                        className="w-full text-sm px-4 py-2.5 rounded-xl border border-[#eee7da] bg-white font-medium"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-black uppercase tracking-wider text-slate-700">
-                        Nombre de photos
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={photoCount}
-                        onChange={(e) => setPhotoCount(e.target.value === '' ? '' : Number(e.target.value))}
-                        placeholder="Ex: 15"
-                        className="w-full text-sm px-4 py-2.5 rounded-xl border border-[#eee7da] bg-white font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-[#eee7da] space-y-2">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={hasDescription}
-                        onChange={(e) => setHasDescription(e.target.checked)}
-                        className="w-4 h-4 rounded text-[#18757d] focus:ring-[#18757d]"
-                      />
-                      <span className="text-xs font-bold text-[#332420]">
-                        Description détaillée rédigée sur la fiche
-                      </span>
-                    </label>
-
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={hasWebsite}
-                        onChange={(e) => setHasWebsite(e.target.checked)}
-                        className="w-4 h-4 rounded text-[#18757d] focus:ring-[#18757d]"
-                      />
-                      <span className="text-xs font-bold text-[#332420]">
-                        Site web ou lien direct de commande renseigné
-                      </span>
-                    </label>
-                  </div>
+              {auditError && (
+                <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <span>{auditError}</span>
                 </div>
               )}
 
@@ -989,9 +470,7 @@ function CalculateurFicheGoogleContent() {
                 className="w-full bg-[#18757d] hover:bg-[#135d64] text-white py-4 px-6 rounded-2xl font-black text-base uppercase tracking-wider transition-all shadow-lg hover:scale-102 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Zap className="w-5 h-5 text-amber-300" />
-                <span>
-                  {searchMode === 'url' ? 'Scanner ma fiche Google Maps en direct' : 'Calculer mon score & afficher mes 3 Quick Wins'}
-                </span>
+                <span>Auditer ma fiche Google Maps en direct</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
 
@@ -1005,17 +484,17 @@ function CalculateurFicheGoogleContent() {
           <div className="bg-white rounded-3xl border border-[#eee7da] p-12 text-center space-y-6 shadow-xl max-w-lg mx-auto">
             <div className="w-16 h-16 border-4 border-[#18757d] border-t-transparent rounded-full animate-spin mx-auto" />
             <div className="space-y-2">
-              <h3 className="text-xl font-black text-[#332420]">Analyse de ta visibilité locale en cours...</h3>
+              <h3 className="text-xl font-black text-[#332420]">Analyse de ta fiche Google Maps en direct...</h3>
               <p className="text-xs text-slate-500 font-semibold">
-                {analysisStep === 1 && "Résolution du lien et interrogation de l'API Google Places..."}
-                {analysisStep === 2 && "Calcul algorithmique des avis, photos et signaux de pertinence..."}
-                {analysisStep === 3 && "Génération de tes 3 Quick Wins stratégiques personnalisés..."}
+                {analysisStep === 1 && "Résolution du lien et connexion à l'API Google Places..."}
+                {analysisStep === 2 && "Récupération des avis réels, photos et signaux algorithmiques..."}
+                {analysisStep === 3 && "Calcul du score de visibilité et génération des Quick Wins..."}
               </p>
             </div>
           </div>
         )}
 
-        {/* ÉCRAN DES RÉSULTATS D'AUDIT */}
+        {/* ÉCRAN DES RÉSULTATS D'AUDIT (100% DONNÉES RÉELLES) */}
         {result && (
           <div className="space-y-8 animate-fadeIn">
             
@@ -1028,19 +507,17 @@ function CalculateurFicheGoogleContent() {
                     <span className="text-xs font-black uppercase tracking-wider bg-[#e6f4f3] text-[#18757d] px-3 py-1 rounded-full">
                       Rapport d'Audit Google Maps
                     </span>
-                    {result.isLiveApi && (
-                      <span className="text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-emerald-600" />
-                        Données vérifiées en direct (Google Places API)
-                      </span>
-                    )}
+                    <span className="text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-600" />
+                      100% Données Réelles Vérifiées (Google Places API)
+                    </span>
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-black text-[#332420] mt-2">
-                    {result.placeName || businessName || 'Votre Établissement'}
+                    {result.placeName || 'Établissement'}
                   </h2>
                   <p className="text-xs text-slate-500 font-medium flex items-center gap-1 mt-0.5">
                     <MapPin className="w-3.5 h-3.5 text-[#18757d]" />
-                    {result.placeAddress || city || 'Localisation'}
+                    {result.placeAddress || 'Localisation'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1112,74 +589,21 @@ function CalculateurFicheGoogleContent() {
 
               </div>
 
-              {/* SECTION AJUSTEMENT RAPIDE DES DONNÉES EN DIRECT */}
-              <div className="bg-[#faf8f5] p-5 rounded-2xl border border-[#eee7da] space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-black uppercase tracking-wider text-[#18757d] flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5" />
-                    Ajuster vos chiffres (Avis, Note, Photos) & recalculer en direct :
-                  </span>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600">Avis Google</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={reviewCount}
-                      onChange={(e) => setReviewCount(e.target.value === '' ? '' : Number(e.target.value))}
-                      placeholder="Ex: 26"
-                      className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white font-bold"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600">Note (/5)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="1"
-                      max="5"
-                      value={rating}
-                      onChange={(e) => setRating(e.target.value === '' ? '' : Number(e.target.value))}
-                      placeholder="Ex: 4.9"
-                      className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white font-bold"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600">Photos</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={photoCount}
-                      onChange={(e) => setPhotoCount(e.target.value === '' ? '' : Number(e.target.value))}
-                      placeholder="Ex: 15"
-                      className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white font-bold"
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <button
-                      type="button"
-                      onClick={handleQuickRecalculate}
-                      className="w-full bg-[#18757d] hover:bg-[#135d64] text-white py-2 px-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-sm cursor-pointer"
-                    >
-                      ⚡ Recalculer
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* LES 4 PILIERS DE CONTRÔLE */}
+              {/* LES 4 PILIERS DE CONTRÔLE (DONNÉES RÉELLES GOOGLE PLACES) */}
               <div className="space-y-4 pt-4 border-t border-[#eee7da]">
                 <h3 className="text-base font-black text-[#332420] uppercase tracking-wider">
-                  Détail par Pilier Stratégique :
+                  Détail des 4 Piliers Fondamentaux (Scannés en direct) :
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {result.pillars.map((pillar, pIdx) => (
                     <div key={pIdx} className="p-4 rounded-2xl border border-[#eee7da] bg-[#faf8f5] space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black text-[#332420]">{pillar.title}</span>
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[#18757d]">
+                        <span className={`text-xs font-black px-2 py-0.5 rounded-md ${
+                          pillar.status === 'good' ? 'bg-emerald-100 text-emerald-800' :
+                          pillar.status === 'warning' ? 'bg-amber-100 text-amber-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
                           {pillar.score} / {pillar.max}
                         </span>
                       </div>
