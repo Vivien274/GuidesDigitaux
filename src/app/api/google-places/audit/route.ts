@@ -288,7 +288,7 @@ export async function POST(req: NextRequest) {
           impact: 'Critique' as const,
           time: '3 minutes',
           action: `Votre fiche compte actuellement ${realRatingCount} avis (${realRating}★). Envoyez notre modèle WhatsApp post-prestation à vos 5 derniers clients pour consolider votre positionnement local.`,
-          moduleLink: 'Module 6 : La Machine à Avis 5 Étoiles'
+          moduleLink: 'Module 6 – La Machine à Avis 5 Étoiles & Réponses SEO (Leçon 6.1)'
         });
       }
 
@@ -300,7 +300,7 @@ export async function POST(req: NextRequest) {
           impact: 'Élevé' as const,
           time: '5 minutes',
           action: `Seulement ${realPhotoCount} photo(s) publique(s) détectée(s). L'algorithme Google Maps privilégie les fiches avec une galerie active et des clichés récents de vos créations.`,
-          moduleLink: 'Module 4 : Photos Vendeuses & Google Vision AI'
+          moduleLink: 'Module 4 – Photos Vendeuses & Google Vision AI (Leçon 4.1)'
         });
       }
 
@@ -312,19 +312,31 @@ export async function POST(req: NextRequest) {
           impact: 'Très élevé' as const,
           time: '2 minutes',
           action: `Rédigez une bio de 750 caractères intégrant vos mots-clés de savoir-faire couplés à votre zone géographique (${realAddress.split(',')[1]?.trim() || 'votre ville'}).`,
-          moduleLink: 'Module 3 : Description & Prompts IA'
+          moduleLink: 'Module 3 – Description Vendeuse & Prompts IA (Leçon 3.1)'
+        });
+      }
+
+      if (!hasWebsite || !hasPhone || !hasHours) {
+        quickWins.push({
+          id: 4,
+          icon: '🛠️',
+          title: 'Compléter les coordonnées et la configuration stratégique',
+          impact: 'Élevé' as const,
+          time: '4 minutes',
+          action: 'Renseignez tous vos canaux de contact (numéro direct, horaires d’ouverture et lien web) pour faciliter la prise de contact.',
+          moduleLink: 'Module 2 – Configuration & Catégorisation Stratégique (Leçon 2.2)'
         });
       }
 
       if (quickWins.length < 3) {
         quickWins.push({
-          id: 4,
+          id: 5,
           icon: '📢',
           title: 'Publier 1 Post Google avec appel à l\'action direct',
           impact: 'Élevé' as const,
           time: '2 minutes',
           action: 'Les actualités régulières envoient un signal de fraîcheur algorithmique prioritaire dans le Pack Local.',
-          moduleLink: 'Module 7 : Routine 5 min & Posts Google'
+          moduleLink: 'Module 7 – Routine 5 min/Semaine & Posts Google (Leçon 7.1)'
         });
       }
 
