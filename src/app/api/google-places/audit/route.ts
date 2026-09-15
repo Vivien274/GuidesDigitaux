@@ -2,31 +2,70 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-// Helper pour résoudre les redirections de liens courts Google Maps (ex: maps.app.goo.gl)
-async function resolveGoogleMapsUrl(rawUrl: string): Promise<{ resolvedQuery: string; placeId?: string }> {
+// Helper pour résoudre les redirections de liens courts Google Maps (ex: maps.app.goo.gl, share.google) et extraire le Place ID
+async function resolveGoogleMapsInput(rawInput: string): Promise<{ placeId?: string; resolvedQuery: string }> {
   try {
-    let targetUrl = rawUrl.trim();
-    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
-      targetUrl = `https://${targetUrl}`;
+    let target = rawInput.trim();
+    if (target.startsWith('ChIJ')) {
+      return { placeId: target, resolvedQuery: target };
+    }
+    if (!target.startsWith('http://') && !target.startsWith('https://')) {
+      target = `https://${target}`;
     }
 
-    let finalUrl = targetUrl;
+    // 1. Résolution de la redirection HTTP si lien court
+    let finalUrl = target;
     try {
-      const response = await fetch(targetUrl, {
-        method: 'GET',
-        redirect: 'follow',
+      const headRes = await fetch(target, { method: 'HEAD', redirect: 'manual' });
+      if (headRes.status >= 300 && headRes.status < 400) {
+        finalUrl = headRes.headers.get('location') || target;
+      }
+    } catch (e) {
+      // Ignorer
+    }
+
+    // 2. ChIJ direct dans l'URL ?
+    const directChij = finalUrl.match(/placeid[=:]\s*(ChIJ[a-zA-Z0-9_-]{23,})/i) || finalUrl.match(/!1s(ChIJ[a-zA-Z0-9_-]{23,})/);
+    if (directChij && directChij[1]) {
+      return { placeId: directChij[1], resolvedQuery: rawInput };
+    }
+
+    // 3. Récupération du code HTML Google Maps pour extraire le lien preview ou le ChIJ
+    try {
+      const mapRes = await fetch(finalUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8'
         }
       });
-      finalUrl = response.url || targetUrl;
-    } catch (fetchErr) {
-      finalUrl = targetUrl;
+      const html = await mapRes.text();
+
+      const htmlChij = html.match(/ChIJ[a-zA-Z0-9_-]{23,}/);
+      if (htmlChij && htmlChij[0]) {
+        return { placeId: htmlChij[0], resolvedQuery: rawInput };
+      }
+
+      const linkHref = html.match(/<link[^>]*href=\"(\/maps\/preview\/place[^\"]+)\"/);
+      if (linkHref && linkHref[1]) {
+        const fullPreviewUrl = 'https://www.google.com' + linkHref[1].replace(/&amp;/g, '&');
+        const pRes = await fetch(fullPreviewUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8'
+          }
+        });
+        const pText = await pRes.text();
+        const previewChij = pText.match(/ChIJ[a-zA-Z0-9_-]{23,}/);
+        if (previewChij && previewChij[0]) {
+          return { placeId: previewChij[0], resolvedQuery: rawInput };
+        }
+      }
+    } catch (err) {
+      console.warn('Erreur extraction Maps HTML:', err);
     }
 
+    // 4. Fallback extraction du nom depuis l'URL
     const decoded = decodeURIComponent(finalUrl);
-
-    // Extraction 1 : /place/Nom+Etablissement/
     const placeMatch = decoded.match(/place\/([^\/@?#]+)/);
     if (placeMatch && placeMatch[1]) {
       const cleanName = placeMatch[1].replace(/\+/g, ' ').replace(/,\s*\d+.*$/, '').trim();
@@ -35,7 +74,6 @@ async function resolveGoogleMapsUrl(rawUrl: string): Promise<{ resolvedQuery: st
       }
     }
 
-    // Extraction 2 : /search/Nom+Etablissement/ ou ?q=Nom
     const qMatch = decoded.match(/[?&]q=([^&]+)/) || decoded.match(/search\/([^\/@?#]+)/);
     if (qMatch && qMatch[1]) {
       const cleanName = decodeURIComponent(qMatch[1]).replace(/\+/g, ' ').replace(/,\s*\d+.*$/, '').trim();
@@ -44,15 +82,9 @@ async function resolveGoogleMapsUrl(rawUrl: string): Promise<{ resolvedQuery: st
       }
     }
 
-    // Extraction 3 : data=!1s... Place ID
-    const placeIdMatch = decoded.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
-    if (placeIdMatch && placeIdMatch[1]) {
-      return { resolvedQuery: rawUrl, placeId: placeIdMatch[1] };
-    }
-
-    return { resolvedQuery: rawUrl };
+    return { resolvedQuery: rawInput };
   } catch (e) {
-    return { resolvedQuery: rawUrl };
+    return { resolvedQuery: rawInput };
   }
 }
 
@@ -113,13 +145,19 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.GOOGLE_PLACES_API_KEY || 'AIzaSyCrvvH4CDd2aloQA4vXacXUGzYbiYpcqZU';
 
-    // Résolution du terme de recherche
+    // Résolution du terme de recherche ou du Place ID direct
+    let directPlaceId: string | undefined;
     let searchQuery = '';
     const rawInput = (url || query || '').trim();
 
-    if (rawInput.startsWith('http://') || rawInput.startsWith('https://') || rawInput.includes('maps.google') || rawInput.includes('goo.gl')) {
-      const { resolvedQuery } = await resolveGoogleMapsUrl(rawInput);
-      searchQuery = resolvedQuery;
+    if (rawInput.startsWith('ChIJ')) {
+      directPlaceId = rawInput;
+    } else if (rawInput.startsWith('http://') || rawInput.startsWith('https://') || rawInput.includes('maps.google') || rawInput.includes('goo.gl')) {
+      const resolved = await resolveGoogleMapsInput(rawInput);
+      if (resolved.placeId) {
+        directPlaceId = resolved.placeId;
+      }
+      searchQuery = resolved.resolvedQuery;
     } else if (businessName) {
       searchQuery = `${businessName} ${city || ''}`.trim();
     } else if (query) {
@@ -130,44 +168,36 @@ export async function POST(req: NextRequest) {
       searchQuery = city.trim();
     }
 
-    // Helper pour vérifier que l'établissement trouvé par Google correspond bien au nom et à la zone recherchée
-    const isNameMatching = (searchedName: string, candidateName: string, searchedCity?: string, candidateAddress?: string): boolean => {
-      if (!searchedName || !candidateName) return true;
-      const cleanA = searchedName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-      const cleanB = candidateName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-      
-      // Si les chaînes nettoyées sont très proches
-      if (cleanA === cleanB || cleanB.startsWith(cleanA) || cleanA.startsWith(cleanB)) return true;
-      
-      const wordsA = searchedName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/\s+/).filter(w => w.length > 1);
-      const wordsB = candidateName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/\s+/).filter(w => w.length > 1);
-      
-      // Vérification géographique si une ville est spécifiée
-      if (searchedCity && candidateAddress) {
-        const cleanCity = searchedCity.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-        const cleanAddr = candidateAddress.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        if (cleanCity.length > 2 && !cleanAddr.includes(cleanCity)) {
-          return false; // Rejeter si la ville ne correspond pas
-        }
-      }
-
-      // Pourcentage de mots en commun
-      const matchingWords = wordsA.filter(w => wordsB.some(wb => wb === w || (w.length > 3 && (wb.includes(w) || w.includes(wb)))));
-      const matchRatio = matchingWords.length / wordsA.length;
-
-      return matchRatio >= 0.6;
-    };
-
     let place: any = null;
 
-    if (searchQuery && !searchQuery.startsWith('http')) {
+    // A. Récupération directe par Place ID si résolu
+    if (directPlaceId) {
+      try {
+        const placeRes = await fetch(`https://places.googleapis.com/v1/places/${directPlaceId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': 'id,displayName,formattedAddress,shortFormattedAddress,rating,userRatingCount,photos,types,editorialSummary,websiteUri,nationalPhoneNumber,regularOpeningHours,pureServiceAreaBusiness,googleMapsUri'
+          }
+        });
+        const placeData = await placeRes.json();
+        if (placeData && (placeData.id || placeData.displayName)) {
+          place = placeData;
+        }
+      } catch (err) {
+        console.warn('Erreur appel direct Place ID:', err);
+      }
+    }
+
+    // B. Recherche textuelle si pas de Place ID direct
+    if (!place && searchQuery && !searchQuery.startsWith('http')) {
       const trySearch = async (q: string) => {
         const googleRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'X-Goog-Api-Key': apiKey,
-            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.photos,places.types,places.editorialSummary,places.websiteUri,places.nationalPhoneNumber,places.regularOpeningHours,places.reviews,places.googleMapsUri'
+            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.shortFormattedAddress,places.rating,places.userRatingCount,places.photos,places.types,places.editorialSummary,places.websiteUri,places.nationalPhoneNumber,places.regularOpeningHours,places.pureServiceAreaBusiness,places.reviews,places.googleMapsUri'
           },
           body: JSON.stringify({
             textQuery: q,
@@ -175,23 +205,15 @@ export async function POST(req: NextRequest) {
           })
         });
         const data = await googleRes.json();
-        const candidate = data.places?.[0] || null;
-        if (candidate && businessName && candidate.displayName?.text) {
-          if (!isNameMatching(businessName, candidate.displayName.text, city, candidate.formattedAddress)) {
-            return null; // Rejeter le faux positif renvoyé par le fuzzy matching de Google
-          }
-        }
-        return candidate;
+        return data.places?.[0] || null;
       };
 
       place = await trySearch(searchQuery);
 
-      // Essai 2 : Si échec, essayer avec juste le nom
       if (!place && businessName && searchQuery !== businessName) {
         place = await trySearch(businessName);
       }
 
-      // Essai 3 : Si échec, essayer en ajoutant la ville et la France
       if (!place && businessName && city) {
         place = await trySearch(`${businessName} ${city} France`);
       }
@@ -200,8 +222,8 @@ export async function POST(req: NextRequest) {
     // 2. Si l'API a trouvé l'établissement réel
     if (place) {
       const realName = place.displayName?.text || businessName || searchQuery || 'Établissement';
-      const realAddress = place.formattedAddress || city || '';
-      const realRating = place.rating || Number(manualRating) || 5.0;
+      const realAddress = place.formattedAddress || place.shortFormattedAddress || (place.pureServiceAreaBusiness ? 'Zone de service (Prestataire itinérant)' : '') || city || '';
+      const realRating = place.rating !== undefined ? place.rating : (Number(manualRating) || 5.0);
       const realRatingCount = place.userRatingCount !== undefined ? place.userRatingCount : (Number(manualReviewCount) || 0);
       const realPhotoCount = place.photos?.length || 0;
       const hasDescription = Boolean(place.editorialSummary?.text && place.editorialSummary.text.length > 30);
@@ -363,7 +385,7 @@ export async function POST(req: NextRequest) {
     // 3. Fallback : Si aucune fiche Google Maps n'a été trouvée via l'API
     return NextResponse.json({
       found: false,
-      message: `Aucun établissement Google Places n'a pu être scanné automatiquement pour "${searchQuery}". Vous pouvez utiliser le mode de simulation manuelle ci-dessous.`
+      message: `Aucun établissement Google Places n'a pu être scanné pour "${searchQuery || 'ce lien'}". Vérifiez que le lien Google Maps est valide et que la fiche est bien publique.`
     });
 
   } catch (error: any) {
