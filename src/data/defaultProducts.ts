@@ -425,7 +425,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
     "rating": 5,
     "reviewsCount": 47,
     "badge": "LANCEMENT OFFICIEL",
-    "image": "/images/products/formation-fiche-google-mockup.jpg",
+    "image": "/images/products/formation-fiche-google-mockup.png",
     "imageAlt": "Cap Visibilité Google - Formation Fiche Google Business Profile pour Artisans",
     "description": "Le GPS pas-à-pas en 7 modules vidéo pour propulser votre atelier dans le Top 3 Google Maps et guider vos clients locaux sans jargon ni budget pub.",
     "features": [
@@ -447,7 +447,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
     "rating": 5,
     "reviewsCount": 18,
     "badge": "OUTIL EXCLUSIF",
-    "image": "/images/products/formation-fiche-google-mockup.jpg",
+    "image": "/images/products/formation-fiche-google-mockup.png",
     "imageAlt": "Calculateur d'indice et score Google Maps pour commerces et artisans",
     "description": "Outil d'audit algorithmique connecté en direct à Google Places pour évaluer le score de visibilité de ta fiche et générer 3 Quick Wins prioritaires.",
     "features": [

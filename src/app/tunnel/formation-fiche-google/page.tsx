@@ -417,9 +417,9 @@ export default function TunnelFormationFicheGooglePage() {
 
           {/* VISUEL MOCKUP HAUTE DÉFINITION */}
           <div className="relative max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white mt-8 group">
-            <div className="relative aspect-video w-full bg-slate-100">
+            <div className="relative aspect-video w-full bg-[#f4ede4]">
               <Image
-                src="/images/products/formation-fiche-google-mockup.jpg"
+                src="/images/products/formation-fiche-google-mockup.png"
                 alt="Formation Fiche Google Business Profile - Guides Digitaux"
                 fill
                 className="object-cover"

@@ -525,7 +525,7 @@ const DEFAULT_COURSES: Course[] = [
     prerequisites: 'Avoir ou vouloir créer une Fiche Google Business Profile pour son activité.',
     price: 29,
     originalPrice: 149,
-    image: '/images/products/formation-fiche-google-mockup.jpg',
+    image: '/images/products/formation-fiche-google-mockup.png',
     status: 'Publié',
     category: 'formation',
     congratulationsMsg: 'Félicitations ! Tu as complété l’ensemble des 7 modules de la Formation Fiche Google. Ta visibilité locale est maintenant blindée pour le Top 3 !',
