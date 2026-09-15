@@ -204,13 +204,19 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
 
   // Determine Product Type & Action Button
   const isCoaching = productId.includes('coaching') || productTitle.toLowerCase().includes('coaching');
-  const isPreorder = productId.includes('precommande') || productId.includes('preorder') || productTitle.toLowerCase().includes('précommande') || productTitle.toLowerCase().includes('fiche google');
-  const isFormation = (productId.includes('formation') || productId.includes('bundle') || productTitle.toLowerCase().includes('formation')) && !productId.includes('pack-guides') && !isPreorder;
+  const isPreorder = (productId.includes('precommande') || productId.includes('preorder') || productTitle.toLowerCase().includes('précommande')) && !productId.includes('formation-fiche-google');
+  const isFormation = (productId.includes('formation') || productId.includes('bundle') || productTitle.toLowerCase().includes('formation') || productId.includes('fiche-google')) && !productId.includes('pack-guides') && !isPreorder;
   const isPdf = !isCoaching && !isFormation && !isPreorder;
+  const hasCalculatorTool = productId.includes('calculateur') || 
+    productId.includes('orderbump') || 
+    productTitle.toLowerCase().includes('calculateur') || 
+    payload.cartItems?.some(it => it.id?.includes('calculateur') || it.id?.includes('orderbump'));
 
   const deduplicatedLinks = getDeduplicatedDownloadLinksForProduct(productId, payload.downloadPdf, payload.cartItems);
   const bookingUrl = payload.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18';
-  const courseUrl = `https://guides-digitaux.com/dashboard/eleve`;
+  const courseUrl = `https://www.guides-digitaux.com/dashboard/eleve`;
+  const accountUrl = `https://www.guides-digitaux.com/mon-compte`;
+  const calculatorUrl = `https://www.guides-digitaux.com/outils/calculateur-fiche-google`;
 
   // --- 1. ADMIN NOTIFICATION EMAIL CONTENT ---
   const adminSubject = `🛒 Nouvelle Commande ! ${formattedAmount} - ${productTitle}`;
@@ -235,7 +241,7 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
           <div style="background-color: #fff7ed; border-left: 4px solid #F2542D; padding: 12px 16px; margin: 15px 0; border-radius: 0 8px 8px 0;">
             <strong>🗓️ Inscription Coaching (2 Sessions) :</strong><br/>
             Le client a accès à votre lien Google Calendar pour réserver ses 2 rendez-vous de 45 min.
-            Vous pouvez gérer ses rendez-vous dans le tableau de bord admin (<a href="https://guides-digitaux.com/dashboard/admin/coaching">Suivi Coaching Admin</a>).
+            Vous pouvez gérer ses rendez-vous dans le tableau de bord admin (<a href="https://www.guides-digitaux.com/dashboard/admin/coaching">Suivi Coaching Admin</a>).
           </div>
         ` : ''}
 
@@ -255,7 +261,7 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #eee7da; border-radius: 20px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
         
         <div style="text-align: center; margin-bottom: 25px;">
-          <img src="https://guides-digitaux.com/images/logo.png" alt="Guides Digitaux" style="max-width: 180px; height: auto;" />
+          <img src="https://www.guides-digitaux.com/images/logo.png" alt="Guides Digitaux" style="max-width: 180px; height: auto;" />
         </div>
 
         <h2 style="color: #18757d; font-size: 22px; margin-top: 0;">Merci pour ta confiance ! 🎉</h2>
@@ -265,13 +271,13 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
         </p>
 
         <p style="font-size: 15px; line-height: 1.6;">
-          C'est <strong>Stéphanie de Guides Digitaux</strong> ! Ta précommande pour <strong>« ${productTitle} »</strong> est bien enregistrée.
+          C'est <strong>Stéphanie de Guides Digitaux</strong> ! Ta commande pour <strong>« ${productTitle} »</strong> est bien confirmée.
         </p>
 
         <!-- RECAP TABLE -->
         <div style="background-color: #faf8f5; border: 1px solid #eee7da; border-radius: 14px; padding: 20px; margin: 20px 0;">
           <h3 style="margin-top: 0; color: #332420; font-size: 16px; border-bottom: 1px solid #e8ded0; padding-bottom: 8px;">
-            📄 Récapitulatif de ta précommande
+            📄 Récapitulatif de ta commande
           </h3>
           <p style="margin: 6px 0; font-size: 14px;"><strong>Produit :</strong> ${productTitle}</p>
           <p style="margin: 6px 0; font-size: 14px;"><strong>Montant réglé :</strong> ${formattedAmount}</p>
@@ -290,18 +296,71 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
               🗓️ RÉSERVER MA SESSION EN VISIO →
             </a>
           </div>
+        ` : isFormation ? `
+          <!-- BLOC ACCÈS FORMATION VIDÉO & DASHBOARD ÉLÈVE -->
+          <div style="background-color: #e6f4f3; border: 2px solid #18757d; border-radius: 16px; padding: 24px; text-align: center; margin: 25px 0;">
+            <h3 style="color: #18757d; margin-top: 0; font-size: 18px;">🎥 Accède immédiatement à tes cours vidéo</h3>
+            <p style="font-size: 14px; color: #332420; margin-bottom: 18px; line-height: 1.5;">
+              Ta formation vidéo est disponible 24h/24 et 7j/7 dans ton espace élève sécurisé :
+            </p>
+            <a href="${courseUrl}" target="_blank" style="display: inline-block; background-color: #18757d; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 14px 30px; border-radius: 30px; text-transform: uppercase;">
+              🚀 ACCÉDER À MON ESPACE ÉLÈVE →
+            </a>
+          </div>
+
+          <!-- NOTICE CRÉATION COMPTE / CONNEXION -->
+          <div style="background-color: #faf8f5; border: 1px solid #eee7da; border-radius: 14px; padding: 16px 20px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #5e4d46;">
+            <strong style="color: #332420; font-size: 14px;">🔑 Comment te connecter ou créer ton compte ?</strong><br/>
+            Rends-toi sur ton espace membre : <a href="${accountUrl}" style="color: #18757d; font-weight: bold;">${accountUrl}</a>.<br/>
+            Connecte-toi simplement avec l'adresse e-mail utilisée lors de ton achat : <strong>${customerEmail}</strong>.<br/>
+            Ton accès à l'ensemble des modules vidéo est activé automatiquement à vie.
+          </div>
+
+          <!-- BONUS ET RESSOURCES PDF TÉLÉCHARGEABLES -->
+          ${deduplicatedLinks.length > 0 ? `
+            <div style="background-color: #ffffff; border: 1px solid #bce3e0; border-radius: 16px; padding: 20px; margin: 25px 0;">
+              <h4 style="color: #18757d; margin-top: 0; font-size: 16px; text-align: center;">
+                📥 Tes Fichiers & Checklists Bonus (Téléchargement Direct)
+              </h4>
+              <p style="font-size: 13px; color: #5e4d46; text-align: center; margin-bottom: 15px;">
+                Retrouve ici tes supports pratiques au format PDF HD :
+              </p>
+              ${deduplicatedLinks.map(link => `
+                <div style="margin-bottom: 10px; text-align: center;">
+                  <a href="${link.url}" target="_blank" style="display: inline-block; width: 90%; max-width: 440px; background-color: #f7faf9; border: 1px solid #18757d; color: #18757d; text-decoration: none; font-weight: bold; font-size: 13px; padding: 11px 18px; border-radius: 20px;">
+                    📄 ${link.title} →
+                  </a>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <!-- BLOC OUTIL CALCULATEUR (SI ACHETÉ) -->
+          ${hasCalculatorTool ? `
+            <div style="background-color: #f7faf9; border: 2px solid #18757d; border-radius: 16px; padding: 20px; text-align: center; margin: 25px 0;">
+              <h3 style="color: #18757d; margin-top: 0; font-size: 16px;">
+                ⚡ Ton Outil : Calculateur & Auditeur Google Maps (Accès Illimité)
+              </h3>
+              <p style="font-size: 13px; color: #332420; margin-bottom: 15px;">
+                Ton accès prioritaire illimité à vie est débloqué. Tu peux auditer toutes tes fiches Google Maps en direct :
+              </p>
+              <a href="${calculatorUrl}" target="_blank" style="display: inline-block; background-color: #18757d; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px; padding: 12px 24px; border-radius: 25px; text-transform: uppercase;">
+                ⚡ OUVRIR LE CALCULATEUR EN DIRECT →
+              </a>
+            </div>
+          ` : ''}
         ` : isPreorder ? `
           <div style="background-color: #fff7ed; border-left: 4px solid #F2542D; border-radius: 0 14px 14px 0; padding: 16px 20px; margin: 20px 0;">
             <strong style="color: #562C2C; font-size: 14px;">🚀 Date de sortie officielle :</strong>
-            <span style="font-size: 14px; color: #562C2C;">Le 15 septembre 2026. Tu recevras automatiquement par email ton guide complet dès sa parution.</span>
+            <span style="font-size: 14px; color: #562C2C;">Tu recevras automatiquement par email ton guide complet dès sa parution.</span>
           </div>
 
           <div style="background-color: #e6f4f3; border: 2px solid #18757d; border-radius: 16px; padding: 20px; margin: 25px 0;">
             <h3 style="color: #18757d; margin-top: 0; text-align: center; font-size: 17px;">
-              🎁 Tes 3 Bonus Exclusifs (Disponibles Immédiatement)
+              🎁 Tes Bonus Exclusifs (Disponibles Immédiatement)
             </h3>
             <p style="font-size: 14px; color: #332420; text-align: center; margin-bottom: 18px;">
-              En remerciement de ta précommande, voici tes 3 guides bonus prêts à être téléchargés :
+              Voici tes guides bonus prêts à être téléchargés :
             </p>
             ${deduplicatedLinks.map(link => `
               <div style="margin-bottom: 12px; text-align: center;">
@@ -317,7 +376,7 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
               📥 ${deduplicatedLinks.length > 1 ? `Tes ${deduplicatedLinks.length} Guides & Checklists PDF (Pack Combo)` : 'Télécharge ton Guide PDF'}
             </h3>
             <p style="font-size: 14px; color: #332420; text-align: center; margin-bottom: 15px;">
-              Tes documents PDF HD sont disponibles en téléchargement immédiat (sans doublons) :
+              Tes documents PDF HD sont disponibles en téléchargement immédiat :
             </p>
             ${deduplicatedLinks.length > 0 ? deduplicatedLinks.map(link => `
               <div style="margin-bottom: 10px; text-align: center;">
@@ -334,20 +393,21 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
             `}
           </div>
         ` : `
+          <!-- CAS CALCULATEUR SEUL OU AUTRE OUTIL -->
           <div style="background-color: #e6f4f3; border: 2px solid #18757d; border-radius: 16px; padding: 20px; text-align: center; margin: 25px 0;">
-            <h3 style="color: #18757d; margin-top: 0;">🎥 Accède à tes cours vidéo</h3>
+            <h3 style="color: #18757d; margin-top: 0;">⚡ Accède à ton Outil en Ligne</h3>
             <p style="font-size: 14px; color: #332420; margin-bottom: 15px;">
-              Ta formation vidéo est disponible 24h/24 et 7j/7 dans ton espace élève :
+              Ton accès illimité à vie est activé :
             </p>
-            <a href="${courseUrl}" target="_blank" style="display: inline-block; background-color: #18757d; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 14px 28px; border-radius: 30px; text-transform: uppercase;">
-              🚀 ACCÉDER À MON ESPACE ÉLÈVE →
+            <a href="${hasCalculatorTool ? calculatorUrl : courseUrl}" target="_blank" style="display: inline-block; background-color: #18757d; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 14px 28px; border-radius: 30px; text-transform: uppercase;">
+              🚀 OUVRIR MON OUTIL →
             </a>
           </div>
         `}
 
         <div style="border-t: 1px solid #eee7da; pt: 20px; margin-top: 25px; font-size: 13px; color: #5e4d46; line-height: 1.5;">
-          <p>Tu peux retrouver l'ensemble de tes achats et téléchargements à tout moment sur ton espace personnel :<br/>
-          👉 <a href="https://guides-digitaux.com/dashboard/eleve" style="color: #18757d; font-weight: bold;">https://guides-digitaux.com/dashboard/eleve</a></p>
+          <p>Tu peux retrouver l'ensemble de tes achats, vidéos et téléchargements à tout moment sur ton espace personnel :<br/>
+          👉 <a href="https://www.guides-digitaux.com/dashboard/eleve" style="color: #18757d; font-weight: bold;">https://www.guides-digitaux.com/dashboard/eleve</a></p>
           
           <p style="margin-top: 20px;">
             Si tu as la moindre question, réponds simplement à cet email ou écris-moi à <a href="mailto:contact@guides-digitaux.com" style="color: #18757d;">contact@guides-digitaux.com</a>.

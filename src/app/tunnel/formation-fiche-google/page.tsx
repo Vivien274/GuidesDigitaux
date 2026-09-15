@@ -75,6 +75,8 @@ export default function TunnelFormationFicheGooglePage() {
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvc, setCardCvc] = useState('');
   const [hasOrderBump, setHasOrderBump] = useState(false);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+  const [optInError, setOptInError] = useState(false);
   const totalAmount = hasOrderBump ? 41 : 29;
 
   // Compte à rebours dynamique jusqu'au 15 octobre 2026 à 23:59:59
@@ -129,6 +131,12 @@ export default function TunnelFormationFicheGooglePage() {
       return;
     }
 
+    if (!newsletterOptIn) {
+      setOptInError(true);
+      alert('Merci de cocher la case d\'acceptation des e-mails et de la newsletter pour valider votre commande.');
+      return;
+    }
+
     setIsLoading(true);
 
     event('InitiateCheckout', {
@@ -178,6 +186,12 @@ export default function TunnelFormationFicheGooglePage() {
   };
 
   const handleCheckout = async () => {
+    if (!newsletterOptIn) {
+      setOptInError(true);
+      alert('Merci de cocher la case d\'acceptation des e-mails et de la newsletter pour valider votre commande.');
+      return;
+    }
+
     setIsLoading(true);
 
     event('InitiateCheckout', {
@@ -229,6 +243,7 @@ export default function TunnelFormationFicheGooglePage() {
             : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
           price: totalAmount,
           hasOrderBump,
+          newsletterOptIn: true,
           customerEmail: emailInput.trim() || undefined,
           cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-fiche-google',
           successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&orderbump=${hasOrderBump ? '1' : '0'}`
@@ -1360,6 +1375,33 @@ export default function TunnelFormationFicheGooglePage() {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* CASE À COCHER OBLIGATOIRE NEWSLETTER & EMAILING */}
+              <div className={`p-4 rounded-2xl border transition-all ${
+                optInError && !newsletterOptIn 
+                  ? 'bg-red-50 border-red-300 ring-2 ring-red-200' 
+                  : 'bg-[#faf8f5] border-[#eee7da]'
+              }`}>
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={newsletterOptIn}
+                    onChange={(e) => {
+                      setNewsletterOptIn(e.target.checked);
+                      if (e.target.checked) setOptInError(false);
+                    }}
+                    className="w-4 h-4 rounded text-[#18757d] focus:ring-[#18757d] mt-0.5 shrink-0 cursor-pointer"
+                  />
+                  <span className="text-xs text-[#5e4d46] leading-relaxed">
+                    <strong className="text-[#332420]">J'accepte</strong> de recevoir les e-mails pédagogiques, les conseils d'optimisation et la newsletter de Guides Digitaux. <span className="text-red-500 font-bold">*</span>
+                  </span>
+                </label>
+                {optInError && !newsletterOptIn && (
+                  <p className="text-[11px] text-red-600 font-bold mt-1.5 ml-7">
+                    Veuillez cocher cette case pour valider votre commande et recevoir vos accès.
+                  </p>
+                )}
               </div>
 
               {/* BOUTON DE VALIDATION DIRECTE */}
