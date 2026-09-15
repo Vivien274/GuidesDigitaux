@@ -298,7 +298,12 @@ export default function BoutiquePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             
             {/* Preorder Cards */}
-            {(selectedCategory === 'all' || selectedCategory === 'formation') && preorders.map((po) => {
+            {(selectedCategory === 'all' || selectedCategory === 'formation') && preorders.filter(po => {
+              if (po.status !== 'En cours') return false;
+              if (po.id?.includes('google') || po.courseTitle?.toLowerCase().includes('google')) return false;
+              if (po.releaseDate && new Date() >= new Date(po.releaseDate)) return false;
+              return true;
+            }).map((po) => {
               const percent = Math.min(100, Math.round((po.currentEnrollments / po.targetEnrollments) * 100));
 
               return (
