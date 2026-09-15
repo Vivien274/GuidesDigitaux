@@ -9,10 +9,10 @@ export default function NotFound() {
         La page que vous recherchez n'existe pas ou a été déplacée.
       </p>
       <Link 
-        href="/tunnel/precommande-fiche-google" 
+        href="/" 
         className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 font-semibold rounded-lg transition-colors"
       >
-        Retourner au tunnel de vente
+        Retourner à la page d'accueil
       </Link>
     </div>
   );

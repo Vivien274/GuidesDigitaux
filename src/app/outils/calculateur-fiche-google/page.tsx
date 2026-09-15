@@ -29,7 +29,8 @@ import {
   Check,
   Link as LinkIcon,
   Search,
-  Sliders
+  Sliders,
+  Gift
 } from 'lucide-react';
 
 interface AuditResult {
@@ -64,12 +65,14 @@ function CalculateurFicheGoogleContent() {
   const searchParams = useSearchParams();
   const { user, isLoggedIn } = useAuth();
 
-  // Contrôle d'accès membre
+  // Contrôle d'accès membre et essai gratuit
   const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
   const [isCheckingAccess, setIsCheckingAccess] = useState<boolean>(true);
+  const [freeTrialUsed, setFreeTrialUsed] = useState<boolean>(false);
   const [unlockEmailInput, setUnlockEmailInput] = useState<string>('');
   const [unlockError, setUnlockError] = useState<string>('');
   const [unlockSuccess, setUnlockSuccess] = useState<boolean>(false);
+  const [isBuying, setIsBuying] = useState<boolean>(false);
 
   // Champs de saisie (URL uniquement)
   const [urlInput, setUrlInput] = useState('');
@@ -79,7 +82,7 @@ function CalculateurFicheGoogleContent() {
   const [analysisStep, setAnalysisStep] = useState(0);
   const [result, setResult] = useState<AuditResult | null>(null);
 
-  // 1. Vérification automatique de l'accès acheteur / superadmin
+  // 1. Vérification automatique de l'accès acheteur / superadmin / essai gratuit
   useEffect(() => {
     async function verifyAccess() {
       setIsCheckingAccess(true);
@@ -88,6 +91,14 @@ function CalculateurFicheGoogleContent() {
       const sessionId = searchParams.get('session_id') || searchParams.get('sessionId');
       const authParam = searchParams.get('auth');
       const purchasedParam = searchParams.get('purchased');
+
+      // Vérification essai gratuit dans localStorage
+      if (typeof window !== 'undefined') {
+        const trialStored = localStorage.getItem('gd_calc_free_trial_used');
+        if (trialStored === 'true') {
+          setFreeTrialUsed(true);
+        }
+      }
 
       if (token || sessionId || authParam === 'granted' || purchasedParam === 'true') {
         setIsUnlocked(true);
@@ -122,15 +133,14 @@ function CalculateurFicheGoogleContent() {
 
         try {
           const purchases = await getUserPurchasesAsync(cleanEmail);
-          const hasGoogleProduct = purchases?.some((p: any) => 
-            p.id?.includes('google') || 
-            p.slug?.includes('google') || 
-            p.title?.toLowerCase().includes('google') ||
-            p.id?.includes('calculateur') ||
-            p.id?.includes('orderbump')
+          const hasCalculatorProduct = purchases?.some((p: any) => 
+            p.id?.includes('calculateur') || 
+            p.slug?.includes('calculateur') ||
+            p.id?.includes('orderbump-calculateur') ||
+            p.title?.toLowerCase().includes('calculateur')
           );
 
-          if (hasGoogleProduct) {
+          if (hasCalculatorProduct) {
             setIsUnlocked(true);
             if (typeof window !== 'undefined') {
               localStorage.setItem('gd_unlocked_tool_google_calc', 'true');
@@ -149,6 +159,37 @@ function CalculateurFicheGoogleContent() {
 
     verifyAccess();
   }, [user?.email, user?.role, searchParams]);
+
+  // Achat direct Stripe 12 € (accès illimité à vie)
+  const handleBuyUnlimited = async () => {
+    setIsBuying(true);
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: 'orderbump-calculateur-score',
+          courseId: 'orderbump-calculateur-score',
+          price: 12,
+          title: 'Calculateur & Auditeur de Score Google Maps (Accès Illimité à Vie)',
+          customerEmail: user?.email || unlockEmailInput || undefined,
+          successUrl: `${window.location.origin}/outils/calculateur-fiche-google?purchased=true`,
+          cancelUrl: `${window.location.origin}/outils/calculateur-fiche-google`
+        })
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Une erreur est survenue lors de l'initialisation du paiement Stripe.");
+      }
+    } catch (e) {
+      console.error('Erreur Stripe Checkout:', e);
+      alert("Impossible d'accéder au paiement Stripe. Réessayez dans un instant.");
+    } finally {
+      setIsBuying(false);
+    }
+  };
 
   // Déblocage manuel par e-mail
   const handleManualUnlock = async (e: React.FormEvent) => {
@@ -172,22 +213,21 @@ function CalculateurFicheGoogleContent() {
       }
 
       const purchases = await getUserPurchasesAsync(emailToTest);
-      const hasPurchased = purchases?.some((p: any) => 
-        p.id?.includes('google') || 
-        p.slug?.includes('google') || 
-        p.title?.toLowerCase().includes('google') ||
-        p.id?.includes('calculateur') ||
-        p.id?.includes('orderbump')
+      const hasPurchasedCalculator = purchases?.some((p: any) => 
+        p.id?.includes('calculateur') || 
+        p.slug?.includes('calculateur') ||
+        p.id?.includes('orderbump-calculateur') ||
+        p.title?.toLowerCase().includes('calculateur')
       );
 
-      if (hasPurchased) {
+      if (hasPurchasedCalculator) {
         setUnlockSuccess(true);
         setIsUnlocked(true);
         if (typeof window !== 'undefined') {
           localStorage.setItem('gd_unlocked_tool_google_calc', 'true');
         }
       } else {
-        setUnlockError('Aucune commande de formation ou d\'outil Google trouvée avec cet e-mail.');
+        setUnlockError('Aucun achat du Calculateur à 12 € trouvé pour cet e-mail. Le calculateur est un produit séparé de la formation.');
       }
     } catch (err) {
       setUnlockError('Erreur lors de la vérification.');
@@ -198,6 +238,12 @@ function CalculateurFicheGoogleContent() {
   const handleRunAudit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuditError('');
+
+    // Si pas débloqué et que l'essai gratuit a déjà été consommé, stopper
+    if (!isUnlocked && freeTrialUsed) {
+      setAuditError('Votre essai gratuit a été utilisé. Débloquez l\'accès illimité pour 12 € pour continuer à auditer vos fiches.');
+      return;
+    }
 
     const cleanUrl = urlInput.trim();
     if (!cleanUrl) {
@@ -219,7 +265,7 @@ function CalculateurFicheGoogleContent() {
           url: cleanUrl,
           query: cleanUrl,
           clientToken: 'authorized-buyer-token',
-          userEmail: user?.email || unlockEmailInput || 'buyer'
+          userEmail: user?.email || unlockEmailInput || 'trial-user'
         })
       });
 
@@ -241,6 +287,14 @@ function CalculateurFicheGoogleContent() {
           quickWins: liveData.quickWins
         });
         setAuditError('');
+
+        // Marquer l'essai gratuit comme consommé si non débloqué
+        if (!isUnlocked) {
+          setFreeTrialUsed(true);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('gd_calc_free_trial_used', 'true');
+          }
+        }
       } else {
         setResult(null);
         setAuditError(
@@ -278,8 +332,8 @@ function CalculateurFicheGoogleContent() {
     );
   }
 
-  // ÉCRAN VERROUILLÉ POUR NON-ACHETEURS
-  if (!isUnlocked) {
+  // ÉCRAN PAYWALL QUAND L'ESSAI GRATUIT EST DÉJÀ CONSOMMÉ ET PAS ENCORE PAYÉ
+  if (!isUnlocked && freeTrialUsed && !result) {
     return (
       <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans flex flex-col justify-between">
         <header className="bg-white border-b border-[#eee7da] py-4 px-4 sm:px-8">
@@ -294,64 +348,92 @@ function CalculateurFicheGoogleContent() {
           </div>
         </header>
 
-        <main className="max-w-3xl mx-auto px-4 py-12 sm:py-16 text-center space-y-8 my-auto">
+        <main className="max-w-2xl mx-auto px-4 py-10 sm:py-14 text-center space-y-8 my-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider border border-amber-200">
             <Lock className="w-4 h-4 text-amber-700" />
-            <span>Outil Exclusif Réservé aux Membres</span>
+            <span>Votre Essai Gratuit a été Utilisé</span>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#332420] tracking-tight leading-tight">
-              Calculateur & Auditeur de Score <br />
-              <span className="text-[#18757d]">Google Business Profile</span>
+              Débloquez l'Accès Illimité <br />
+              <span className="text-[#18757d]">au Calculateur Google Maps</span>
             </h1>
-            <p className="text-sm sm:text-base text-[#5e4d46] max-w-xl mx-auto leading-relaxed">
-              Cet outil d’audit connecté en temps réel à l’API Google Places est réservé aux acheteurs de la <strong>Formation Fiche Google</strong>.
+            <p className="text-sm sm:text-base text-[#5e4d46] max-w-lg mx-auto leading-relaxed">
+              Vous avez utilisé votre 1er audit d'essai offert. Pour analyser toutes vos fiches, mesurer l'impact de vos modifications dans le temps ou auditer vos clients, activez l'accès illimité.
             </p>
           </div>
 
-          <div className="bg-white rounded-3xl border-2 border-[#18757d]/20 p-6 sm:p-8 shadow-xl text-left space-y-4">
-            <h3 className="text-sm font-black text-[#332420] uppercase tracking-wider text-center sm:text-left">
-              Ce que cet outil analyse pour vous en direct :
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#faf8f5] border border-[#eee7da]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span className="text-xs text-[#332420] font-bold">Connexion API directe avec les serveurs Google Maps</span>
-              </div>
-              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#faf8f5] border border-[#eee7da]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span className="text-xs text-[#332420] font-bold">Calcul précis de l’indice de visibilité sur 100 points</span>
-              </div>
-              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#faf8f5] border border-[#eee7da]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span className="text-xs text-[#332420] font-bold">Génération immédiate de 3 Quick Wins stratégiques</span>
-              </div>
-              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#faf8f5] border border-[#eee7da]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span className="text-xs text-[#332420] font-bold">Rapport d'audit imprimable pour suivre votre progression</span>
+          {/* CARTE D'OFFRE DU CALCULATEUR (12 €) */}
+          <div className="bg-white rounded-3xl border-2 border-[#18757d] p-6 sm:p-8 shadow-2xl text-left space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-[#18757d] text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-bl-xl">
+              Accès Immédiat à Vie
+            </div>
+            
+            <div className="space-y-1">
+              <span className="text-xs font-black text-[#18757d] uppercase tracking-wider">Outil Indépendant</span>
+              <h3 className="text-2xl font-black text-[#332420]">Calculateur & Auditeur de Score Google Maps</h3>
+              <div className="flex items-baseline gap-2 pt-1">
+                <span className="text-4xl font-black text-[#18757d]">12 €</span>
+                <span className="text-xs text-slate-500 font-bold">paiement unique • accès à vie</span>
               </div>
             </div>
 
-            <div className="pt-4 space-y-3">
-              <Link
-                href="/tunnel/formation-fiche-google#commander"
-                className="w-full bg-[#18757d] hover:bg-[#135d64] text-white py-4 px-6 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-lg hover:scale-102 flex items-center justify-center gap-2"
+            <ul className="space-y-3 text-xs sm:text-sm text-[#5e4d46]">
+              <li className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span><strong>Audits illimités 24h/24</strong> connectés en direct à l'API Google Places</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>Calcul précis de votre score de visibilité locale sur 100 points</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>Diagnostic complet des 4 piliers algorithmiques réels</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>Génération automatique de <strong>3 Quick Wins stratégiques</strong> à chaque audit</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>Rapports exportables et imprimables pour suivre vos progrès</span>
+              </li>
+            </ul>
+
+            <div className="pt-2">
+              <button
+                onClick={handleBuyUnlimited}
+                disabled={isBuying}
+                className="w-full bg-[#18757d] hover:bg-[#135d64] text-white py-4 px-6 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-lg hover:scale-102 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
               >
                 <Zap className="w-4 h-4 text-amber-300" />
-                <span>Débloquer l'accès avec la Formation (29 €)</span>
+                <span>{isBuying ? 'Connexion Stripe sécurisée...' : 'Débloquer l\'Accès Illimité pour 12 €'}</span>
                 <ArrowRight className="w-4 h-4" />
-              </Link>
-              <p className="text-[11px] text-center text-slate-400 font-medium">
-                Accès immédiat à vie • 7 Modules vidéo • Checklist 25 points • Prompts IA inclus
-              </p>
+              </button>
             </div>
           </div>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-left space-y-3 max-w-md mx-auto">
+          {/* LIEN DISCRET VERS LA FORMATION VIDÉO */}
+          <div className="p-4 rounded-2xl bg-[#eef7f6] border border-[#bce3e0] text-xs text-[#332420] text-center space-y-1">
+            <p className="font-bold">
+              💡 Vous souhaitez aussi la méthode complète étape par étape pour ranker #1 ?
+            </p>
+            <Link
+              href="/tunnel/formation-fiche-google#commander"
+              className="inline-flex items-center gap-1 font-black text-[#18757d] hover:underline"
+            >
+              <span>Découvrir la Formation Vidéo Fiche Google (29 €)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* DÉBLOQUER AVEC E-MAIL ACHETEUR EXISTANT */}
+          <div className="bg-white border border-[#eee7da] rounded-2xl p-5 text-left space-y-3 max-w-md mx-auto">
             <div className="flex items-center gap-2 text-xs font-black text-slate-700">
               <Key className="w-4 h-4 text-[#18757d]" />
-              <span>Vous avez déjà commandé cette formation ?</span>
+              <span>Vous avez déjà acheté le calculateur à 12 € ?</span>
             </div>
             <form onSubmit={handleManualUnlock} className="space-y-2">
               <div className="flex gap-2">
@@ -359,7 +441,7 @@ function CalculateurFicheGoogleContent() {
                   type="email"
                   value={unlockEmailInput}
                   onChange={(e) => setUnlockEmailInput(e.target.value)}
-                  placeholder="Votre e-mail d'achat..."
+                  placeholder="Votre e-mail d'achat du calculateur..."
                   className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#18757d] bg-white"
                 />
                 <button type="submit" className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shrink-0 cursor-pointer">
@@ -367,34 +449,43 @@ function CalculateurFicheGoogleContent() {
                 </button>
               </div>
               {unlockError && <p className="text-[11px] text-red-600 font-medium">{unlockError}</p>}
+              {unlockSuccess && <p className="text-[11px] text-emerald-600 font-bold">Accès vérifié avec succès !</p>}
             </form>
           </div>
         </main>
 
         <footer className="bg-white border-t border-[#eee7da] py-6 text-center text-xs text-slate-500">
-          <p>© 2026 Guides Digitaux • Outil d'Audit Sécurisé • Réservé aux Membres</p>
+          <p>© 2026 Guides Digitaux • Outil d'Audit Sécurisé • Essai Gratuit & Accès Illimité à 12 €</p>
         </footer>
       </div>
     );
   }
 
+
   // ÉCRAN DÉBLOQUÉ
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans">
       
-      {/* HEADER DE L'OUTIL DÉBLOQUÉ */}
+      {/* HEADER DE L'OUTIL DÉBLOQUÉ / ESSAI GRATUIT */}
       <header className="bg-white border-b border-[#eee7da] py-4 px-4 sm:px-8">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="relative h-9 w-40 block">
             <Image src="/images/logo.png" alt="Guides Digitaux" fill className="object-contain object-left" priority />
           </Link>
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              Accès Membre Actif
-            </span>
-            <Link href="/dashboard/eleve" className="text-xs font-black text-[#18757d] hover:underline hidden sm:inline">
-              Mon Espace Élève →
+            {isUnlocked ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                Accès Illimité Actif
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-xs font-black text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+                <Gift className="w-3.5 h-3.5 text-amber-700" />
+                {freeTrialUsed ? 'Essai Gratuit Utilisé' : '1er Essai Gratuit Offert'}
+              </span>
+            )}
+            <Link href="/mon-compte" className="text-xs font-black text-[#18757d] hover:underline hidden sm:inline">
+              Espace Membre →
             </Link>
           </div>
         </div>
@@ -413,7 +504,11 @@ function CalculateurFicheGoogleContent() {
           </h1>
 
           <p className="text-base sm:text-lg text-[#5e4d46] max-w-2xl mx-auto font-medium leading-relaxed">
-            Collez le lien direct de votre fiche Google Maps pour auditer en temps réel vos avis réels, vos photos publiques et vos <strong>3 Quick Wins prioritaires</strong>.
+            {!isUnlocked && !freeTrialUsed ? (
+              <>Testez votre fiche gratuitement : collez votre lien Google Maps pour obtenir en direct votre score de visibilité locale, vos signaux réels et vos <strong>3 Quick Wins prioritaires</strong>.</>
+            ) : (
+              <>Collez le lien direct de votre fiche Google Maps pour auditer en temps réel vos avis réels, vos photos publiques et vos <strong>3 Quick Wins prioritaires</strong>.</>
+            )}
           </p>
         </div>
       </section>
@@ -497,6 +592,37 @@ function CalculateurFicheGoogleContent() {
         {/* ÉCRAN DES RÉSULTATS D'AUDIT (100% DONNÉES RÉELLES) */}
         {result && (
           <div className="space-y-8 animate-fadeIn">
+
+            {/* BANNIÈRE DE CONVERSION SI UTILISATEUR NON DÉBLOQUÉ */}
+            {!isUnlocked && (
+              <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 border border-amber-300/30">
+                <div className="space-y-1 text-center md:text-left">
+                  <div className="flex items-center justify-center md:justify-start gap-2 font-black text-sm uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4 text-amber-200 shrink-0" />
+                    <span>🎉 Vous venez d'effectuer votre 1er audit d'essai gratuit !</span>
+                  </div>
+                  <p className="text-xs text-amber-100 font-medium max-w-xl">
+                    Pour auditer vos prochaines fiches en illimité ou suivre l'évolution de votre score au fil de vos modifications, débloquez l'accès illimité au calculateur pour 12 €.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    onClick={handleBuyUnlimited}
+                    disabled={isBuying}
+                    className="bg-[#332420] hover:bg-black text-white px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg transition-transform hover:scale-105 flex items-center gap-2 cursor-pointer disabled:opacity-75"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{isBuying ? 'Connexion Stripe...' : 'Calculateur Illimité (12 €)'}</span>
+                  </button>
+                  <Link
+                    href="/tunnel/formation-fiche-google#commander"
+                    className="bg-white/20 hover:bg-white/30 text-white px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-colors hidden sm:inline-block"
+                  >
+                    Formation Vidéo (29 €)
+                  </Link>
+                </div>
+              </div>
+            )}
             
             {/* SCORE HERO CARD */}
             <div className="bg-white rounded-3xl border-2 border-[#18757d]/30 p-6 sm:p-10 shadow-2xl space-y-8">
