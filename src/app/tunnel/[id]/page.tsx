@@ -66,6 +66,12 @@ export default function SalesFunnelPage() {
   const router = useRouter();
   const rawId = (params?.id as string) || '';
 
+  useEffect(() => {
+    if (rawId === 'precommande-fiche-google' || rawId === 'fiche-google' || rawId.includes('precommande')) {
+      router.replace('/tunnel/formation-fiche-google');
+    }
+  }, [rawId, router]);
+
   const [campaign, setCampaign] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isVipModalOpen, setIsVipModalOpen] = useState(false);

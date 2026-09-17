@@ -90,14 +90,15 @@ function EleveDashboardContent() {
         }
 
         const formattedReal = baseList.map((item: any) => {
-          const matchedDb = dbCourses.find(c => c.id === item.id || c.title === item.title);
-          const targetTitle = matchedDb?.title || item.title || 'Produit Guides Digitaux';
-          const targetId = matchedDb?.id || item.id || `item-${Date.now()}`;
-          const isPreorder = !!item.isPreorder || item.slug === 'precommande-fiche-google' || item.id === 'precommande-fiche-google' || (item.slug && item.slug.includes('precommande'));
+          const isGoogleCourse = item.slug === 'precommande-fiche-google' || item.id === 'precommande-fiche-google' || item.slug === 'formation-fiche-google' || item.id === 'formation-fiche-google' || (item.slug && item.slug.includes('fiche-google'));
+          const matchedDb = dbCourses.find(c => c.id === item.id || c.title === item.title || (isGoogleCourse && (c.slug === 'formation-fiche-google' || c.id === '33333333-3333-4333-a333-333333333333')));
+          const targetTitle = matchedDb?.title || (isGoogleCourse ? "Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu'à votre atelier" : item.title || 'Produit Guides Digitaux');
+          const targetId = matchedDb?.id || item.id || (isGoogleCourse ? '33333333-3333-4333-a333-333333333333' : `item-${Date.now()}`);
+          const isPreorder = !isGoogleCourse && (!!item.isPreorder || (item.slug && item.slug.includes('precommande') && !item.slug.includes('fiche-google')));
           const isCoachingItem = item.category === 'coaching' || item.type === 'coaching' || item.slug === 'coaching-site' || item.id === 'coaching-site' || targetTitle.toLowerCase().includes('coaching') || targetTitle.toLowerCase().includes('accompagnement');
-          const isPdfItem = !isPreorder && !isCoachingItem && (item.category === 'ebook' || item.category === 'checklist' || item.type === 'ebook' || item.type === 'checklist' || !!item.downloadPdf || (item.slug && item.slug.includes('guide')) || (item.id && item.id.includes('guide')));
+          const isPdfItem = !isPreorder && !isCoachingItem && !isGoogleCourse && (item.category === 'ebook' || item.category === 'checklist' || item.type === 'ebook' || item.type === 'checklist' || !!item.downloadPdf || (item.slug && item.slug.includes('guide')) || (item.id && item.id.includes('guide')));
           const isToolItem = item.type === 'tool' || item.id?.includes('calculateur') || item.id?.includes('orderbump') || item.slug?.includes('calculateur');
-          const targetSlug = item.slug || item.id || (targetTitle.toLowerCase().includes('woocommerce') ? 'formation-woocommerce' : (isCoachingItem ? 'coaching-site' : 'creer-sa-vitrine-wordpress'));
+          const targetSlug = isGoogleCourse ? 'formation-fiche-google' : (item.slug || item.id || (targetTitle.toLowerCase().includes('woocommerce') ? 'formation-woocommerce' : (isCoachingItem ? 'coaching-site' : 'creer-sa-vitrine-wordpress')));
           
           const totalLess = matchedDb?.modules ? matchedDb.modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) : (item.totalLessons || (isPdfItem || isCoachingItem || isToolItem ? 0 : 4));
 
@@ -354,7 +355,7 @@ function EleveDashboardContent() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {courses.map((item) => {
-                const isPreorderItem = item.isPreorder || item.slug?.includes('precommande') || item.id === 'precommande-fiche-google';
+                const isPreorderItem = !item.slug?.includes('fiche-google') && (item.isPreorder || (item.slug?.includes('precommande') && !item.slug?.includes('fiche-google')));
 
                 return (
                   <div key={item.id} className="bg-white rounded-3xl overflow-hidden border border-[#eee7da] shadow-sm hover:shadow-md transition-all flex flex-col justify-between">

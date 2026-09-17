@@ -417,26 +417,22 @@ export async function fetchUserPurchasesFromDb(email: string): Promise<any[]> {
       .eq('customer_email', normalizedEmail);
 
     if (preorderBuyersData && preorderBuyersData.length > 0) {
-      const allPreorders = await fetchPreordersFromDb();
       preorderBuyersData.forEach((buyer: any) => {
-        const campaignId = buyer.campaign_id || 'precommande-fiche-google';
-        const campaignMatch = allPreorders.find(p => p.id === campaignId || p.courseId === campaignId) || {
-          id: campaignId,
-          courseTitle: 'Fais décoller ton activité locale grâce à une Fiche Google parfaite',
-          price: Number(buyer.price) || 0,
-          releaseDate: '2026-09-15'
-        };
+        // La formation Fiche Google est désormais officiellement publiée et active
+        const courseId = '33333333-3333-4333-a333-333333333333';
+        const courseSlug = 'formation-fiche-google';
+        const courseTitle = "Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu'à votre atelier";
 
-        if (!purchasesMap.has(campaignMatch.id)) {
-          purchasesMap.set(campaignMatch.id, {
-            id: campaignMatch.id,
-            title: campaignMatch.courseTitle || 'Précommande Fiche Google',
-            slug: campaignMatch.id,
+        if (!purchasesMap.has(courseSlug) && !purchasesMap.has(courseId)) {
+          purchasesMap.set(courseSlug, {
+            id: courseId,
+            title: courseTitle,
+            slug: courseSlug,
             type: 'formation',
-            typeLabel: 'Précommande Enregistrée',
-            price: Number(buyer.price) || campaignMatch.price || 0,
-            isPreorder: true,
-            releaseDate: campaignMatch.releaseDate || '2026-09-15',
+            typeLabel: 'Formation Vidéo',
+            price: Number(buyer.price) || 29,
+            isPreorder: false,
+            downloadPdf: '/downloads/bonus-1-checklist-audit-fiche-google.pdf',
             purchaseDate: buyer.created_at ? new Date(buyer.created_at).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')
           });
         }

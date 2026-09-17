@@ -54,7 +54,7 @@ export default function FormationViewerPage() {
 
   useEffect(() => {
     if (slug.includes('precommande') || slug === 'precommande-fiche-google') {
-      router.replace('/precommande');
+      router.replace('/formation/formation-fiche-google');
       return;
     }
   }, [slug, router]);
