@@ -25,9 +25,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Ensure tags contain both prevente-gmb and any custom tags specified
+    // Ensure tags contain the requested tag and any additional tags specified
     const tags = Array.from(
-      new Set([tag, 'prevente-gmb', 'prévente-GMB', ...(Array.isArray(body.tags) ? body.tags : [])])
+      new Set([tag, ...(Array.isArray(body.tags) ? body.tags : [])])
     );
 
     const result = await subscribeOrUpdateMailchimpMember({

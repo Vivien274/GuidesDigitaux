@@ -272,6 +272,11 @@ export async function POST(request: Request) {
           collectedTags.add('newsletter');
         }
 
+        // Tag calculateur-gmb si order bump ou produit calculateur
+        if (session.metadata?.hasOrderBump === 'true' || session.metadata?.orderbump === '1' || productId?.includes('calculateur') || productId?.includes('orderbump')) {
+          collectedTags.add('calculateur-gmb');
+        }
+
         await subscribeOrUpdateMailchimpMember({
           email: customerEmail,
           fullName: session.customer_details?.name,

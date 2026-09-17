@@ -38,9 +38,13 @@ export const PRODUCT_MAILCHIMP_TAGS: Record<string, string[]> = {
   'formation-woocommerce': ['formation-woocommerce', 'client'],
 
   // Formation & Précommande Google Business Profile
-  '17873181-7987-4000-a000-000000000000': ['prevente-gmb', 'client'],
-  'creation-gmb': ['prevente-gmb', 'client'],
-  'precommande-fiche-google': ['prevente-gmb', 'client'],
+  'formation-fiche-google': ['formation-gmb', 'client'],
+  '17873181-7987-4000-a000-000000000000': ['formation-gmb', 'client'],
+  'creation-gmb': ['formation-gmb', 'client'],
+  // Calculateur & Auditeur de Score Google Maps (12 €)
+  'orderbump-calculateur-score': ['calculateur-gmb', 'client'],
+  'calculateur-fiche-google': ['calculateur-gmb', 'client'],
+  'calculateur-score': ['calculateur-gmb', 'client'],
 
   // Pack Guides & Combo
   'pack-guides': ['pack-guides', 'client'],

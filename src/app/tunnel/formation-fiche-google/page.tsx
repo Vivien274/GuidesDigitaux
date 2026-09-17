@@ -174,6 +174,23 @@ export default function TunnelFormationFicheGooglePage() {
         }
       }
 
+      // Inscription automatique Mailchimp avec tags formation-gmb, calculateur-gmb (si sélectionné) et newsletter
+      try {
+        const directTags = ['formation-gmb', 'newsletter', 'client'];
+        if (hasOrderBump) {
+          directTags.push('calculateur-gmb');
+        }
+        fetch('/api/mailchimp/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailInput.trim(),
+            tag: 'formation-gmb',
+            tags: directTags
+          })
+        }).catch(err => console.warn('Notice Mailchimp direct subscribe:', err));
+      } catch (e) {}
+
       // Simulation ou appel API de finalisation
       await new Promise(r => setTimeout(r, 1200));
 
