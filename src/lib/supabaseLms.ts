@@ -111,7 +111,7 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
                 notes: l.notes || localLes?.notes || '',
                 pdfUrl: l.pdf_url || localLes?.pdfUrl || '',
                 externalLink: l.external_link || localLes?.externalLink || '',
-                duration: l.duration || localLes?.duration || '10:00',
+                duration: (l.duration && l.duration !== '10:00' && l.duration !== '12:00') ? l.duration : (localLes?.duration && localLes.duration !== '10:00' && localLes.duration !== '12:00' ? localLes.duration : ''),
                 files: effectiveFiles,
                 links: effectiveLinks
               };

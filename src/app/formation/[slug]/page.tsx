@@ -708,7 +708,9 @@ export default function FormationViewerPage() {
                                   <span className="truncate">{lesson.title}</span>
                                 </div>
 
-                                <span className="text-[10px] text-slate-400 shrink-0">{lesson.duration}</span>
+                                {lesson.duration && lesson.duration.trim() !== '' && lesson.duration !== '10:00' && lesson.duration !== '12:00' && (
+                                  <span className="text-[10px] text-slate-400 shrink-0">{lesson.duration}</span>
+                                )}
                               </button>
                             );
                           })}
