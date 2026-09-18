@@ -100,8 +100,8 @@ export default function FormationViewerPage() {
           }
 
           // 3. Formation Fiche Google
-          if (cleanSlug.includes('google') || cleanSlug.includes('gmb')) {
-            const gCourse = list.find(c => (c.slug && c.slug.includes('google')) || c.id === '33333333-3333-4333-a333-333333333333' || (c.title && c.title.toLowerCase().includes('google')));
+          if (cleanSlug.includes('google') || cleanSlug.includes('gmb') || cleanSlug.includes('precommande')) {
+            const gCourse = list.find(c => (c.slug && c.slug.includes('google')) || c.id === '17873181-7987-4000-a000-000000000000' || c.id === '33333333-3333-4333-a333-333333333333' || (c.title && c.title.toLowerCase().includes('google')));
             if (gCourse) return gCourse;
           }
 
@@ -120,15 +120,16 @@ export default function FormationViewerPage() {
           return null;
         };
 
-        let match = findMatch(localCourses);
+        let match: any = null;
+        try {
+          const dbCourses = await fetchCoursesFromDb();
+          match = findMatch(dbCourses || []);
+        } catch (dbErr) {
+          console.warn('DB course fetch error:', dbErr);
+        }
 
         if (!match) {
-          try {
-            const dbCourses = await fetchCoursesFromDb();
-            match = findMatch(dbCourses || []);
-          } catch (dbErr) {
-            console.warn('DB course fetch error:', dbErr);
-          }
+          match = findMatch(localCourses);
         }
 
         if (match && match.modules && match.modules.length > 0) {

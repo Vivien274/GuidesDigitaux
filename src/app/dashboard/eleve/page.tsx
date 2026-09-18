@@ -91,9 +91,9 @@ function EleveDashboardContent() {
 
         const formattedReal = baseList.map((item: any) => {
           const isGoogleCourse = item.slug === 'precommande-fiche-google' || item.id === 'precommande-fiche-google' || item.slug === 'formation-fiche-google' || item.id === 'formation-fiche-google' || (item.slug && item.slug.includes('fiche-google'));
-          const matchedDb = dbCourses.find(c => c.id === item.id || c.title === item.title || (isGoogleCourse && (c.slug === 'formation-fiche-google' || c.id === '33333333-3333-4333-a333-333333333333')));
+          const matchedDb = dbCourses.find(c => c.id === item.id || c.title === item.title || (isGoogleCourse && (c.slug === 'formation-fiche-google' || c.id === '17873181-7987-4000-a000-000000000000' || c.id === '33333333-3333-4333-a333-333333333333')));
           const targetTitle = matchedDb?.title || (isGoogleCourse ? "Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu'à votre atelier" : item.title || 'Produit Guides Digitaux');
-          const targetId = matchedDb?.id || item.id || (isGoogleCourse ? '33333333-3333-4333-a333-333333333333' : `item-${Date.now()}`);
+          const targetId = matchedDb?.id || item.id || (isGoogleCourse ? '17873181-7987-4000-a000-000000000000' : `item-${Date.now()}`);
           const isPreorder = !isGoogleCourse && (!!item.isPreorder || (item.slug && item.slug.includes('precommande') && !item.slug.includes('fiche-google')));
           const isCoachingItem = item.category === 'coaching' || item.type === 'coaching' || item.slug === 'coaching-site' || item.id === 'coaching-site' || targetTitle.toLowerCase().includes('coaching') || targetTitle.toLowerCase().includes('accompagnement');
           const isPdfItem = !isPreorder && !isCoachingItem && !isGoogleCourse && (item.category === 'ebook' || item.category === 'checklist' || item.type === 'ebook' || item.type === 'checklist' || !!item.downloadPdf || (item.slug && item.slug.includes('guide')) || (item.id && item.id.includes('guide')));

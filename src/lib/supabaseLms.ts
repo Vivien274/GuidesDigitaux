@@ -45,7 +45,7 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
       `);
 
     const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
-      setTimeout(() => resolve({ data: null, error: new Error('Timeout') }), 1500)
+      setTimeout(() => resolve({ data: null, error: new Error('Timeout') }), 4000)
     );
 
     const { data: courses, error } = await Promise.race([fetchPromise, timeoutPromise]);
@@ -62,51 +62,62 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
     });
 
     return filteredCourses.map((c: any) => {
-      const localMatch = getStoredCourses().find((sc: any) => sc.id === c.id);
+      const isGoogle = c.id.includes('17873181') || (c.title && c.title.toLowerCase().includes('google'));
+      const isWc = c.id.includes('22222222') || (c.title && c.title.toLowerCase().includes('woocommerce'));
+      const isWp = c.id.includes('11111111') || (c.title && c.title.toLowerCase().includes('wordpress'));
+      const slug = isGoogle ? 'formation-fiche-google' : (isWc ? 'formation-woocommerce' : 'creer-sa-vitrine-wordpress');
+
+      const localMatch = getStoredCourses().find((sc: any) => sc.id === c.id || (isGoogle && sc.slug === 'formation-fiche-google'));
+
+      const rawModules = Array.isArray(c.modules) && c.modules.length > 0 ? c.modules : (localMatch?.modules || []);
+      const sortedModules = [...rawModules].sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+
       return {
         id: c.id,
+        slug: slug,
         title: c.title,
-        description: c.description,
-        duration: c.duration || '3h30',
-        level: c.level || 'Débutant',
-        prerequisites: c.prerequisites || '',
-        price: c.price || 99,
-        image: c.image || c.image_url || localMatch?.image || '/images/products/coaching-site.webp',
+        description: c.description || localMatch?.description || '',
+        duration: c.duration || localMatch?.duration || (isGoogle ? '2h00' : '3h30'),
+        level: c.level || localMatch?.level || 'Tous niveaux',
+        prerequisites: c.prerequisites || localMatch?.prerequisites || '',
+        price: c.price || localMatch?.price || (isGoogle ? 29 : 199),
+        image: c.image || c.image_url || localMatch?.image || (isGoogle ? '/images/products/formation-fiche-google-mockup.png' : '/images/products/coaching-site.webp'),
         category: 'Formation Vidéo',
         status: c.status || 'Publié',
         scheduledPublishDate: c.scheduled_publish_date || localMatch?.scheduledPublishDate,
-        congratulationsMsg: c.congratulations_msg || localMatch?.congratulationsMsg,
+        congratulationsMsg: c.congratulations_msg || localMatch?.congratulationsMsg || 'Félicitations pour avoir complété cette formation !',
         bonusDocTitle: c.bonus_doc_title || localMatch?.bonusDocTitle,
         bonusDocUrl: c.bonus_doc_url || localMatch?.bonusDocUrl,
         communityLink: (localMatch && localMatch.communityLink !== undefined) ? localMatch.communityLink : (c.community_link ?? ''),
         liveStreamUrl: (localMatch && localMatch.liveStreamUrl !== undefined) ? localMatch.liveStreamUrl : (c.live_stream_url ?? ''),
         liveStreamDate: (localMatch && localMatch.liveStreamDate !== undefined) ? localMatch.liveStreamDate : (c.live_stream_date ?? ''),
         liveStreamTitle: (localMatch && localMatch.liveStreamTitle !== undefined) ? localMatch.liveStreamTitle : (c.live_stream_title ?? ''),
-        modules: (c.modules && c.modules.length > 0)
-          ? c.modules.map((m: any) => {
-              const localMod = localMatch?.modules?.find((lm: any) => lm.id === m.id || lm.title === m.title);
+        modules: sortedModules.map((m: any) => {
+          const localMod = localMatch?.modules?.find((lm: any) => lm.id === m.id || lm.title === m.title);
+          const rawLessons = Array.isArray(m.lessons) && m.lessons.length > 0 ? m.lessons : (localMod?.lessons || []);
+          const sortedLessons = [...rawLessons].sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+
+          return {
+            id: m.id,
+            title: m.title,
+            lessons: sortedLessons.map((l: any) => {
+              const localLes = localMod?.lessons?.find((ll: any) => ll.id === l.id || ll.title === l.title);
+              const effectiveFiles = l.files || (Array.isArray(localLes?.files) && localLes.files.length > 0 ? localLes.files : (l.pdf_url ? [{ id: `file-${l.id}`, name: 'Support de cours PDF', url: l.pdf_url }] : []));
+              const effectiveLinks = l.links || (Array.isArray(localLes?.links) && localLes.links.length > 0 ? localLes.links : (l.external_link ? [{ id: `link-${l.id}`, title: 'Ressource utile', url: l.external_link }] : []));
               return {
-                id: m.id,
-                title: m.title,
-                lessons: (m.lessons || []).map((l: any) => {
-                  const localLes = localMod?.lessons?.find((ll: any) => ll.id === l.id || ll.title === l.title);
-                  const effectiveFiles = l.files || (Array.isArray(localLes?.files) && localLes.files.length > 0 ? localLes.files : (l.pdf_url ? [{ id: `file-${l.id}`, name: 'Support de cours PDF', url: l.pdf_url }] : []));
-                  const effectiveLinks = l.links || (Array.isArray(localLes?.links) && localLes.links.length > 0 ? localLes.links : (l.external_link ? [{ id: `link-${l.id}`, title: 'Ressource utile', url: l.external_link }] : []));
-                  return {
-                    id: l.id,
-                    title: l.title,
-                    videoUrl: l.video_url || localLes?.videoUrl || 'https://www.youtube.com/watch?v=k3_tw44QsZQ',
-                    notes: l.notes || localLes?.notes || '',
-                    pdfUrl: l.pdf_url || localLes?.pdfUrl || '',
-                    externalLink: l.external_link || localLes?.externalLink || '',
-                    duration: l.duration || localLes?.duration || '10:00',
-                    files: effectiveFiles,
-                    links: effectiveLinks
-                  };
-                })
+                id: l.id,
+                title: l.title,
+                videoUrl: l.video_url || localLes?.videoUrl || (isGoogle ? 'https://youtu.be/jyySdvvd1fY' : 'https://youtu.be/Zb4ZKpTd0_8'),
+                notes: l.notes || localLes?.notes || '',
+                pdfUrl: l.pdf_url || localLes?.pdfUrl || '',
+                externalLink: l.external_link || localLes?.externalLink || '',
+                duration: l.duration || localLes?.duration || '10:00',
+                files: effectiveFiles,
+                links: effectiveLinks
               };
             })
-          : (localMatch?.modules || [])
+          };
+        })
       };
     });
 
