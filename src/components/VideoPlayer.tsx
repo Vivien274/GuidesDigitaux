@@ -61,13 +61,33 @@ export default function VideoPlayer({ url, poster }: VideoPlayerProps) {
   // If YouTube link
   if (youtubeUrl) {
     return (
-      <div className="w-full aspect-video bg-black rounded-3xl overflow-hidden shadow-xl border border-slate-800 relative group">
+      <div className="w-full aspect-video bg-black rounded-3xl overflow-hidden shadow-xl border border-slate-800 relative group select-none">
         <iframe
           src={youtubeUrl}
           title="Lecteur Vidéo Formation"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
-          className="w-full h-full border-0"
+          className="w-full h-full border-0 pointer-events-auto"
+        />
+
+        {/* Protection Shield : Bloque le clic externe sur le logo et bouton 'Regarder sur YouTube' en bas à droite */}
+        <div 
+          className="absolute bottom-0 right-0 w-36 h-12 z-20 pointer-events-auto cursor-default bg-transparent"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          title=""
+        />
+
+        {/* Protection Shield : Bloque le lien sortant sur le titre en haut */}
+        <div 
+          className="absolute top-0 left-0 right-0 h-14 z-20 pointer-events-auto cursor-default bg-transparent"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          title=""
         />
       </div>
     );
