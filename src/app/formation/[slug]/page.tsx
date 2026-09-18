@@ -133,6 +133,20 @@ export default function FormationViewerPage() {
         }
 
         if (match && match.modules && match.modules.length > 0) {
+          const rawMods = match.modules || [];
+          const sortedModules = [...rawMods].sort((a: any, b: any) => {
+            const idxA = a.order_index !== undefined ? Number(a.order_index) : 999;
+            const idxB = b.order_index !== undefined ? Number(b.order_index) : 999;
+            return idxA - idxB;
+          }).map((m: any) => ({
+            ...m,
+            lessons: [...(m.lessons || [])].sort((la: any, lb: any) => {
+              const lIdxA = la.order_index !== undefined ? Number(la.order_index) : 999;
+              const lIdxB = lb.order_index !== undefined ? Number(lb.order_index) : 999;
+              return lIdxA - lIdxB;
+            })
+          }));
+
           const formatted = {
             id: match.id,
             title: match.title,
@@ -144,12 +158,21 @@ export default function FormationViewerPage() {
             liveStreamUrl: match.liveStreamUrl,
             liveStreamDate: match.liveStreamDate,
             liveStreamTitle: match.liveStreamTitle,
-            modules: match.modules
+            modules: sortedModules
           };
 
           setCourseData(formatted);
-          if (formatted.modules[0]?.lessons?.length > 0) {
-            setActiveLesson(formatted.modules[0].lessons[0]);
+          if (sortedModules[0]?.lessons?.length > 0) {
+            setActiveLesson((prevLesson: any) => {
+              if (prevLesson) {
+                // Find if previous lesson exists in new modules
+                for (const m of sortedModules) {
+                  const found = m.lessons?.find((l: any) => l.id === prevLesson.id || l.title === prevLesson.title);
+                  if (found) return found;
+                }
+              }
+              return sortedModules[0].lessons[0];
+            });
           }
         }
       } catch (err) {
@@ -448,7 +471,7 @@ export default function FormationViewerPage() {
                     dangerouslySetInnerHTML={{ __html: activeLesson?.notes || 'Descriptif et notes d\'accompagnement de la leçon.' }}
                   />
 
-                  {/* Multiple PDF & Resource Files Download Boxes */}
+                  {/* Multiple PDF & Resource Files Download Boxes (Only if files exist in studio) */}
                   {activeLesson?.files && activeLesson.files.length > 0 ? (
                     <div className="space-y-3 pt-2">
                       <h4 className="text-xs font-extrabold text-[#18757d] uppercase tracking-wider">Fichiers & supports téléchargeables</h4>
@@ -461,7 +484,7 @@ export default function FormationViewerPage() {
                               </div>
                               <div>
                                 <h5 className="text-xs font-extrabold text-[#332420]">{file.name}</h5>
-                                <p className="text-[10px] text-slate-500">Document joint de la leçon (PDF / Archive)</p>
+                                <p className="text-[10px] text-slate-500">Document joint de la leçon</p>
                               </div>
                             </div>
                             <a
@@ -476,20 +499,20 @@ export default function FormationViewerPage() {
                         ))}
                       </div>
                     </div>
-                  ) : (
+                  ) : (activeLesson?.pdfUrl && activeLesson.pdfUrl.trim() !== '' && !activeLesson.pdfUrl.includes('checklist-a-verifier')) ? (
                     <div className="p-5 bg-[#faf8f5] rounded-2xl border border-[#eee7da] flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center shrink-0">
                           <Download className="w-5 h-5" />
                         </div>
                         <div>
-                          <h4 className="text-xs font-extrabold text-[#332420]">Fiche récapitulative & Support PDF</h4>
-                          <p className="text-[11px] text-slate-500">Document d'accompagnement de la leçon (Format PDF)</p>
+                          <h4 className="text-xs font-extrabold text-[#332420]">Support PDF de la leçon</h4>
+                          <p className="text-[11px] text-slate-500">Document joint à télécharger</p>
                         </div>
                       </div>
 
                       <a
-                        href={activeLesson?.pdfUrl || "https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp"}
+                        href={activeLesson.pdfUrl}
                         target="_blank"
                         rel="noreferrer"
                         className="px-5 py-2.5 text-xs font-extrabold text-[#18757d] bg-white border border-[#eee7da] hover:bg-[#18757d] hover:text-white rounded-xl transition-colors uppercase tracking-wider shrink-0"
@@ -497,7 +520,7 @@ export default function FormationViewerPage() {
                         TÉLÉCHARGER
                       </a>
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Multiple External Links Boxes */}
                   {activeLesson?.links && activeLesson.links.length > 0 && (
