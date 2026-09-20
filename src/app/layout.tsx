@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 import MetaPixel from "@/components/MetaPixel";
 import { FB_PIXEL_ID_1, FB_PIXEL_IDS } from "@/lib/metaPixel";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import ThirdPartyScripts from "@/components/ThirdPartyScripts";
 
 const CookieConsentBanner = dynamic(() => import("@/components/CookieConsentBanner"));
 const AccessibilityWidget = dynamic(() => import("@/components/AccessibilityWidget"));
@@ -53,75 +54,8 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning className={`${jakartaSans.variable} h-full antialiased scroll-smooth`}>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
-        {gtmId && (
-          <>
-            <Script
-              id="google-tag-manager"
-              strategy="lazyOnload"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-                  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-                  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-                  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-                  })(window,document,'script','dataLayer','${gtmId}');
-                `,
-              }}
-            />
-            <noscript>
-              <iframe
-                src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-                height="0"
-                width="0"
-                style={{ display: 'none', visibility: 'hidden' }}
-              />
-            </noscript>
-          </>
-        )}
-        {gaId && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-              strategy="lazyOnload"
-            />
-            <Script
-              id="google-analytics"
-              strategy="lazyOnload"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${gaId}', {
-                    page_path: window.location.pathname,
-                  });
-                `,
-              }}
-            />
-          </>
-        )}
-        <Script
-          src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6Lcqdp4tAAAAAMtfeNqnAOYwn7nQoTAzX7d-p6H_'}`}
-          strategy="lazyOnload"
-        />
-        <Script
-          id="meta-pixel-script"
-          strategy="lazyOnload"
-          dangerouslySetInnerHTML={{
-            __html: `
-              !function(f,b,e,v,n,t,s)
-              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-              n.queue=[];t=b.createElement(e);t.async=!0;
-              t.src=v;s=b.getElementsByTagName(e)[0];
-              s.parentNode.insertBefore(t,s)}(window, document,'script',
-              'https://connect.facebook.net/en_US/fbevents.js');
-              ${FB_PIXEL_IDS.map((id) => `fbq('init', '${id}');`).join('\n              ')}
-              fbq('track', 'PageView');
-            `,
-          }}
-        />
+        {/* CHARGEMENT DIFFÉRÉ ET INTELLIGENT DES SCRIPTS TIERS (GTM, GA4, META PIXEL) */}
+        <ThirdPartyScripts gaId={gaId} gtmId={gtmId} />
         <noscript>
           {FB_PIXEL_IDS.map((id) => (
             <img
@@ -133,7 +67,16 @@ export default function RootLayout({
               alt={`Meta Pixel ${id}`}
             />
           ))}
+          {gtmId && (
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+              height="0"
+              width="0"
+              style={{ display: 'none', visibility: 'hidden' }}
+            />
+          )}
         </noscript>
+
         <Suspense fallback={null}>
           <MetaPixel />
         </Suspense>

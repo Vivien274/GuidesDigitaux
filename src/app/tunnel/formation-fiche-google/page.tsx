@@ -994,6 +994,8 @@ export default function TunnelFormationFicheGooglePage() {
                 <div key={idx} className="bg-white rounded-2xl border border-[#eee7da] overflow-hidden shadow-2xs">
                   <button
                     onClick={() => setOpenModule(isOpen ? null : idx)}
+                    aria-expanded={isOpen}
+                    aria-label={`Ouvrir ou fermer le module ${idx + 1} : ${mod.title}`}
                     className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-[#faf8f5] transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-3.5">
@@ -1338,6 +1340,8 @@ export default function TunnelFormationFicheGooglePage() {
                 <div key={idx} className="bg-[#faf8f5] rounded-2xl border border-[#eee7da] overflow-hidden">
                   <button
                     onClick={() => setOpenFaq(isOpen ? null : idx)}
+                    aria-expanded={isOpen}
+                    aria-label={`Question : ${faq.q}`}
                     className="w-full p-5 text-left flex items-center justify-between gap-4 hover:bg-[#f4ede0]/50 transition-colors cursor-pointer"
                   >
                     <span className="text-sm sm:text-base font-black text-[#332420] flex items-center gap-2.5">
@@ -1476,10 +1480,14 @@ export default function TunnelFormationFicheGooglePage() {
             {/* FORMULAIRE DE PAIEMENT PAR CARTE DIRECT */}
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-black text-[#332420] uppercase tracking-wider mb-1.5">
+                <label htmlFor="checkout-email" className="block text-xs font-black text-[#332420] uppercase tracking-wider mb-1.5">
                   Adresse e-mail (pour la réception instantanée des accès) :
                 </label>
                 <input
+                  id="checkout-email"
+                  name="email"
+                  autoComplete="email"
+                  aria-label="Adresse e-mail pour la réception des accès"
                   type="email"
                   placeholder="ex: marie.artisanat@gmail.com"
                   value={emailInput}
@@ -1504,7 +1512,12 @@ export default function TunnelFormationFicheGooglePage() {
 
                 <div className="space-y-2.5">
                   <div>
+                    <label htmlFor="checkout-card-number" className="sr-only">Numéro de carte bancaire</label>
                     <input
+                      id="checkout-card-number"
+                      name="cardNumber"
+                      autoComplete="cc-number"
+                      aria-label="Numéro de carte bancaire (16 chiffres)"
                       type="text"
                       placeholder="Numéro de carte bancaire (16 chiffres)"
                       maxLength={19}
@@ -1518,26 +1531,40 @@ export default function TunnelFormationFicheGooglePage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2.5">
-                    <input
-                      type="text"
-                      placeholder="MM / AA"
-                      maxLength={5}
-                      value={cardExpiry}
-                      onChange={(e) => {
-                        let val = e.target.value.replace(/\D/g, '');
-                        if (val.length >= 2) val = `${val.slice(0, 2)}/${val.slice(2, 4)}`;
-                        setCardExpiry(val);
-                      }}
-                      className="w-full px-4 py-2.5 rounded-xl border border-[#eee7da] bg-white text-sm text-[#332420] font-mono text-center focus:ring-2 focus:ring-[#18757d] focus:outline-hidden"
-                    />
-                    <input
-                      type="password"
-                      placeholder="CVC / CVV"
-                      maxLength={4}
-                      value={cardCvc}
-                      onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ''))}
-                      className="w-full px-4 py-2.5 rounded-xl border border-[#eee7da] bg-white text-sm text-[#332420] font-mono text-center focus:ring-2 focus:ring-[#18757d] focus:outline-hidden"
-                    />
+                    <div>
+                      <label htmlFor="checkout-card-expiry" className="sr-only">Date d'expiration</label>
+                      <input
+                        id="checkout-card-expiry"
+                        name="cardExpiry"
+                        autoComplete="cc-exp"
+                        aria-label="Date d'expiration (MM / AA)"
+                        type="text"
+                        placeholder="MM / AA"
+                        maxLength={5}
+                        value={cardExpiry}
+                        onChange={(e) => {
+                          let val = e.target.value.replace(/\D/g, '');
+                          if (val.length >= 2) val = `${val.slice(0, 2)}/${val.slice(2, 4)}`;
+                          setCardExpiry(val);
+                        }}
+                        className="w-full px-4 py-2.5 rounded-xl border border-[#eee7da] bg-white text-sm text-[#332420] font-mono text-center focus:ring-2 focus:ring-[#18757d] focus:outline-hidden"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="checkout-card-cvc" className="sr-only">Code CVC</label>
+                      <input
+                        id="checkout-card-cvc"
+                        name="cardCvc"
+                        autoComplete="cc-csc"
+                        aria-label="Code de sécurité CVC ou CVV (3 ou 4 chiffres)"
+                        type="password"
+                        placeholder="CVC / CVV"
+                        maxLength={4}
+                        value={cardCvc}
+                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ''))}
+                        className="w-full px-4 py-2.5 rounded-xl border border-[#eee7da] bg-white text-sm text-[#332420] font-mono text-center focus:ring-2 focus:ring-[#18757d] focus:outline-hidden"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1553,6 +1580,9 @@ export default function TunnelFormationFicheGooglePage() {
               >
                 <div className="flex items-start gap-3.5">
                   <input
+                    id="checkout-orderbump-optin"
+                    name="orderBumpOptIn"
+                    aria-label="Ajouter l'accès illimité au calculateur de score et 3 quick wins pour 12 euros"
                     type="checkbox"
                     checked={hasOrderBump}
                     onChange={() => {}}
@@ -1585,6 +1615,9 @@ export default function TunnelFormationFicheGooglePage() {
               <div className="p-4 rounded-2xl border bg-[#faf8f5] border-[#eee7da] transition-all">
                 <label className="flex items-start gap-3 cursor-pointer select-none">
                   <input
+                    id="checkout-newsletter-optin"
+                    name="newsletterOptIn"
+                    aria-label="J'accepte de recevoir les e-mails pédagogiques, les conseils d'optimisation et la newsletter de Guides Digitaux"
                     type="checkbox"
                     checked={newsletterOptIn}
                     onChange={(e) => setNewsletterOptIn(e.target.checked)}
@@ -1600,7 +1633,8 @@ export default function TunnelFormationFicheGooglePage() {
               <button
                 onClick={handleDirectPayment}
                 disabled={isLoading}
-                className="w-full bg-[#18757d] hover:bg-[#135d64] text-white py-4 px-6 rounded-2xl font-black text-base sm:text-lg uppercase tracking-wider transition-all shadow-xl hover:scale-102 active:scale-98 disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer"
+                aria-label={`Payer ${totalAmount},00 € et accéder à la formation`}
+                className="w-full bg-[#18757d] hover:bg-[#135d64] text-white py-4 px-6 rounded-2xl font-black text-base sm:text-lg uppercase tracking-wider transition-all shadow-xl hover:scale-102 active:scale-98 disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer min-h-[48px]"
               >
                 {isLoading && !expressProvider ? (
                   <span className="flex items-center gap-2">
@@ -1619,7 +1653,8 @@ export default function TunnelFormationFicheGooglePage() {
                 <button
                   onClick={handleCheckout}
                   type="button"
-                  className="text-xs text-slate-500 hover:text-[#18757d] underline transition-colors cursor-pointer"
+                  aria-label="Ouvrir le paiement hébergé Stripe Checkout classique"
+                  className="text-xs text-slate-500 hover:text-[#18757d] underline transition-colors cursor-pointer min-h-[32px] py-1"
                 >
                   Ou ouvrir sur la page de paiement hébergée Stripe
                 </button>

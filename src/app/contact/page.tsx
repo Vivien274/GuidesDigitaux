@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import Script from 'next/script';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { Mail, Phone, Send, CheckCircle2, Sparkles, Calendar, ArrowRight, HeartHandshake, Share2 } from 'lucide-react';
 
 export default function ContactPage() {
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6Lcqdp4tAAAAAMtfeNqnAOYwn7nQoTAzX7d-p6H_';
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -65,6 +67,10 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
+      <Script
+        src={`https://www.google.com/recaptcha/api.js?render=${siteKey}`}
+        strategy="lazyOnload"
+      />
       <Header />
 
       {/* HERO SECTION */}
