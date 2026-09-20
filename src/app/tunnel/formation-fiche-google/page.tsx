@@ -590,7 +590,7 @@ export default function TunnelFormationFicheGooglePage() {
               className="w-full bg-[#18757d] hover:bg-[#135d64] text-white py-4 px-8 rounded-2xl text-base sm:text-lg font-black tracking-wide shadow-xl hover:shadow-2xl hover:scale-102 active:scale-98 transition-all flex items-center justify-center gap-3 cursor-pointer"
             >
               <span>Je profite de l'offre à 29 €</span>
-              <span className="text-xs line-through text-emerald-200">69 €</span>
+              <span className="text-xs line-through text-white/90 font-bold">69 €</span>
               <ArrowRight className="w-5 h-5" />
             </button>
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-[#5e4d46]">
@@ -617,11 +617,11 @@ export default function TunnelFormationFicheGooglePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-10">
           
           <div className="text-center space-y-3">
-            <span className="text-xs font-extrabold text-red-600 uppercase tracking-wider bg-red-50 px-3 py-1 rounded-full border border-red-200">
+            <span className="text-xs font-extrabold text-red-800 uppercase tracking-wider bg-red-50 px-3 py-1 rounded-full border border-red-200">
               Le constat frustrant
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-[#332420] tracking-tight">
-              Tu as un savoir-faire en or, mais dans ta ville… <span className="text-red-600">personne ne te trouve sur Google</span>
+              Tu as un savoir-faire en or, mais dans ta ville… <span className="text-red-700 font-bold">personne ne te trouve sur Google</span>
             </h2>
           </div>
 
@@ -629,7 +629,7 @@ export default function TunnelFormationFicheGooglePage() {
             
             <div className="bg-red-50/70 border border-red-200 rounded-3xl p-6 sm:p-8 space-y-4">
               <h3 className="text-lg font-black text-red-950 flex items-center gap-2">
-                <X className="w-5 h-5 text-red-600 shrink-0" />
+                <X className="w-5 h-5 text-red-700 shrink-0" />
                 Tu en as marre de…
               </h3>
               <ul className="space-y-3 text-sm text-red-900/90 leading-relaxed font-medium">
@@ -769,7 +769,7 @@ export default function TunnelFormationFicheGooglePage() {
                 <span className="text-xs text-[#5e4d46] font-bold uppercase tracking-wider block">Tarif Lancement</span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl sm:text-4xl font-black text-[#18757d]">29 €</span>
-                  <span className="text-lg line-through text-slate-400 font-bold">69 €</span>
+                  <span className="text-lg line-through text-slate-600 font-bold">69 €</span>
                 </div>
               </div>
             </div>
@@ -805,8 +805,8 @@ export default function TunnelFormationFicheGooglePage() {
                 </div>
                 <div className="space-y-1">
                   <div className="text-4xl font-black text-[#332420]">29 €</div>
-                  <p className="text-xs text-emerald-600 font-black">Économie immédiate de 40 € (-58%)</p>
-                  <p className="text-[11px] text-slate-500">Valable jusqu'au 15 octobre 2026 à 23h59</p>
+                  <p className="text-xs text-emerald-800 font-black">Économie immédiate de 40 € (-58%)</p>
+                  <p className="text-[11px] text-slate-600 font-medium">Valable jusqu'au 15 octobre 2026 à 23h59</p>
                 </div>
 
                 <button
@@ -817,7 +817,7 @@ export default function TunnelFormationFicheGooglePage() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
-                <p className="text-[11px] text-slate-500 flex items-center justify-center gap-1">
+                <p className="text-[11px] text-slate-600 font-medium flex items-center justify-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   Accès illimité 24/7 & Mises à jour incluses
                 </p>
@@ -1192,7 +1192,7 @@ export default function TunnelFormationFicheGooglePage() {
 
               <div className="space-y-3 text-xs sm:text-sm">
                 <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5">
-                  <span className="text-red-600 font-black">AVANT :</span>
+                  <span className="text-red-800 font-black">AVANT :</span>
                   <span className="text-red-950 font-medium">Fiche introuvable au-delà de la 10ème place, 2 avis anciens, zéro demande d'itinéraire et téléphone silencieux.</span>
                 </div>
 
@@ -1225,7 +1225,7 @@ export default function TunnelFormationFicheGooglePage() {
                   </div>
                   <div>
                     <h5 className="text-xs font-black text-[#332420]">{rev.author}</h5>
-                    <p className="text-[11px] text-slate-500">{rev.role}</p>
+                    <p className="text-[11px] text-slate-700 font-medium">{rev.role}</p>
                   </div>
                 </div>
               </div>
@@ -1256,42 +1256,42 @@ export default function TunnelFormationFicheGooglePage() {
                   <CheckCircle2 className="w-5 h-5 text-[#18757d]" />
                   Formation Vidéo Complète 7 Modules
                 </span>
-                <span className="text-slate-400 line-through text-sm">69 €</span>
+                <span className="text-slate-600 font-semibold line-through text-sm">69 €</span>
               </div>
               <div className="flex items-center justify-between text-sm sm:text-base font-bold text-[#332420]">
                 <span className="flex items-center gap-2">
                   <Gift className="w-5 h-5 text-amber-500" />
                   Bonus 1 : Scripts WhatsApp, SMS & Email "Avis 5 Étoiles"
                 </span>
-                <span className="text-slate-400 line-through text-sm">29 €</span>
+                <span className="text-slate-600 font-semibold line-through text-sm">29 €</span>
               </div>
               <div className="flex items-center justify-between text-sm sm:text-base font-bold text-[#332420]">
                 <span className="flex items-center gap-2">
                   <Gift className="w-5 h-5 text-amber-500" />
                   Bonus 2 : Kit 10 Modèles de Réponses aux Avis Clients
                 </span>
-                <span className="text-slate-400 line-through text-sm">29 €</span>
+                <span className="text-slate-600 font-semibold line-through text-sm">29 €</span>
               </div>
               <div className="flex items-center justify-between text-sm sm:text-base font-bold text-[#332420]">
                 <span className="flex items-center gap-2">
                   <Gift className="w-5 h-5 text-amber-500" />
                   Bonus 3 : Checklist Audit Rapide Fiche Google (25 Points)
                 </span>
-                <span className="text-slate-400 line-through text-sm">29 €</span>
+                <span className="text-slate-600 font-semibold line-through text-sm">29 €</span>
               </div>
               <div className="flex items-center justify-between text-sm sm:text-base font-bold text-[#332420]">
                 <span className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-amber-500" />
                   Bonus 4 : Bibliothèque de Prompts IA Rédacteurs (ChatGPT/Claude)
                 </span>
-                <span className="text-slate-400 line-through text-sm">20 €</span>
+                <span className="text-slate-600 font-semibold line-through text-sm">20 €</span>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <span className="text-xs text-slate-500 uppercase tracking-wider block font-bold">Valeur totale perçue : <span className="line-through">176 €</span></span>
-                <span className="text-xs text-red-600 font-extrabold">Tarif normal hors lancement : 69 €</span>
+                <span className="text-xs text-slate-700 uppercase tracking-wider block font-bold">Valeur totale perçue : <span className="line-through">176 €</span></span>
+                <span className="text-xs text-red-700 font-extrabold">Tarif normal hors lancement : 69 €</span>
               </div>
               <div className="text-right">
                 <span className="text-xs text-[#18757d] font-black uppercase tracking-wider block">Tarif Lancement Aujourd'hui</span>
@@ -1397,7 +1397,7 @@ export default function TunnelFormationFicheGooglePage() {
                 </p>
               </div>
               <div className="text-right">
-                <span className="text-xs text-slate-400 line-through block font-bold">
+                <span className="text-xs text-slate-600 line-through block font-bold">
                   {hasOrderBump ? '118,00 €' : '69,00 €'}
                 </span>
                 <span className="text-3xl font-black text-[#18757d]">{totalAmount},00 €</span>
@@ -1578,7 +1578,7 @@ export default function TunnelFormationFicheGooglePage() {
                     : 'bg-[#faf8f5] border-dashed border-[#18757d]/40 hover:border-[#18757d] hover:bg-amber-50/40'
                 }`}
               >
-                <div className="flex items-start gap-3.5">
+                <label htmlFor="checkout-orderbump-optin" className="flex items-start gap-3.5 cursor-pointer">
                   <input
                     id="checkout-orderbump-optin"
                     name="orderBumpOptIn"
@@ -1595,7 +1595,7 @@ export default function TunnelFormationFicheGooglePage() {
                         Offre Spéciale Unique
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-400 line-through font-bold">49 €</span>
+                        <span className="text-xs text-slate-600 line-through font-bold">49 €</span>
                         <span className="text-sm font-black text-[#18757d] bg-white px-2 py-0.5 rounded-md border border-[#eee7da]">
                           +12,00 €
                         </span>
@@ -1608,7 +1608,7 @@ export default function TunnelFormationFicheGooglePage() {
                       Entre simplement l'URL de ta fiche pour calculer instantanément ta note d'optimisation de 0 à 100 et débloquer tes 3 actions correctives prioritaires à fort impact pour dépasser tes concurrents locaux.
                     </p>
                   </div>
-                </div>
+                </label>
               </div>
 
               {/* CASE À COCHER OPTIONNELLE NEWSLETTER & EMAILING */}
@@ -1624,7 +1624,7 @@ export default function TunnelFormationFicheGooglePage() {
                     className="w-4 h-4 rounded text-[#18757d] focus:ring-[#18757d] mt-0.5 shrink-0 cursor-pointer"
                   />
                   <span className="text-xs text-[#5e4d46] leading-relaxed">
-                    <strong className="text-[#332420]">J'accepte</strong> de recevoir les e-mails pédagogiques, les conseils d'optimisation et la newsletter de Guides Digitaux. <span className="text-slate-400 font-normal text-[11px]">(Optionnel)</span>
+                    <strong className="text-[#332420]">J'accepte</strong> de recevoir les e-mails pédagogiques, les conseils d'optimisation et la newsletter de Guides Digitaux. <span className="text-slate-600 font-medium text-[11px]">(Optionnel)</span>
                   </span>
                 </label>
               </div>
