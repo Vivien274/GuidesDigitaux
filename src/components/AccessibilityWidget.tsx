@@ -79,6 +79,13 @@ export default function AccessibilityWidget() {
 
     // Dyslexic Font
     if (state.dyslexicFont) {
+      if (!document.getElementById('opendyslexic-font')) {
+        const link = document.createElement('link');
+        link.id = 'opendyslexic-font';
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.cdnfonts.com/css/opendyslexic';
+        document.head.appendChild(link);
+      }
       html.classList.add('a11y-dyslexic');
     } else {
       html.classList.remove('a11y-dyslexic');

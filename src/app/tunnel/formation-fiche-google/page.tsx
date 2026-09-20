@@ -62,6 +62,29 @@ const REAL_REVIEWS = [
   }
 ];
 
+function ApplePayLogo({ className = "h-[26px] w-auto" }: { className?: string }) {
+  return (
+    <img
+      src="/images/apple-pay.svg"
+      alt="Apple Pay"
+      className={`${className} object-contain pointer-events-none select-none`}
+      style={{ height: '26px', width: 'auto', maxHeight: '26px' }}
+    />
+  );
+}
+
+function GooglePayLogo({ className = "h-[26px] w-auto" }: { className?: string }) {
+  return (
+    <img
+      src="/images/google-pay.svg"
+      alt="Google Pay"
+      className={`${className} object-contain pointer-events-none select-none`}
+      style={{ height: '26px', width: 'auto', maxHeight: '26px' }}
+    />
+  );
+}
+
+
 export default function TunnelFormationFicheGooglePage() {
   const router = useRouter();
   const [openModule, setOpenModule] = useState<number | null>(0);
@@ -77,6 +100,7 @@ export default function TunnelFormationFicheGooglePage() {
   const [hasOrderBump, setHasOrderBump] = useState(false);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [optInError, setOptInError] = useState(false);
+  const [expressProvider, setExpressProvider] = useState<'apple_pay' | 'google_pay' | null>(null);
   const totalAmount = hasOrderBump ? 41 : 29;
 
   // Compte à rebours dynamique jusqu'au 15 octobre 2026 à 23:59:59
@@ -131,12 +155,6 @@ export default function TunnelFormationFicheGooglePage() {
       return;
     }
 
-    if (!newsletterOptIn) {
-      setOptInError(true);
-      alert('Merci de cocher la case d\'acceptation des e-mails et de la newsletter pour valider votre commande.');
-      return;
-    }
-
     setIsLoading(true);
 
     event('InitiateCheckout', {
@@ -174,9 +192,12 @@ export default function TunnelFormationFicheGooglePage() {
         }
       }
 
-      // Inscription automatique Mailchimp avec tags formation-gmb, calculateur-gmb (si sélectionné) et newsletter
+      // Inscription automatique Mailchimp si renseigné, avec tags formation-gmb, newsletter (si acceptée) et calculateur-gmb
       try {
-        const directTags = ['formation-gmb', 'newsletter', 'client'];
+        const directTags = ['formation-gmb', 'client'];
+        if (newsletterOptIn) {
+          directTags.push('newsletter');
+        }
         if (hasOrderBump) {
           directTags.push('calculateur-gmb');
         }
@@ -202,13 +223,101 @@ export default function TunnelFormationFicheGooglePage() {
     }
   };
 
-  const handleCheckout = async () => {
-    if (!newsletterOptIn) {
-      setOptInError(true);
-      alert('Merci de cocher la case d\'acceptation des e-mails et de la newsletter pour valider votre commande.');
-      return;
-    }
+  // PAIEMENT EXPRESS 1-CLIC (APPLE PAY / GOOGLE PAY)
+  const handleExpressPayment = async (provider: 'apple_pay' | 'google_pay') => {
+    setExpressProvider(provider);
+    setIsLoading(true);
 
+    event('InitiateCheckout', {
+      content_name: hasOrderBump
+        ? 'Cap Visibilité Google + Calculateur de Score Order Bump'
+        : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
+      content_ids: hasOrderBump ? ['formation-fiche-google', 'orderbump-calculateur-score'] : ['formation-fiche-google'],
+      content_type: 'product',
+      value: totalAmount,
+      currency: 'EUR',
+    });
+
+    try {
+      if (typeof window !== 'undefined') {
+        const existing = JSON.parse(localStorage.getItem('gd_enrolled_courses') || '[]');
+        const newEnrolled = {
+          id: 'formation-fiche-google',
+          title: 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
+          slug: 'formation-fiche-google',
+          type: 'formation',
+          typeLabel: '⭐ LANCEMENT OFFICIEL (7 Modules + Prompts IA + Bonus)',
+          progress: 0,
+          completedLessons: 0,
+          totalLessons: 7,
+          duration: '2h00',
+          instructor: 'Stéphanie ROCQ',
+          price: totalAmount,
+          hasOrderBump,
+          customerEmail: emailInput.trim() || undefined,
+          purchaseDate: new Date().toLocaleDateString('fr-FR')
+        };
+
+        if (!existing.some((e: any) => e.id === newEnrolled.id || e.slug === newEnrolled.slug)) {
+          localStorage.setItem('gd_enrolled_courses', JSON.stringify([newEnrolled, ...existing]));
+        }
+      }
+
+      if (emailInput.trim() && emailInput.includes('@')) {
+        try {
+          const directTags = ['formation-gmb', 'client'];
+          if (newsletterOptIn) directTags.push('newsletter');
+          if (hasOrderBump) directTags.push('calculateur-gmb');
+          fetch('/api/mailchimp/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: emailInput.trim(),
+              tag: 'formation-gmb',
+              tags: directTags
+            })
+          }).catch(err => console.warn('Notice Mailchimp:', err));
+        } catch (e) {}
+      }
+
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId: 'formation-fiche-google',
+          productId: 'formation-fiche-google',
+          courseTitle: hasOrderBump
+            ? 'Cap Visibilité Google + Calculateur de Score & 3 Quick Wins'
+            : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
+          title: hasOrderBump
+            ? 'Cap Visibilité Google + Calculateur de Score & 3 Quick Wins'
+            : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
+          price: totalAmount,
+          hasOrderBump,
+          newsletterOptIn: !!newsletterOptIn,
+          customerEmail: emailInput.trim() || undefined,
+          cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-fiche-google',
+          successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&orderbump=${hasOrderBump ? '1' : '0'}${emailInput.trim() ? `&email=${encodeURIComponent(emailInput.trim())}` : ''}`
+        })
+      });
+
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Une erreur est survenue lors de l\'initialisation du paiement express.');
+        setIsLoading(false);
+        setExpressProvider(null);
+      }
+    } catch (e) {
+      console.error('Erreur Stripe express checkout:', e);
+      alert('Impossible de contacter le serveur de paiement sécurisé.');
+      setIsLoading(false);
+      setExpressProvider(null);
+    }
+  };
+
+  const handleCheckout = async () => {
     setIsLoading(true);
 
     event('InitiateCheckout', {
@@ -260,10 +369,10 @@ export default function TunnelFormationFicheGooglePage() {
             : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
           price: totalAmount,
           hasOrderBump,
-          newsletterOptIn: true,
+          newsletterOptIn: !!newsletterOptIn,
           customerEmail: emailInput.trim() || undefined,
           cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-fiche-google',
-          successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&orderbump=${hasOrderBump ? '1' : '0'}`
+          successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&orderbump=${hasOrderBump ? '1' : '0'}${emailInput.trim() ? `&email=${encodeURIComponent(emailInput.trim())}` : ''}`
         })
       });
 
@@ -413,9 +522,10 @@ export default function TunnelFormationFicheGooglePage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="relative h-10 w-40 sm:w-48 block">
             <Image
-              src="/images/logo.png"
+              src="/images/logo.webp"
               alt="Guides Digitaux - Formations & Ressources pour Artisans"
               fill
+              sizes="(max-width: 640px) 160px, 192px"
               className="object-contain object-left"
               priority
             />
@@ -451,11 +561,13 @@ export default function TunnelFormationFicheGooglePage() {
           <div className="relative max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white mt-8 group">
             <div className="relative aspect-video w-full bg-[#f4ede4]">
               <Image
-                src="/images/products/formation-fiche-google-mockup.png"
+                src="/images/products/formation-fiche-google-mockup.webp"
                 alt="Formation Fiche Google Business Profile - Guides Digitaux"
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 768px, 800px"
                 className="object-cover"
                 priority
+                fetchPriority="high"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-80" />
               <div className="absolute bottom-4 left-4 right-4 text-white flex flex-wrap items-center justify-between gap-2">
@@ -1062,10 +1174,12 @@ export default function TunnelFormationFicheGooglePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div className="relative aspect-video w-full rounded-2xl overflow-hidden shadow-lg border-2 border-[#eee7da]">
               <Image
-                src="/images/products/google-maps-stats-results.jpg"
+                src="/images/products/google-maps-stats-results.webp"
                 alt="Statistiques Google Maps et croissance locale"
                 fill
+                sizes="(max-width: 768px) 100vw, 500px"
                 className="object-cover"
+                loading="lazy"
               />
             </div>
 
@@ -1286,42 +1400,76 @@ export default function TunnelFormationFicheGooglePage() {
               </div>
             </div>
 
-            {/* BOX ORDER BUMP RECOMMANDÉ (12 €) */}
-            <div
-              onClick={() => setHasOrderBump(!hasOrderBump)}
-              className={`p-5 rounded-2xl border-2 transition-all cursor-pointer select-none ${
-                hasOrderBump
-                  ? 'bg-amber-50/90 border-amber-500 shadow-md ring-2 ring-amber-400/30'
-                  : 'bg-[#faf8f5] border-dashed border-[#18757d]/40 hover:border-[#18757d] hover:bg-amber-50/40'
-              }`}
-            >
-              <div className="flex items-start gap-3.5">
-                <input
-                  type="checkbox"
-                  checked={hasOrderBump}
-                  onChange={() => {}}
-                  className="w-5 h-5 rounded text-[#18757d] focus:ring-[#18757d] mt-1 shrink-0 cursor-pointer"
-                />
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider bg-amber-400 text-[#332420] px-2.5 py-0.5 rounded-md">
-                      <Zap className="w-3.5 h-3.5" />
-                      Offre Unique • Order Bump
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-slate-400 line-through font-bold">49 €</span>
-                      <span className="text-sm font-black text-[#18757d] bg-white px-2 py-0.5 rounded-md border border-[#eee7da]">
-                        +12,00 €
-                      </span>
-                    </div>
-                  </div>
-                  <h4 className="text-sm font-black text-[#332420]">
-                    OUI ! J'ajoute l'Accès Illimité au Calculateur de Score &amp; Générateur de 3 Quick Wins Fiche Google
-                  </h4>
-                  <p className="text-xs text-[#5e4d46] leading-relaxed">
-                    Entre simplement l'URL de ta fiche pour calculer instantanément ta note d'optimisation de 0 à 100 et débloquer tes 3 actions correctives prioritaires à fort impact pour dépasser tes concurrents locaux.
-                  </p>
+            {/* BOUTONS PAIEMENT EXPRESS EN 1 CLIC (APPLE PAY & GOOGLE PAY) */}
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-[#332420] uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                  Paiement Express en 1 clic
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-[#18757d] bg-[#e6f4f3] px-2.5 py-0.5 rounded-full border border-[#18757d]/20">
+                    {totalAmount},00 €
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    Sécurisé SSL
+                  </span>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* BOUTON APPLE PAY */}
+                <button
+                  type="button"
+                  onClick={() => handleExpressPayment('apple_pay')}
+                  disabled={isLoading}
+                  aria-label="Payer en 1 clic avec Apple Pay"
+                  title="Payer en 1 clic avec Apple Pay"
+                  className="w-full h-12 bg-black hover:bg-neutral-900 text-white rounded-xl transition-all shadow-sm hover:shadow-md hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 flex items-center justify-center cursor-pointer border border-neutral-800 px-4 overflow-hidden"
+                >
+                  {isLoading && expressProvider === 'apple_pay' ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span className="text-xs font-medium">Connexion Apple Pay...</span>
+                    </span>
+                  ) : (
+                    <ApplePayLogo className="h-[26px] w-auto" />
+                  )}
+                </button>
+
+                {/* BOUTON GOOGLE PAY */}
+                <button
+                  type="button"
+                  onClick={() => handleExpressPayment('google_pay')}
+                  disabled={isLoading}
+                  aria-label="Payer en 1 clic avec Google Pay"
+                  title="Payer en 1 clic avec Google Pay"
+                  className="w-full h-12 bg-black hover:bg-neutral-900 text-white rounded-xl transition-all shadow-sm hover:shadow-md hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 flex items-center justify-center cursor-pointer border border-neutral-800 px-4 overflow-hidden"
+                >
+                  {isLoading && expressProvider === 'google_pay' ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span className="text-xs font-medium">Connexion Google Pay...</span>
+                    </span>
+                  ) : (
+                    <GooglePayLogo className="h-[26px] w-auto" />
+                  )}
+                </button>
+              </div>
+
+              <p className="text-center text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1.5 pt-0.5">
+                <Lock className="w-3 h-3 text-emerald-600" />
+                Paiement express biométrique sécurisé (Face ID / Touch ID)
+              </p>
+
+              {/* SÉPARATEUR */}
+              <div className="relative flex items-center justify-center pt-2 pb-1">
+                <div className="grow border-t border-[#eee7da]"></div>
+                <span className="shrink mx-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  ou par carte bancaire
+                </span>
+                <div className="grow border-t border-[#eee7da]"></div>
               </div>
             </div>
 
@@ -1394,31 +1542,58 @@ export default function TunnelFormationFicheGooglePage() {
                 </div>
               </div>
 
-              {/* CASE À COCHER OBLIGATOIRE NEWSLETTER & EMAILING */}
-              <div className={`p-4 rounded-2xl border transition-all ${
-                optInError && !newsletterOptIn 
-                  ? 'bg-red-50 border-red-300 ring-2 ring-red-200' 
-                  : 'bg-[#faf8f5] border-[#eee7da]'
-              }`}>
+              {/* BOX OFFRE SPÉCIALE RECOMMANDÉE (12 €) - POSITIONNÉE AU-DESSUS DU BOUTON DE PAIEMENT */}
+              <div
+                onClick={() => setHasOrderBump(!hasOrderBump)}
+                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer select-none ${
+                  hasOrderBump
+                    ? 'bg-amber-50/90 border-amber-500 shadow-md ring-2 ring-amber-400/30'
+                    : 'bg-[#faf8f5] border-dashed border-[#18757d]/40 hover:border-[#18757d] hover:bg-amber-50/40'
+                }`}
+              >
+                <div className="flex items-start gap-3.5">
+                  <input
+                    type="checkbox"
+                    checked={hasOrderBump}
+                    onChange={() => {}}
+                    className="w-5 h-5 rounded text-[#18757d] focus:ring-[#18757d] mt-1 shrink-0 cursor-pointer"
+                  />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider bg-amber-400 text-[#332420] px-2.5 py-0.5 rounded-md shadow-xs">
+                        <Zap className="w-3.5 h-3.5 fill-current" />
+                        Offre Spéciale Unique
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-slate-400 line-through font-bold">49 €</span>
+                        <span className="text-sm font-black text-[#18757d] bg-white px-2 py-0.5 rounded-md border border-[#eee7da]">
+                          +12,00 €
+                        </span>
+                      </div>
+                    </div>
+                    <h4 className="text-sm font-black text-[#332420]">
+                      OUI ! J'ajoute l'Accès Illimité au Calculateur de Score &amp; Générateur de 3 Quick Wins Fiche Google
+                    </h4>
+                    <p className="text-xs text-[#5e4d46] leading-relaxed">
+                      Entre simplement l'URL de ta fiche pour calculer instantanément ta note d'optimisation de 0 à 100 et débloquer tes 3 actions correctives prioritaires à fort impact pour dépasser tes concurrents locaux.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* CASE À COCHER OPTIONNELLE NEWSLETTER & EMAILING */}
+              <div className="p-4 rounded-2xl border bg-[#faf8f5] border-[#eee7da] transition-all">
                 <label className="flex items-start gap-3 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={newsletterOptIn}
-                    onChange={(e) => {
-                      setNewsletterOptIn(e.target.checked);
-                      if (e.target.checked) setOptInError(false);
-                    }}
+                    onChange={(e) => setNewsletterOptIn(e.target.checked)}
                     className="w-4 h-4 rounded text-[#18757d] focus:ring-[#18757d] mt-0.5 shrink-0 cursor-pointer"
                   />
                   <span className="text-xs text-[#5e4d46] leading-relaxed">
-                    <strong className="text-[#332420]">J'accepte</strong> de recevoir les e-mails pédagogiques, les conseils d'optimisation et la newsletter de Guides Digitaux. <span className="text-red-500 font-bold">*</span>
+                    <strong className="text-[#332420]">J'accepte</strong> de recevoir les e-mails pédagogiques, les conseils d'optimisation et la newsletter de Guides Digitaux. <span className="text-slate-400 font-normal text-[11px]">(Optionnel)</span>
                   </span>
                 </label>
-                {optInError && !newsletterOptIn && (
-                  <p className="text-[11px] text-red-600 font-bold mt-1.5 ml-7">
-                    Veuillez cocher cette case pour valider votre commande et recevoir vos accès.
-                  </p>
-                )}
               </div>
 
               {/* BOUTON DE VALIDATION DIRECTE */}
@@ -1427,7 +1602,7 @@ export default function TunnelFormationFicheGooglePage() {
                 disabled={isLoading}
                 className="w-full bg-[#18757d] hover:bg-[#135d64] text-white py-4 px-6 rounded-2xl font-black text-base sm:text-lg uppercase tracking-wider transition-all shadow-xl hover:scale-102 active:scale-98 disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer"
               >
-                {isLoading ? (
+                {isLoading && !expressProvider ? (
                   <span className="flex items-center gap-2">
                     <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                     Traitement sécurisé Stripe...
@@ -1458,7 +1633,7 @@ export default function TunnelFormationFicheGooglePage() {
               </span>
               <span className="flex items-center gap-1">
                 <CreditCard className="w-3.5 h-3.5 text-[#18757d]" />
-                Cartes CB, Visa, Mastercard, Apple Pay
+                Cartes CB, Visa, Mastercard, Apple Pay, Google Pay
               </span>
               <span className="flex items-center gap-1">
                 <FileCheck2 className="w-3.5 h-3.5 text-amber-600" />
@@ -1472,10 +1647,12 @@ export default function TunnelFormationFicheGooglePage() {
           <div className="pt-4 flex items-center justify-center gap-4 text-left max-w-md mx-auto">
             <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-[#18757d] shrink-0">
               <Image
-                src="/images/stephanie.png"
+                src="/images/stephanie.webp"
                 alt="Stéphanie Rocq - Formatrice et Fondatrice Guides Digitaux"
                 fill
+                sizes="56px"
                 className="object-cover"
+                loading="lazy"
               />
             </div>
             <div>

@@ -5,11 +5,13 @@ import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import MetaPixel from "@/components/MetaPixel";
 import { FB_PIXEL_ID_1, FB_PIXEL_IDS } from "@/lib/metaPixel";
-import CookieConsentBanner from "@/components/CookieConsentBanner";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
-import AccessibilityWidget from "@/components/AccessibilityWidget";
+
+const CookieConsentBanner = dynamic(() => import("@/components/CookieConsentBanner"));
+const AccessibilityWidget = dynamic(() => import("@/components/AccessibilityWidget"));
 
 const jakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -55,7 +57,7 @@ export default function RootLayout({
           <>
             <Script
               id="google-tag-manager"
-              strategy="afterInteractive"
+              strategy="lazyOnload"
               dangerouslySetInnerHTML={{
                 __html: `
                   (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -80,11 +82,11 @@ export default function RootLayout({
           <>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-              strategy="afterInteractive"
+              strategy="lazyOnload"
             />
             <Script
               id="google-analytics"
-              strategy="afterInteractive"
+              strategy="lazyOnload"
               dangerouslySetInnerHTML={{
                 __html: `
                   window.dataLayer = window.dataLayer || [];
@@ -104,7 +106,7 @@ export default function RootLayout({
         />
         <Script
           id="meta-pixel-script"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `
               !function(f,b,e,v,n,t,s)
