@@ -41,7 +41,7 @@ function ConfirmationContent() {
     setIsMounted(true);
   }, []);
 
-  const courseId = searchParams.get('id') || 'precommande-fiche-google';
+  const courseId = searchParams.get('productId') || searchParams.get('id') || 'formation-fiche-google';
   const sessionId = searchParams.get('session_id') || searchParams.get('sessionId') || '';
   const isCartCheckout = searchParams.get('cart_checkout') === 'true' || searchParams.get('cart') === 'true' || courseId === 'cart_items';
 

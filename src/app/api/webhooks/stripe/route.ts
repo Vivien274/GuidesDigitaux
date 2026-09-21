@@ -43,8 +43,8 @@ export async function POST(request: Request) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
-    const customerEmail = session.customer_details?.email;
-    const productId = session.metadata?.productId;
+    const customerEmail = (session.customer_details?.email || session.customer_email)?.toLowerCase().trim();
+    const productId = session.metadata?.productId || session.metadata?.courseId;
 
     if (!customerEmail || !productId) {
       return NextResponse.json({ error: 'Metadata produit ou email manquants' }, { status: 400 });
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       if (!userId) {
         try {
           const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
-          const existingUser = usersData?.users?.find(u => u.email === customerEmail);
+          const existingUser = usersData?.users?.find(u => u.email?.toLowerCase().trim() === customerEmail);
 
           if (existingUser) {
             userId = existingUser.id;
@@ -77,21 +77,22 @@ export async function POST(request: Request) {
         }
       }
 
-      if (!userId) {
-        userId = `usr_${Date.now()}`;
-      }
+      const isValidUuid = (val?: string | null): boolean => 
+        !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
+      const safeUserId = isValidUuid(userId) ? userId : null;
 
-      // 2. Assurer la présence de l'entrée profile (sécurisé)
-      try {
-        await supabaseAdmin.from('profiles').upsert({
-          id: userId,
-          email: customerEmail,
-          full_name: session.customer_details?.name ?? null,
-        });
-      } catch (profileErr) {
-        console.warn('[Stripe Webhook] Profile upsert notice:', profileErr);
+      // 2. Assurer la présence de l'entrée profile si un UUID valide existe
+      if (safeUserId) {
+        try {
+          await supabaseAdmin.from('profiles').upsert({
+            id: safeUserId,
+            email: customerEmail,
+            full_name: session.customer_details?.name ?? null,
+          });
+        } catch (profileErr) {
+          console.warn('[Stripe Webhook] Profile upsert notice:', profileErr);
+        }
       }
-
 
       // 3. Enregistrement de la commande dans la table `orders`
       const amountEur = (session.amount_total ?? 0) / 100;
@@ -107,8 +108,8 @@ export async function POST(request: Request) {
           const itemPrice = Number(cartIt.price) || 0;
           const pId = cartIt.id;
 
-          await supabaseAdmin.from('orders').insert({
-            user_id: userId,
+          const { error: insErr } = await supabaseAdmin.from('orders').insert({
+            user_id: safeUserId,
             customer_email: customerEmail,
             product_id: pId,
             stripe_session_id: `${session.id}_${pId}`,
@@ -117,6 +118,9 @@ export async function POST(request: Request) {
             currency: session.currency || 'eur',
             status: 'paid'
           });
+          if (insErr) {
+            console.error('[Stripe Webhook] Erreur insertion orders cart item:', insErr);
+          }
 
           // Expand bundles like pack-guides
           const matchedProd = DEFAULT_PRODUCTS.find(p => p.id === pId || p.slug === pId);
@@ -126,24 +130,21 @@ export async function POST(request: Request) {
 
           for (const subId of subItemsToGrant) {
             try {
-              await supabaseAdmin.from('enrollments').insert({
-                user_id: userId,
-                user_email: customerEmail,
-                product_id: subId,
-                course_id: subId,
-                item_title: cartIt.title || subId,
-                item_type: 'ebook',
-                price: itemPrice,
-                stripe_session_id: session.id
-              });
+              if (safeUserId) {
+                await supabaseAdmin.from('enrollments').insert({
+                  user_id: safeUserId,
+                  course_id: subId,
+                  status: 'active'
+                });
+              }
             } catch (e) {}
           }
         }
       } else {
-        const { data: order } = await supabaseAdmin
+        const { data: order, error: insErr } = await supabaseAdmin
           .from('orders')
           .insert({
-            user_id: userId,
+            user_id: safeUserId,
             customer_email: customerEmail,
             product_id: productId,
             stripe_session_id: session.id,
@@ -154,6 +155,10 @@ export async function POST(request: Request) {
           })
           .select('id')
           .single();
+
+        if (insErr) {
+          console.error('[Stripe Webhook] Erreur insertion order:', insErr);
+        }
 
         const targetProduct = DEFAULT_PRODUCTS.find(p => p.id === productId || p.slug === productId);
         const productsToGrant = targetProduct?.bundleProductIds && targetProduct.bundleProductIds.length > 0

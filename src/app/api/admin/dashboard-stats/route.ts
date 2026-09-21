@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
 import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kvnvfsahoblmcpurnmtn.supabase.co';
@@ -41,29 +42,33 @@ export async function GET() {
       });
     });
 
-    // 1. Fetch profiles
-    const { data: profiles } = await supabaseServer.from('profiles').select('*');
-    if (profiles && Array.isArray(profiles)) {
-      profiles.forEach((p: any) => {
-        const em = p.email?.toLowerCase().trim();
-        if (em) {
-          const existing = accountsMap.get(em);
-          if (existing) {
-            existing.name = p.full_name || existing.name;
-            existing.role = p.role || existing.role;
-          } else {
-            accountsMap.set(em, {
-              id: p.id || `p_${Date.now()}`,
-              name: p.full_name || em.split('@')[0],
-              email: em,
-              role: (p.role as 'superadmin' | 'formateur' | 'eleve') || 'eleve',
-              purchasesCount: 0,
-              totalSpent: 0,
-              purchasesDetails: []
-            });
+    // 1. Fetch profiles safely (non-blocking if RLS recursion occurs)
+    try {
+      const { data: profiles } = await supabaseServer.from('profiles').select('*');
+      if (profiles && Array.isArray(profiles)) {
+        profiles.forEach((p: any) => {
+          const em = p.email?.toLowerCase().trim();
+          if (em) {
+            const existing = accountsMap.get(em);
+            if (existing) {
+              existing.name = p.full_name || existing.name;
+              existing.role = p.role || existing.role;
+            } else {
+              accountsMap.set(em, {
+                id: p.id || `p_${Date.now()}`,
+                name: p.full_name || em.split('@')[0],
+                email: em,
+                role: (p.role as 'superadmin' | 'formateur' | 'eleve') || 'eleve',
+                purchasesCount: 0,
+                totalSpent: 0,
+                purchasesDetails: []
+              });
+            }
           }
-        }
-      });
+        });
+      }
+    } catch (e) {
+      console.warn('[Dashboard Stats] Profiles fetch notice:', e);
     }
 
     let totalRevenue = 0;
@@ -88,6 +93,72 @@ export async function GET() {
       }
       return { title, price, type, downloadPdf };
     };
+
+    // 1.5. Synchronisation de réconciliation avec Stripe Checkout Sessions (rattrapage automatique)
+    try {
+      const secretKey = (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('...'))
+        ? process.env.STRIPE_SECRET_KEY 
+        : null;
+
+      if (secretKey) {
+        const stripe = new Stripe(secretKey);
+        const stripeSessions = await stripe.checkout.sessions.list({ limit: 40 });
+
+        for (const session of stripeSessions.data) {
+          if (session.payment_status === 'paid') {
+            const customerEmail = (session.customer_details?.email || session.customer_email || '').toLowerCase().trim();
+            const productId = session.metadata?.productId || session.metadata?.courseId || 'formation-fiche-google';
+            const amountEur = (session.amount_total ?? 0) / 100;
+
+            if (customerEmail && productId) {
+              const { data: existingOrd } = await supabaseServer
+                .from('orders')
+                .select('id')
+                .eq('stripe_session_id', session.id)
+                .maybeSingle();
+
+              if (!existingOrd) {
+                let rawCartItems: any[] = [];
+                if (session.metadata?.cartItemsJson) {
+                  try {
+                    rawCartItems = JSON.parse(session.metadata.cartItemsJson);
+                  } catch (e) {}
+                }
+
+                if (Array.isArray(rawCartItems) && rawCartItems.length > 0) {
+                  for (const cartIt of rawCartItems) {
+                    const itemPrice = Number(cartIt.price) || 0;
+                    const pId = cartIt.id;
+                    await supabaseServer.from('orders').insert({
+                      customer_email: customerEmail,
+                      product_id: pId,
+                      stripe_session_id: `${session.id}_${pId}`,
+                      stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+                      amount: itemPrice,
+                      currency: session.currency || 'eur',
+                      status: 'paid'
+                    });
+                  }
+                } else {
+                  await supabaseServer.from('orders').insert({
+                    customer_email: customerEmail,
+                    product_id: productId,
+                    stripe_session_id: session.id,
+                    stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+                    amount: amountEur,
+                    currency: session.currency || 'eur',
+                    status: 'paid'
+                  });
+                }
+                console.log(`[Dashboard Stats] Synchronisation réussie de la commande Stripe ${session.id} pour ${customerEmail}`);
+              }
+            }
+          }
+        }
+      }
+    } catch (stripeSyncErr) {
+      console.warn('[Dashboard Stats] Stripe sync notice:', stripeSyncErr);
+    }
 
     // 2. Fetch orders
     const { data: orders } = await supabaseServer.from('orders').select('*').order('created_at', { ascending: false });
