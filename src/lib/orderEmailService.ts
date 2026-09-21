@@ -448,56 +448,63 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
 async function sendSingleEmail(to: string, subject: string, html: string): Promise<{ ok: boolean; provider?: string; error?: string }> {
   const resendApiKey = process.env.RESEND_API_KEY;
   const mailchimpApiKey = process.env.MAILCHIMP_API_KEY || '';
+  let lastError = '';
+
+  if (!resendApiKey && !mailchimpApiKey) {
+    return {
+      ok: false,
+      provider: 'none',
+      error: "Clé RESEND_API_KEY non configurée dans Vercel. Ajoutez votre clé Resend dans Vercel > Settings > Environment Variables."
+    };
+  }
 
   // 1. Try Resend API if API Key is configured
   if (resendApiKey) {
     try {
-      const fromAddress = process.env.RESEND_FROM_EMAIL || 'Guides Digitaux <contact@guides-digitaux.com>';
-      let res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: [to],
-          subject: subject,
-          html: html
-        })
-      });
+      const fromCandidates = [
+        process.env.RESEND_FROM_EMAIL || 'Guides Digitaux <contact@guides-digitaux.com>',
+        'Guides Digitaux <contact@send.guides-digitaux.com>',
+        'Guides Digitaux <stephanie@guides-digitaux.com>',
+        'Guides Digitaux <onboarding@resend.dev>'
+      ];
 
-      let resData = await res.json().catch(() => ({}));
+      for (const candidateFrom of fromCandidates) {
+        try {
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              from: candidateFrom,
+              to: [to],
+              subject: subject,
+              html: html
+            })
+          });
 
-      // Fallback for unverified domain in Resend test environment
-      if (!res.ok && resData?.message?.includes('domain')) {
-        console.warn(`[Email Service] Resend domain '${fromAddress}' not verified yet. Retrying with onboarding@resend.dev...`);
-        res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: 'Guides Digitaux <onboarding@resend.dev>',
-            to: [to],
-            subject: subject,
-            html: html
-          })
-        });
-        resData = await res.json().catch(() => ({}));
-      }
+          const resData = await res.json().catch(() => ({}));
 
-      if (res.ok) {
-        console.log(`[Email Service] Sent email to ${to} via Resend (ID: ${resData?.id || 'ok'})`);
-        return { ok: true, provider: 'resend' };
-      } else {
-        const errorMsg = resData?.message || `Resend error status ${res.status}`;
-        console.error(`[Email Service] Resend API Error for ${to}:`, errorMsg);
-        // Continue fallback
+          if (res.ok) {
+            console.log(`[Email Service] Sent email to ${to} via Resend using '${candidateFrom}' (ID: ${resData?.id || 'ok'})`);
+            return { ok: true, provider: 'resend' };
+          }
+
+          lastError = resData?.message || `Erreur Resend (${res.status})`;
+          console.warn(`[Email Service] Resend attempt with '${candidateFrom}' failed:`, lastError);
+
+          // Si la clé API elle-même est invalide, inutile de tester d'autres adresses
+          if (res.status === 401 || (res.status === 403 && lastError.toLowerCase().includes('api key'))) {
+            break;
+          }
+        } catch (callErr: any) {
+          lastError = callErr?.message || 'Erreur réseau vers Resend';
+        }
       }
     } catch (e: any) {
-      console.warn(`[Email Service] Resend attempt failed for ${to}:`, e?.message || e);
+      lastError = e?.message || 'Connexion à Resend impossible';
+      console.warn(`[Email Service] Resend attempt failed for ${to}:`, lastError);
     }
   }
 
@@ -527,6 +534,6 @@ async function sendSingleEmail(to: string, subject: string, html: string): Promi
     }
   }
 
-  console.log(`[Email Service Log] Simulation mode or provider unverified for: ${to}`);
-  return { ok: false, provider: 'none', error: 'Domaine Resend non vérifié ou clé d\'envoi absente dans .env' };
+  console.log(`[Email Service Log] Simulation mode or provider unverified for: ${to} - Error: ${lastError}`);
+  return { ok: false, provider: 'none', error: lastError || 'Domaine Resend non vérifié sur resend.com/domains ou clé absente' };
 }

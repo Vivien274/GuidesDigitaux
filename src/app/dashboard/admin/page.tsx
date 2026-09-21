@@ -163,17 +163,19 @@ export default function SuperadminDashboardPage() {
   // Email Management States
   const [manualEmailTarget, setManualEmailTarget] = useState('');
   const [manualNameTarget, setManualNameTarget] = useState('');
-  const [manualProductTarget, setManualProductTarget] = useState('precommande-fiche-google');
+  const [manualProductTarget, setManualProductTarget] = useState('formation-fiche-google');
   const [manualAmountTarget, setManualAmountTarget] = useState<number>(29);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailStatusMsg, setEmailStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [resendStatusPerUser, setResendStatusPerUser] = useState<Record<string, string>>({});
+  const [lastAttemptedEmail, setLastAttemptedEmail] = useState('sanjullian.jessica@hotmail.fr');
 
   const handleSendManualEmail = async (overrideEmail?: string, overrideProductId?: string, overrideAmount?: number) => {
     const targetEmail = (overrideEmail || manualEmailTarget).trim();
     const targetProduct = overrideProductId || manualProductTarget;
     const targetAmount = overrideAmount !== undefined ? overrideAmount : manualAmountTarget;
     const targetName = manualNameTarget.trim();
+    if (targetEmail) setLastAttemptedEmail(targetEmail);
 
     if (!targetEmail || !targetEmail.includes('@')) {
       alert('Veuillez saisir une adresse e-mail valide.');
@@ -997,7 +999,7 @@ export default function SuperadminDashboardPage() {
 
             {/* Live Feedback Alert */}
             {emailStatusMsg && (
-              <div className={`p-4 rounded-2xl text-xs font-extrabold flex items-center justify-between gap-3 ${
+              <div className={`p-4 rounded-2xl text-xs font-extrabold flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                 emailStatusMsg.type === 'success'
                   ? 'bg-emerald-50 text-emerald-900 border border-emerald-300'
                   : 'bg-rose-50 text-rose-900 border border-rose-300'
@@ -1006,9 +1008,22 @@ export default function SuperadminDashboardPage() {
                   {emailStatusMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <X className="w-4 h-4 text-rose-600 shrink-0" />}
                   <span>{emailStatusMsg.text}</span>
                 </div>
-                <button onClick={() => setEmailStatusMsg(null)} className="text-slate-400 hover:text-slate-600 text-xs">
-                  ✕
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {emailStatusMsg.type === 'error' && (
+                    <a
+                      href={`mailto:${encodeURIComponent(lastAttemptedEmail || 'sanjullian.jessica@hotmail.fr')}?subject=${encodeURIComponent('🎉 Confirmation de ta commande Guides Digitaux — Cap Visibilité Google')}&body=${encodeURIComponent("Bonjour Jessica,\n\nC'est Stéphanie de Guides Digitaux ! Ta commande pour la formation « Cap Visibilité Google » est bien confirmée (29,00 € réglés sur Stripe).\n\n🎥 ACCÉDER À TES COURS VIDÉO :\nTu peux accéder immédiatement à l'ensemble de tes 7 modules vidéo et prompts IA dans ton espace élève :\n👉 https://www.guides-digitaux.com/dashboard/eleve\n\n🔑 COMMENT TE CONNECTER :\n1. Rends-toi sur : https://www.guides-digitaux.com/mon-compte\n2. Connecte-toi simplement avec ton adresse e-mail : " + (lastAttemptedEmail || 'sanjullian.jessica@hotmail.fr') + "\n3. Tes accès sont activés à vie.\n\n📥 TES RESSOURCES & CHECKLISTS BONUS :\n- Checklist d'audit Fiche Google (25 points) : https://www.guides-digitaux.com/downloads/bonus-1-checklist-audit-fiche-google.pdf\n- Scripts WhatsApp, SMS & Email \"Avis 5 Étoiles\" : https://www.guides-digitaux.com/downloads/bonus-2-scripts-recolte-avis-clients.pdf\n- 10 Modèles de Réponses aux Avis Clients : https://www.guides-digitaux.com/downloads/bonus-3-modeles-reponses-avis.pdf\n\nSi tu as la moindre question lors de ton apprentissage, réponds directement à cet e-mail.\n\nÀ très vite,\nStéphanie ROCQ — Guides Digitaux\ncontact@guides-digitaux.com")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-[#18757d] hover:bg-[#12595f] text-white rounded-lg text-[11px] font-bold inline-flex items-center gap-1 shadow-xs cursor-pointer"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Ouvrir dans mon appli Mail</span>
+                    </a>
+                  )}
+                  <button onClick={() => setEmailStatusMsg(null)} className="text-slate-400 hover:text-slate-600 text-xs px-2 py-1">
+                    ✕
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1055,7 +1070,8 @@ export default function SuperadminDashboardPage() {
                     }}
                     className="w-full bg-white border border-[#eee7da] rounded-xl px-3 py-2 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
                   >
-                    <option value="precommande-fiche-google">🚀 Précommande Fiche Google (29€ - 3 Bonus Inclus)</option>
+                    <option value="formation-fiche-google">⭐ Formation Fiche Google : Cap Visibilité (29€ - Lancement)</option>
+                    <option value="orderbump-calculateur-score">⚡ Outil Calculateur de Score Google Maps (12€)</option>
                     {DEFAULT_PRODUCTS.map(p => (
                       <option key={p.id} value={p.id}>
                         {p.title} ({p.price}€)
@@ -1234,6 +1250,7 @@ export default function SuperadminDashboardPage() {
                     price: p.price,
                     date: p.date,
                     type: p.type,
+                    slug: p.slug || p.id,
                     userName: u.name,
                     userEmail: u.email
                   }))
@@ -1287,7 +1304,7 @@ export default function SuperadminDashboardPage() {
                               <td className="py-3.5 px-3 text-center whitespace-nowrap">
                                 <div className="flex items-center justify-center gap-1.5">
                                   <button
-                                    onClick={() => handleSendManualEmail(ord.userEmail, ord.id || 'precommande-fiche-google', ord.price)}
+                                    onClick={() => handleSendManualEmail(ord.userEmail, ord.slug || 'formation-fiche-google', ord.price)}
                                     disabled={isSendingEmail}
                                     className="px-2 py-1 bg-[#e6f4f3] hover:bg-[#18757d] text-[#18757d] hover:text-white rounded-lg text-[10px] font-extrabold transition-colors inline-flex items-center gap-1 cursor-pointer"
                                     title="Renvoyer l'e-mail de confirmation"

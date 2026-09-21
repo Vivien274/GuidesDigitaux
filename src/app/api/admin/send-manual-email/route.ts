@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     } else {
       return NextResponse.json({
         success: false,
-        error: `Resend : ${emailResult?.customerStatus?.error || 'Le domaine guides-digitaux.com nécessite une validation sur resend.com/domains pour livrer les clients.'}`
+        error: emailResult?.customerStatus?.error || 'Erreur lors de l’envoi de l’e-mail via Resend'
       }, { status: 400 });
     }
   } catch (error: any) {
