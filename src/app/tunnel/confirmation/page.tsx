@@ -235,19 +235,23 @@ function ConfirmationContent() {
       }
     }
 
-    // 5. Track Meta Pixel Purchase event once per checkout session
+    // 5. Track Meta Pixel Purchase event once per checkout session (always trigger for test sessions)
     if (typeof window !== 'undefined') {
       try {
+        const isTestVisit = !sessionId || sessionId.includes('test') || searchParams.get('test') === 'true';
         const trackedPixel = JSON.parse(localStorage.getItem('gd_meta_pixel_tracked') || '[]');
-        const currentOrderKey = sessionId || `order_${courseId}_${resolvedPrice}`;
-        if (!trackedPixel.includes(currentOrderKey)) {
-          trackPurchase(Number(resolvedPrice) || 0, 'EUR', {
-            content_name: courseId || 'Commande Guides Digitaux',
-            content_ids: [courseId || 'precommande-fiche-google'],
+        const currentOrderKey = sessionId;
+        
+        if (isTestVisit || (currentOrderKey && !trackedPixel.includes(currentOrderKey))) {
+          trackPurchase(Number(resolvedPrice) || 29, 'EUR', {
+            content_name: resolvedTitle || courseId || 'Formation Fiche Google',
+            content_ids: [courseId || 'formation-fiche-google'],
             content_type: 'product',
-            order_id: sessionId || undefined,
+            order_id: sessionId || `test_${Date.now()}`,
           });
-          localStorage.setItem('gd_meta_pixel_tracked', JSON.stringify([...trackedPixel, currentOrderKey]));
+          if (currentOrderKey && !isTestVisit) {
+            localStorage.setItem('gd_meta_pixel_tracked', JSON.stringify([...trackedPixel, currentOrderKey]));
+          }
         }
       } catch (e) {
         console.error('Erreur lors du suivi Meta Pixel Purchase:', e);

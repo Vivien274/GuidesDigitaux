@@ -26,7 +26,7 @@ export default function ThirdPartyScripts({
     const isBot =
       /Lighthouse|Google-InspectionTool|Chrome-Lighthouse|PTST|Wpt|PageSpeed/i.test(
         navigator.userAgent
-      ) || (typeof navigator !== 'undefined' && Boolean(navigator.webdriver));
+      );
 
     if (isBot) {
       // Provide no-op stubs so any on-page analytics calls don't crash
@@ -37,6 +37,7 @@ export default function ThirdPartyScripts({
       if (!window.fbq) {
         const stub: any = function () {};
         stub.queue = [];
+        stub.push = stub;
         window.fbq = stub;
       }
       return;
@@ -60,18 +61,26 @@ export default function ThirdPartyScripts({
         }
       };
       fbStub.queue = [];
+      fbStub.push = fbStub;
       fbStub.loaded = true;
       fbStub.version = '2.0';
       window.fbq = fbStub;
       window._fbq = fbStub;
 
-      FB_PIXEL_IDS.forEach((id) => {
+      Array.from(new Set(FB_PIXEL_IDS)).forEach((id) => {
         window.fbq('init', id);
       });
       window.fbq('track', 'PageView');
     }
 
     let loaded = false;
+    const events = ['scroll', 'touchstart', 'pointerdown', 'mousemove', 'keydown'];
+
+    const cleanupListeners = () => {
+      events.forEach((evt) => {
+        window.removeEventListener(evt, loadHeavyScripts);
+      });
+    };
 
     const loadHeavyScripts = () => {
       if (loaded) return;
@@ -120,14 +129,6 @@ export default function ThirdPartyScripts({
       loadHeavyScripts();
       return;
     }
-
-    const events = ['scroll', 'touchstart', 'pointerdown', 'mousemove', 'keydown'];
-
-    const cleanupListeners = () => {
-      events.forEach((evt) => {
-        window.removeEventListener(evt, loadHeavyScripts);
-      });
-    };
 
     events.forEach((evt) => {
       window.addEventListener(evt, loadHeavyScripts, { once: true, passive: true });
