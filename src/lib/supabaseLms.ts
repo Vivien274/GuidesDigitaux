@@ -748,7 +748,15 @@ export async function fetchProductsFromDb(): Promise<any[]> {
       .order('created_at', { ascending: false });
 
     if (!error && data && data.length > 0) {
-      const dbProducts = data.map((row: any) => {
+      const activeData = data.filter((row: any) => {
+        // Exclude obsolete pre-orders that are now officially released
+        if (row.id === 'precommande-fiche-google' || row.slug === 'precommande-fiche-google' || (row.title && row.title.toLowerCase().includes('précommande'))) {
+          return false;
+        }
+        return true;
+      });
+
+      const dbProducts = activeData.map((row: any) => {
         const isBundle = (row.id && row.id.includes('bundle')) || (row.slug && row.slug.includes('bundle'));
         const localMatch = storedMap.get(row.id) || storedMap.get(row.slug) || DEFAULT_PRODUCTS.find(p => 
           p.id === row.id || 
@@ -764,23 +772,29 @@ export async function fetchProductsFromDb(): Promise<any[]> {
         const effectiveLongDescription = row.long_description || localMatch?.longDescription || row.description || '';
         const effectiveDescription = row.description || localMatch?.description || '';
 
+        const isCoaching = row.id === 'coaching-site' || 
+                           row.slug === 'coaching-site' || 
+                           (row.title || '').toLowerCase().includes('coaching') || 
+                           localMatch?.category === 'coaching';
+
         return {
           id: row.id,
           title: row.title || localMatch?.title,
           slug: row.slug || row.id,
-          category: row.category || localMatch?.category || 'checklist',
-          categoryLabel: row.category_label || row.categoryLabel || localMatch?.categoryLabel || 'Checklist Digital',
+          category: isCoaching ? 'coaching' : (row.category || localMatch?.category || 'checklist'),
+          categoryLabel: isCoaching ? 'Coaching & Visio' : (row.category_label || row.categoryLabel || localMatch?.categoryLabel || 'Checklist Digital'),
           price: isBundle ? 250 : (row.price ? Number(row.price) : (localMatch?.price ?? 0)),
           originalPrice: isBundle ? 298 : (row.original_price ? Number(row.original_price) : localMatch?.originalPrice),
           rating: Number(row.rating) || localMatch?.rating || 5,
           reviewsCount: Number(row.reviews_count) || localMatch?.reviewsCount || 0,
-          badge: isBundle ? 'ÉCONOMISE 48€' : (row.badge || localMatch?.badge),
+          badge: isCoaching ? 'ACCOMPAGNEMENT 1-SUR-1' : (isBundle ? 'ÉCONOMISE 48€' : (row.badge || localMatch?.badge)),
           image: resolvedImage,
           imageAlt: row.image_alt || row.imageAlt || localMatch?.imageAlt || `${row.title} - Guides digitaux - Métropole lilloise`,
           description: effectiveDescription,
           longDescription: effectiveLongDescription,
           htmlContent: row.html_content,
           downloadPdf: row.download_pdf || row.pdf_file_url || localMatch?.downloadPdf,
+          bookingUrl: isCoaching ? (row.booking_url || localMatch?.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18') : undefined,
           features: (Array.isArray(row.features) && row.features.length > 0) ? row.features : (localMatch?.features || []),
           gallery: (Array.isArray(row.gallery) && row.gallery.length > 0) ? row.gallery : (localMatch?.gallery || [resolvedImage])
         };

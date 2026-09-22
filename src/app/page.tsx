@@ -106,9 +106,20 @@ export default function HomePage() {
           return true;
         });
 
-        const nonFormations = PRODUCTS.filter(p => p.category !== 'course' && (p.category as string) !== 'formation');
+        const nonFormations = PRODUCTS.filter(p => 
+          p.category !== 'course' && 
+          (p.category as string) !== 'formation' &&
+          p.id !== 'precommande-fiche-google' &&
+          p.slug !== 'precommande-fiche-google' &&
+          !p.title.toLowerCase().includes('précommande')
+        );
         
-        const dynamicFormations: ProductItem[] = publishedDbCourses.map(c => {
+        const validCourses = publishedDbCourses.filter(c => 
+          c.id !== 'precommande-fiche-google' && 
+          !c.title.toLowerCase().includes('précommande')
+        );
+
+        const dynamicFormations: ProductItem[] = validCourses.map(c => {
           const staticMatch = PRODUCTS.find(p => {
             if (p.id === c.id) return true;
             const cT = c.title.toLowerCase();

@@ -210,21 +210,21 @@ export default function AccessibilityWidget() {
         />
       )}
 
-      {/* FLOATING TRIGGER BUTTON (BOTTOM-LEFT) */}
-      <div className="fixed bottom-6 left-6 z-[99999] print:hidden">
+      {/* FLOATING TRIGGER BUTTON (EDGE TAB ON MOBILE, BOTTOM-LEFT ON DESKTOP) */}
+      <div className="fixed top-1/2 -translate-y-1/2 left-0 sm:top-auto sm:translate-y-0 sm:bottom-6 sm:left-6 z-[99999] print:hidden">
         <button
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Options d'accessibilité (Ally)"
           title="Accessibilité numérique (a11y)"
-          className={`relative p-3.5 sm:p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer border-2 ${
+          className={`relative p-2.5 sm:p-4 rounded-r-2xl rounded-l-none sm:rounded-full shadow-2xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer border-y-2 border-r-2 sm:border-2 ${
             hasActiveModifiers 
               ? 'bg-[#F2542D] border-white text-white ring-4 ring-[#F2542D]/30 shadow-[#F2542D]/40' 
-              : 'bg-[#18757d] border-white/80 text-white hover:bg-[#12595f] ring-4 ring-[#18757d]/20'
+              : 'bg-[#18757d] border-white/80 text-white hover:bg-[#12595f] ring-2 sm:ring-4 ring-[#18757d]/20'
           }`}
         >
-          <Eye className="w-6 h-6 animate-pulse" />
+          <Eye className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
           {hasActiveModifiers && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 border-2 border-white rounded-full"></span>
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-emerald-400 border-2 border-white rounded-full"></span>
           )}
         </button>
       </div>

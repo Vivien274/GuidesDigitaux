@@ -92,20 +92,26 @@ export default function BoutiquePage() {
           p.title.toLowerCase().trim() === titleLower
         );
         if (!exists) {
+          const isCoaching = c.id === 'coaching-site' || titleLower.includes('coaching');
           combined.push({
             id: c.id,
             slug: canonicalSlug,
             title: c.title,
-            category: 'formation',
-            categoryLabel: 'Formation Vidéo',
+            category: isCoaching ? 'coaching' : 'formation',
+            categoryLabel: isCoaching ? 'Coaching & Visio' : 'Formation Vidéo',
             price: c.price || 99,
             originalPrice: c.originalPrice,
             rating: 5,
             reviewsCount: 0,
-            badge: c.isPreorder ? 'PRÉCOMMANDE' : undefined,
+            badge: isCoaching ? 'ACCOMPAGNEMENT 1-SUR-1' : (c.isPreorder ? 'PRÉCOMMANDE' : undefined),
             image: c.image || '/images/products/coaching-site.webp',
-            description: c.description || 'Formation vidéo complète pas-à-pas avec exercices pratiques.',
-            features: [
+            description: c.description || (isCoaching ? 'Accompagnement individuel sur-mesure en visio.' : 'Formation vidéo complète pas-à-pas avec exercices pratiques.'),
+            features: isCoaching ? [
+              '2 sessions individuelles de 45 minutes en visio',
+              'Écran partagé directement sur ton propre site web',
+              'Résolution pas-à-pas de tes blocages techniques & SEO',
+              'Accompagnement 100% personnalisé avec Stéphanie Rocq'
+            ] : [
               'Accès illimité 24/7',
               `${c.modules?.length || 0} Modules vidéo pas-à-pas`,
               'Support et exercices pratiques',
@@ -120,6 +126,16 @@ export default function BoutiquePage() {
       const seenKeys = new Set<string>();
 
       combined.forEach(p => {
+        // Exclude obsolete pre-order product
+        if (p.id === 'precommande-fiche-google' || p.slug === 'precommande-fiche-google' || p.title.toLowerCase().includes('précommande')) {
+          return;
+        }
+
+        // Enforce strict coaching category for coaching product
+        if (p.id === 'coaching-site' || p.slug === 'coaching-site' || p.title.toLowerCase().includes('coaching')) {
+          p.category = 'coaching';
+          p.categoryLabel = 'Coaching & Visio';
+        }
         const key = p.title.toLowerCase().trim();
         if (!seenKeys.has(key) && !seenKeys.has(p.id)) {
           seenKeys.add(key);
@@ -213,12 +229,12 @@ export default function BoutiquePage() {
         </div>
       </section>
 
-      {/* FILTER TABS */}
-      <section className="bg-[#f5f1e8] py-6 border-b border-[#e8ded0] sticky top-20 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-center sm:justify-start gap-3">
+      {/* FILTER TABS (HORIZONTAL SCROLL ON MOBILE) */}
+      <section className="bg-[#f5f1e8] py-3.5 sm:py-6 border-b border-[#e8ded0] sticky top-20 z-30 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto sm:flex-wrap items-center justify-start gap-2.5 pb-1 sm:pb-0 scrollbar-none">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all ${
+            className={`whitespace-nowrap px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-bold transition-all shrink-0 ${
               selectedCategory === 'all'
                 ? 'bg-[#18757d] text-white shadow-sm'
                 : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#e8ded0]'
@@ -229,7 +245,7 @@ export default function BoutiquePage() {
 
           <button
             onClick={() => setSelectedCategory('ebook')}
-            className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
               selectedCategory === 'ebook'
                 ? 'bg-[#18757d] text-white shadow-sm'
                 : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#e8ded0]'
@@ -241,7 +257,7 @@ export default function BoutiquePage() {
 
           <button
             onClick={() => setSelectedCategory('checklist')}
-            className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
               selectedCategory === 'checklist'
                 ? 'bg-[#18757d] text-white shadow-sm'
                 : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#e8ded0]'
@@ -253,7 +269,7 @@ export default function BoutiquePage() {
 
           <button
             onClick={() => setSelectedCategory('formation')}
-            className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
               selectedCategory === 'formation'
                 ? 'bg-[#18757d] text-white shadow-sm'
                 : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#e8ded0]'
@@ -265,7 +281,7 @@ export default function BoutiquePage() {
 
           <button
             onClick={() => setSelectedCategory('coaching')}
-            className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
               selectedCategory === 'coaching'
                 ? 'bg-[#18757d] text-white shadow-sm'
                 : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#e8ded0]'
