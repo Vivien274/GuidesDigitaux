@@ -466,10 +466,15 @@ export default function HomePage() {
                 <div>
                   {/* Product Cover Image */}
                   {product.image && (
-                    <Link href={`/produit/${product.slug || product.id}`} className="block relative w-full h-48 sm:h-52 mb-5 rounded-2xl overflow-hidden bg-[#f4ede0] border border-[#eee7da] shadow-xs">
+                    <Link
+                      href={`/produit/${product.slug || product.id}`}
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="block relative w-full h-48 sm:h-52 mb-5 rounded-2xl overflow-hidden bg-[#f4ede0] border border-[#eee7da] shadow-xs"
+                    >
                       <Image
                         src={product.image}
-                        alt={product.title}
+                        alt=""
                         fill
                         className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
                       />
@@ -520,6 +525,7 @@ export default function HomePage() {
                   <div className="grid grid-cols-2 gap-3">
                     <Link
                       href={`/produit/${product.slug || product.id}`}
+                      aria-label={`Voir les détails du produit ${product.title}`}
                       className="w-full py-3 px-3 text-xs font-extrabold text-[#332420] bg-[#f4ede0] hover:bg-[#e8ded0] rounded-xl transition-colors text-center flex items-center justify-center"
                     >
                       Détails
@@ -816,7 +822,7 @@ export default function HomePage() {
             <div className="bg-white rounded-3xl p-7 border border-[#eee7da] shadow-sm hover:shadow-lg transition-all flex flex-col justify-between">
               <div>
                 <div className="mb-4">
-                  <span className="inline-block px-3 py-1 rounded-full text-[10px] font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
                     VENDRE EN LIGNE
                   </span>
                 </div>
@@ -840,10 +846,10 @@ export default function HomePage() {
             <div className="bg-white rounded-3xl p-7 border border-[#eee7da] shadow-sm hover:shadow-lg transition-all flex flex-col justify-between">
               <div>
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                  <span className="inline-block px-3 py-1 rounded-full text-[10px] font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
                     JE ME LANCE EN LIGNE
                   </span>
-                  <span className="inline-block px-3 py-1 rounded-full text-[10px] font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
                     VENDRE EN LIGNE
                   </span>
                 </div>
@@ -867,10 +873,10 @@ export default function HomePage() {
             <div className="bg-white rounded-3xl p-7 border border-[#eee7da] shadow-sm hover:shadow-lg transition-all flex flex-col justify-between">
               <div>
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                  <span className="inline-block px-3 py-1 rounded-full text-[10px] font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
                     JE ME LANCE EN LIGNE
                   </span>
-                  <span className="inline-block px-3 py-1 rounded-full text-[10px] font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
                     ME FAIRE CONNAÎTRE
                   </span>
                 </div>
