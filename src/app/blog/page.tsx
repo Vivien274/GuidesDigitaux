@@ -9,6 +9,14 @@ import { ArrowRight, Calendar, Clock, Sparkles, BookOpen } from 'lucide-react';
 import { BLOG_ARTICLES } from '@/data/blogArticles';
 
 export default function BlogPage() {
+  const visibleArticles = BLOG_ARTICLES.filter((article) => {
+    if (article.status === 'draft') return false;
+    if (article.status === 'scheduled' && article.scheduledAt) {
+      return new Date(article.scheduledAt).getTime() <= Date.now();
+    }
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
       <Header />
@@ -34,7 +42,7 @@ export default function BlogPage() {
       <section className="py-12 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {BLOG_ARTICLES.map((article) => (
+            {visibleArticles.map((article) => (
               <article key={article.id} className="bg-white rounded-3xl overflow-hidden border border-[#e8ded0] shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
                 <div>
                   <div className="relative h-64 w-full bg-[#faf8f5]">
