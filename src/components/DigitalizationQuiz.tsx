@@ -229,7 +229,7 @@ export default function DigitalizationQuiz() {
             <div className="pt-4">
               <button
                 onClick={() => setCurrentStep(1)}
-                className="px-8 py-5 text-sm sm:text-base font-extrabold text-white bg-[#F2542D] hover:bg-[#d8441f] rounded-full shadow-xl uppercase tracking-wider transition-all transform hover:scale-105 inline-flex items-center gap-2 cursor-pointer"
+                className="px-8 py-5 text-sm sm:text-base font-extrabold text-white bg-[#c43c1d] hover:bg-[#a82e14] rounded-full shadow-xl uppercase tracking-wider transition-all transform hover:scale-105 inline-flex items-center gap-2 cursor-pointer"
               >
                 <span>COMMENCER LE QUIZ GRATUIT</span>
                 <ArrowRight className="w-5 h-5" />

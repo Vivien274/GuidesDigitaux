@@ -213,7 +213,7 @@ export default function Header() {
                 <ShoppingBag className="w-4 h-4" />
                 <span className="hidden sm:inline">Panier</span>
                 {totalItems > 0 && (
-                  <span className="bg-[#e05a47] text-white text-[11px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center -ml-0.5">
+                  <span className="bg-[#c43c1d] text-white text-[11px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center -ml-0.5">
                     {totalItems}
                   </span>
                 )}

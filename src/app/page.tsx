@@ -432,7 +432,7 @@ export default function HomePage() {
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#e05a47] block mb-2">Boutique en ligne</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#c03823] block mb-2">Boutique en ligne</span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-[#332420]">
                 Nos Guides & Formations Disponibles
               </h2>

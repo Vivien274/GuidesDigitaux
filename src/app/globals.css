@@ -10,7 +10,9 @@
   --teal-primary: #18757d;
   --teal-dark: #12595f;
   --teal-light: #e6f4f3;
-  --coral-accent: #e05a47;
+  --terracotta-accent: #c43c1d; /* Conforme WCAG AA (ratio > 5:1 sur fond clair) */
+  --terracotta-hover: #a82e14;
+  --coral-accent: #c43c1d;
   --coral-light: #fdf1ef;
   --mustard-accent: #f5d76e;
   --beige-badge: #f4ede0;
