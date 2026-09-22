@@ -133,8 +133,14 @@ export default function CookieConsentBanner() {
                 <h4 className="text-xs font-extrabold text-[#332420]">Mesure d'Audience & Meta Pixel</h4>
                 <p className="text-[10px] text-slate-500">Permet d'analyser la fréquentation du site.</p>
               </div>
+              <label htmlFor="cookie-analytics-consent" className="sr-only">
+                Accepter les cookies de mesure d'audience et Meta Pixel
+              </label>
               <input
+                id="cookie-analytics-consent"
+                name="cookie-analytics-consent"
                 type="checkbox"
+                aria-label="Accepter les cookies de mesure d'audience et Meta Pixel"
                 checked={analyticsConsent}
                 onChange={(e) => setAnalyticsConsent(e.target.checked)}
                 className="w-4 h-4 text-[#18757d] rounded accent-[#18757d] cursor-pointer"

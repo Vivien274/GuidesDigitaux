@@ -177,15 +177,18 @@ export default function CartDrawer() {
               
               {/* CODE PROMO INPUT */}
               <div className="space-y-1.5 bg-white p-3 rounded-2xl border border-[#eee7da]">
-                <label className="text-[11px] font-extrabold text-[#5e4d46] uppercase flex items-center gap-1">
+                <label htmlFor="cart-coupon-input" className="text-[11px] font-extrabold text-[#5e4d46] uppercase flex items-center gap-1">
                   🎟️ Code Promo / Remise :
                 </label>
                 <div className="flex items-center gap-2">
                   <input
+                    id="cart-coupon-input"
+                    name="cart-coupon"
                     type="text"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                     placeholder="BIENVENUE10"
+                    aria-label="Code Promo ou Remise"
                     className="flex-1 p-2 bg-[#faf8f5] border border-[#eee7da] rounded-xl text-xs font-mono font-bold text-[#332420] focus:outline-none uppercase"
                   />
                   <button

@@ -59,13 +59,19 @@ export default function Footer() {
             ) : (
               <>
                 <div className="relative flex-1">
-                  <Mail className="w-5 h-5 text-teal-700 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <label htmlFor="footer-newsletter-email" className="sr-only">
+                    Ton adresse email pro
+                  </label>
+                  <Mail className="w-5 h-5 text-teal-700 absolute left-4 top-1/2 -translate-y-1/2" aria-hidden="true" />
                   <input
+                    id="footer-newsletter-email"
+                    name="footer-email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Ton adresse email pro..."
+                    aria-label="Ton adresse email professionnelle"
                     className="w-full pl-12 pr-4 py-3.5 bg-white text-[#332420] placeholder:text-slate-400 font-medium text-sm rounded-2xl border-0 focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-inner"
                   />
                 </div>
