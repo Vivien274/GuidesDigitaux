@@ -277,6 +277,13 @@ function ConfirmationContent() {
     // Guarantee that all purchases (single or multi-item cart) are bound to activeEmail
     processPurchasesForEmail(activeEmail, resolvedPrice);
 
+    trackPurchase(Number(resolvedPrice) || 29, 'EUR', {
+      content_name: resolvedTitle,
+      content_ids: [courseId],
+      content_type: 'product',
+      order_id: sessionId || undefined,
+    });
+
     setIsAccountActivated(true);
 
     setTimeout(() => {
@@ -511,7 +518,16 @@ function ConfirmationContent() {
               </div>
               <Link
                 href="/dashboard/eleve?purchased=true"
-                className="inline-flex items-center justify-center gap-2 w-full py-3.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors mt-2"
+                id="btn-confirmation-achat"
+                onClick={() => {
+                  trackPurchase(Number(resolvedPrice) || 29, 'EUR', {
+                    content_name: resolvedTitle,
+                    content_ids: [courseId],
+                    content_type: 'product',
+                    order_id: sessionId || undefined,
+                  });
+                }}
+                className="inline-flex items-center justify-center gap-2 w-full py-3.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors mt-2 cursor-pointer"
               >
                 <Rocket className="w-4 h-4" />
                 Accéder à mon Espace Élève
@@ -555,6 +571,8 @@ function ConfirmationContent() {
 
               <button
                 type="submit"
+                id="btn-activer-compte-achat"
+                data-meta-event="Purchase"
                 className="w-full py-3.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-md uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer mt-2"
               >
                 <Lock className="w-4 h-4" />

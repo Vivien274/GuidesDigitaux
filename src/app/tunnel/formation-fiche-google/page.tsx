@@ -297,7 +297,7 @@ export default function TunnelFormationFicheGooglePage() {
           newsletterOptIn: !!newsletterOptIn,
           customerEmail: emailInput.trim() || undefined,
           cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-fiche-google',
-          successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&orderbump=${hasOrderBump ? '1' : '0'}${emailInput.trim() ? `&email=${encodeURIComponent(emailInput.trim())}` : ''}`
+          successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&price=${totalAmount}&orderbump=${hasOrderBump ? '1' : '0'}${emailInput.trim() ? `&email=${encodeURIComponent(emailInput.trim())}` : ''}`
         })
       });
 
@@ -372,7 +372,7 @@ export default function TunnelFormationFicheGooglePage() {
           newsletterOptIn: !!newsletterOptIn,
           customerEmail: emailInput.trim() || undefined,
           cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-fiche-google',
-          successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&orderbump=${hasOrderBump ? '1' : '0'}${emailInput.trim() ? `&email=${encodeURIComponent(emailInput.trim())}` : ''}`
+          successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&price=${totalAmount}&orderbump=${hasOrderBump ? '1' : '0'}${emailInput.trim() ? `&email=${encodeURIComponent(emailInput.trim())}` : ''}`
         })
       });
 
