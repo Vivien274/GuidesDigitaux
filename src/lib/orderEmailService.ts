@@ -182,6 +182,28 @@ export function getDeduplicatedDownloadLinksForProduct(
   return Array.from(linksMap.values());
 }
 
+// In-memory deduplication cache to prevent concurrent/repeated email dispatch for the same orderId
+const processedOrderEmailsCache = new Map<string, number>();
+
+function shouldSkipDuplicateOrderEmail(orderId: string, customerEmail: string): boolean {
+  if (!orderId) return false;
+  const key = `${orderId.toLowerCase().trim()}_${customerEmail.toLowerCase().trim()}`;
+  const now = Date.now();
+  
+  // Clean entries older than 30 minutes
+  for (const [k, timestamp] of processedOrderEmailsCache.entries()) {
+    if (now - timestamp > 30 * 60 * 1000) {
+      processedOrderEmailsCache.delete(k);
+    }
+  }
+
+  if (processedOrderEmailsCache.has(key)) {
+    return true;
+  }
+  processedOrderEmailsCache.set(key, now);
+  return false;
+}
+
 /**
  * Sends order notification email to Admin (contact@guides-digitaux.com)
  * and confirmation email to the customer with download links or video access.
@@ -197,6 +219,15 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
     currency = 'EUR',
     purchaseDate = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
   } = payload;
+
+  if (shouldSkipDuplicateOrderEmail(orderId, customerEmail)) {
+    console.log(`[Order Email Service] Emails for order ${orderId} (${customerEmail}) already processed recently. Skipping duplicate dispatch.`);
+    return {
+      success: true,
+      adminStatus: { ok: true, provider: 'cache_dedup' },
+      customerStatus: { ok: true, provider: 'cache_dedup' }
+    };
+  }
 
   console.log(`[Order Email Service] Processing emails for order ${orderId} (${customerEmail}) - Product: ${productTitle}`);
 

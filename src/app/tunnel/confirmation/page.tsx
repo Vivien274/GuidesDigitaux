@@ -185,11 +185,13 @@ function ConfirmationContent() {
               }
             }
 
-            // Send confirmation & admin email once per session
-            if (typeof window !== 'undefined') {
-              const emailSentKey = `gd_email_sent_${sessionId}`;
-              if (!sessionStorage.getItem(emailSentKey)) {
-                sessionStorage.setItem(emailSentKey, 'true');
+            // Send confirmation & admin email once per session ONLY if not a real Stripe session
+            // (For real Stripe sessions cs_live_... / cs_test_..., the official Stripe Webhook already sends the emails server-side)
+            const isStripeSession = sessionId.startsWith('cs_live_') || sessionId.startsWith('cs_test_');
+            if (!isStripeSession && typeof window !== 'undefined') {
+              const emailSentKey = `gd_email_sent_${sessionId || stripeEmail}`;
+              if (!localStorage.getItem(emailSentKey)) {
+                localStorage.setItem(emailSentKey, 'true');
                 fetch('/api/orders/send-email', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -278,16 +280,7 @@ function ConfirmationContent() {
       return;
     }
 
-    // Guarantee that all purchases (single or multi-item cart) are bound to activeEmail
-    processPurchasesForEmail(activeEmail, resolvedPrice);
-
-    trackPurchase(Number(resolvedPrice) || 29, 'EUR', {
-      content_name: resolvedTitle,
-      content_ids: [courseId],
-      content_type: 'product',
-      order_id: sessionId || undefined,
-    });
-
+    // Account successfully activated - purchase is already secured and tracked on page load
     setIsAccountActivated(true);
 
     setTimeout(() => {

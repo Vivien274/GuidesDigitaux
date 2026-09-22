@@ -1,7 +1,7 @@
 'use client';
 
 import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
-import { saveUserPurchaseToDb, fetchUserPurchasesFromDb, saveOrderToDb } from './supabaseLms';
+import { saveUserPurchaseToDb, fetchUserPurchasesFromDb } from './supabaseLms';
 
 export interface EnrolledCourseItem {
   id: string;
@@ -152,7 +152,6 @@ export function addPurchaseToUser(email: string | null | undefined, item: Enroll
       } catch (e) {}
     }
     saveUserPurchaseToDb(normalized, item);
-    saveOrderToDb(normalized, item.id || item.slug || 'product', 'paid', item.price || 0);
     return updated;
   }
   return [item];

@@ -107,19 +107,28 @@ export async function POST(request: Request) {
         for (const cartIt of rawCartItems) {
           const itemPrice = Number(cartIt.price) || 0;
           const pId = cartIt.id;
+          const cartSessionId = `${session.id}_${pId}`;
 
-          const { error: insErr } = await supabaseAdmin.from('orders').insert({
-            user_id: safeUserId,
-            customer_email: customerEmail,
-            product_id: pId,
-            stripe_session_id: `${session.id}_${pId}`,
-            stripe_payment_intent_id: session.payment_intent as string,
-            amount: itemPrice,
-            currency: session.currency || 'eur',
-            status: 'paid'
-          });
-          if (insErr) {
-            console.error('[Stripe Webhook] Erreur insertion orders cart item:', insErr);
+          const { data: existingCartOrder } = await supabaseAdmin
+            .from('orders')
+            .select('id')
+            .eq('stripe_session_id', cartSessionId)
+            .maybeSingle();
+
+          if (!existingCartOrder) {
+            const { error: insErr } = await supabaseAdmin.from('orders').insert({
+              user_id: safeUserId,
+              customer_email: customerEmail,
+              product_id: pId,
+              stripe_session_id: cartSessionId,
+              stripe_payment_intent_id: session.payment_intent as string,
+              amount: itemPrice,
+              currency: session.currency || 'eur',
+              status: 'paid'
+            });
+            if (insErr) {
+              console.error('[Stripe Webhook] Erreur insertion orders cart item:', insErr);
+            }
           }
 
           // Expand bundles like pack-guides
@@ -141,23 +150,33 @@ export async function POST(request: Request) {
           }
         }
       } else {
-        const { data: order, error: insErr } = await supabaseAdmin
+        const { data: existingOrder } = await supabaseAdmin
           .from('orders')
-          .insert({
-            user_id: safeUserId,
-            customer_email: customerEmail,
-            product_id: productId,
-            stripe_session_id: session.id,
-            stripe_payment_intent_id: session.payment_intent as string,
-            amount: amountEur,
-            currency: session.currency || 'eur',
-            status: 'paid'
-          })
           .select('id')
-          .single();
+          .eq('stripe_session_id', session.id)
+          .maybeSingle();
 
-        if (insErr) {
-          console.error('[Stripe Webhook] Erreur insertion order:', insErr);
+        if (!existingOrder) {
+          const { data: order, error: insErr } = await supabaseAdmin
+            .from('orders')
+            .insert({
+              user_id: safeUserId,
+              customer_email: customerEmail,
+              product_id: productId,
+              stripe_session_id: session.id,
+              stripe_payment_intent_id: session.payment_intent as string,
+              amount: amountEur,
+              currency: session.currency || 'eur',
+              status: 'paid'
+            })
+            .select('id')
+            .single();
+
+          if (insErr) {
+            console.error('[Stripe Webhook] Erreur insertion order:', insErr);
+          }
+        } else {
+          console.log(`[Stripe Webhook] Order with session ${session.id} already exists in DB. Skipping duplicate insert.`);
         }
 
         const targetProduct = DEFAULT_PRODUCTS.find(p => p.id === productId || p.slug === productId);

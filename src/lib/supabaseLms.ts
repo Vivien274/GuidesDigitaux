@@ -492,16 +492,31 @@ export async function fetchUserPurchasesFromDb(email: string): Promise<any[]> {
 }
 
 /**
- * 8. Save Customer Order to Supabase DB orders table
+ * 8. Save Customer Order to Supabase DB orders table (Idempotent: prevents duplicate orders)
  */
 export async function saveOrderToDb(customerEmail: string, productId: string, status: string = 'paid', price: number = 5, sessionId?: string) {
-  if (!customerEmail) return;
+  if (!customerEmail || !sessionId) {
+    // Never create ghost orders without an authentic session ID
+    return;
+  }
   const normalizedEmail = customerEmail.toLowerCase().trim();
   try {
+    // 1. Strict idempotency check: don't insert if order with this session ID already exists
+    const { data: existing } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('stripe_session_id', sessionId)
+      .maybeSingle();
+
+    if (existing) {
+      console.log(`[Supabase LMS] Order already recorded for session ${sessionId}. Skipping duplicate insert.`);
+      return;
+    }
+
     const payload = {
       customer_email: normalizedEmail,
       product_id: productId,
-      stripe_session_id: sessionId || `sess_cart_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      stripe_session_id: sessionId,
       amount: Number(price) || 5,
       currency: 'eur',
       status: status,
