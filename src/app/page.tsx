@@ -284,23 +284,23 @@ export default function HomePage() {
                   className="rounded-[32px] object-cover shadow-2xl transition-transform duration-500 hover:scale-105 border-4 border-white"
                 />
 
-                <div className="absolute top-12 -left-6 sm:-left-10 bg-white p-4 rounded-2xl shadow-xl card-shadow-soft border border-slate-100 flex items-center gap-3 animate-float-slow z-20">
-                  <div className="w-11 h-11 rounded-full bg-[#18757d] flex items-center justify-center text-white shrink-0">
-                    <Users className="w-5 h-5" />
+                <div className="absolute -top-5 left-1 sm:top-12 sm:-left-10 bg-white p-3 sm:p-4 rounded-2xl shadow-xl card-shadow-soft border border-slate-100 flex items-center gap-2.5 sm:gap-3 animate-float-slow z-20">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#18757d] flex items-center justify-center text-white shrink-0">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-400 block font-medium">Spécial</span>
-                    <span className="text-sm font-extrabold text-[#332420]">Artisans / créateurs</span>
+                    <span className="text-[10px] sm:text-[11px] text-slate-400 block font-medium">Spécial</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-[#332420]">Artisans / créateurs</span>
                   </div>
                 </div>
 
-                <div className="absolute bottom-6 -right-4 sm:-right-8 bg-white p-4 rounded-2xl shadow-xl card-shadow-soft border border-slate-100 flex items-center gap-3 animate-float-delay z-20">
-                  <div className="w-11 h-11 rounded-full bg-[#e05a47] flex items-center justify-center text-white shrink-0">
-                    <GraduationCap className="w-5 h-5" />
+                <div className="absolute bottom-4 right-1 sm:bottom-6 sm:-right-8 bg-white p-3 sm:p-4 rounded-2xl shadow-xl card-shadow-soft border border-slate-100 flex items-center gap-2.5 sm:gap-3 animate-float-delay z-20">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#e05a47] flex items-center justify-center text-white shrink-0">
+                    <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-400 block font-medium">Guides & Formations</span>
-                    <span className="text-sm font-extrabold text-[#18757d]">en ligne</span>
+                    <span className="text-[10px] sm:text-[11px] text-slate-400 block font-medium">Guides & Formations</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-[#18757d]">en ligne</span>
                   </div>
                 </div>
 
