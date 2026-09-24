@@ -6,16 +6,18 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { ArrowRight, Calendar, Clock, Sparkles, BookOpen } from 'lucide-react';
-import { BLOG_ARTICLES } from '@/data/blogArticles';
+import { BLOG_ARTICLES, getArticleTimestamp } from '@/data/blogArticles';
 
 export default function BlogPage() {
-  const visibleArticles = BLOG_ARTICLES.filter((article) => {
-    if (article.status === 'draft') return false;
-    if (article.status === 'scheduled' && article.scheduledAt) {
-      return new Date(article.scheduledAt).getTime() <= Date.now();
-    }
-    return true;
-  });
+  const visibleArticles = BLOG_ARTICLES
+    .filter((article) => {
+      if (article.status === 'draft') return false;
+      if (article.status === 'scheduled' && article.scheduledAt) {
+        return new Date(article.scheduledAt).getTime() <= Date.now();
+      }
+      return true;
+    })
+    .sort((a, b) => getArticleTimestamp(b) - getArticleTimestamp(a));
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">

@@ -325,13 +325,14 @@ export default function BoutiquePage() {
               return (
                 <div 
                   key={po.id}
-                  className="bg-white rounded-3xl overflow-hidden border-2 border-amber-300 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col group relative"
+                  className="bg-white rounded-3xl overflow-hidden border-2 border-amber-300 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col group relative cursor-pointer"
                 >
                   {/* Image */}
                   <div className="relative h-60 w-full overflow-hidden bg-amber-50">
                     <Image
                       src={po.image || "https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp"}
-                      alt={po.courseTitle}
+                      alt=""
+                      aria-hidden="true"
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -358,18 +359,18 @@ export default function BoutiquePage() {
                         )}
                       </div>
 
-                      <Link 
-                        href={getPreorderDestinationUrl(po)} 
-                        target={getPreorderDestinationUrl(po).startsWith('http') ? '_blank' : '_self'}
-                        className="block"
-                      >
-                        <h3 className="text-base font-extrabold text-[#332420] line-clamp-2 leading-snug hover:text-[#18757d] transition-colors">
+                      <h3 className="text-base font-extrabold text-[#332420] line-clamp-2 leading-snug hover:text-[#18757d] transition-colors">
+                        <Link 
+                          href={getPreorderDestinationUrl(po)} 
+                          target={getPreorderDestinationUrl(po).startsWith('http') ? '_blank' : '_self'}
+                          className="after:absolute after:inset-0 after:z-0 focus:outline-none"
+                        >
                           {po.courseTitle}
-                        </h3>
-                      </Link>
+                        </Link>
+                      </h3>
 
                       {/* Mini Jauge Objectif */}
-                      <div className="p-3 bg-[#faf8f5] rounded-xl border border-[#eee7da] space-y-1.5">
+                      <div className="p-3 bg-[#faf8f5] rounded-xl border border-[#eee7da] space-y-1.5 relative z-10">
                         <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-700">
                           <span>Jauge d'objectif :</span>
                           <span className="text-[#18757d]">{po.currentEnrollments}/{po.targetEnrollments} ({percent}%)</span>
@@ -383,14 +384,13 @@ export default function BoutiquePage() {
                       </div>
                     </div>
 
-                    <Link
-                      href={getPreorderDestinationUrl(po)}
-                      target={getPreorderDestinationUrl(po).startsWith('http') ? '_blank' : '_self'}
-                      className="w-full py-3.5 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
+                    <span
+                      aria-hidden="true"
+                      className="w-full py-3.5 text-xs font-extrabold text-[#332420] bg-amber-400 group-hover:bg-amber-300 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 uppercase tracking-wider pointer-events-none"
                     >
                       <Rocket className="w-4 h-4 text-[#332420]" />
                       PRÉCOMMANDER À {po.price} €
-                    </Link>
+                    </span>
                   </div>
                 </div>
               );
@@ -399,13 +399,14 @@ export default function BoutiquePage() {
             {filteredProducts.map((product) => (
               <div 
                 key={product.id}
-                className="bg-white rounded-3xl overflow-hidden border border-[#eee7da] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group"
+                className="relative bg-white rounded-3xl overflow-hidden border border-[#eee7da] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer"
               >
                 {/* Product Image */}
                 <div className="relative h-60 w-full overflow-hidden bg-[#f5f1e8]">
                   <Image
                     src={product.image}
-                    alt={product.imageAlt || `${product.title} - Guides digitaux - Métropole lilloise`}
+                    alt=""
+                    aria-hidden="true"
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -435,11 +436,11 @@ export default function BoutiquePage() {
                     </div>
 
                     {/* Title */}
-                    <Link href={`/produit/${product.slug || product.id}`} className="block">
-                      <h3 className="text-base font-extrabold text-[#332420] line-clamp-2 leading-snug hover:text-[#18757d] transition-colors">
+                    <h3 className="text-base font-extrabold text-[#332420] line-clamp-2 leading-snug hover:text-[#18757d] transition-colors">
+                      <Link href={`/produit/${product.slug || product.id}`} className="after:absolute after:inset-0 after:z-0 focus:outline-none">
                         {product.title}
-                      </h3>
-                    </Link>
+                      </Link>
+                    </h3>
 
                     {/* Rating (Only shown if real reviews exist) */}
                     {product.reviewsCount && product.reviewsCount > 0 ? (
@@ -458,16 +459,16 @@ export default function BoutiquePage() {
 
                   {/* Actions */}
                   <div className="pt-4 border-t border-[#eee7da] flex items-center gap-3">
-                    <Link
-                      href={`/produit/${product.slug || product.id}`}
-                      className="flex-1 px-4 py-3 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors text-center"
+                    <span
+                      aria-hidden="true"
+                      className="flex-1 px-4 py-3 text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] group-hover:bg-[#d4edea] rounded-xl transition-colors text-center pointer-events-none"
                     >
                       Détails
-                    </Link>
+                    </span>
                     
                     <button
                       onClick={() => addToCart(product)}
-                      className="px-4 py-3 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
+                      className="relative z-10 px-4 py-3 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-sm transition-colors flex items-center gap-1.5"
                     >
                       <ShoppingCart className="w-3.5 h-3.5" />
                       Ajouter

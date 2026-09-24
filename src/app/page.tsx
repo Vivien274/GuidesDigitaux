@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import DigitalizationQuiz from '@/components/DigitalizationQuiz';
+import { BLOG_ARTICLES, getArticleTimestamp } from '@/data/blogArticles';
 import { 
   PhoneCall, 
   ArrowRight, 
@@ -37,7 +38,8 @@ interface ProductItem {
   id: string;
   slug: string;
   title: string;
-  category: 'seo' | 'social' | 'gestion' | 'course' | 'formation';
+  category: 'all' | 'ebook' | 'checklist' | 'formation' | 'coaching';
+  categoryLabel?: string;
   badge: string;
   badgeBg: string;
   price: number;
@@ -47,27 +49,215 @@ interface ProductItem {
   pagesOrDuration: string;
   isPreorder?: boolean;
   releaseDate?: string;
-  image?: string;
+  image: string;
+  isNew?: boolean;
+  orderPriority: number;
+  detailsUrl: string;
+  buyUrl?: string;
 }
 
 import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
+import { fetchCoursesFromDb, fetchProductsFromDb } from '@/lib/supabaseLms';
 
-const PRODUCTS: ProductItem[] = DEFAULT_PRODUCTS.map(p => ({
-  id: p.id,
-  slug: p.slug,
-  title: p.title,
-  category: p.category === 'formation' ? 'course' : (p.category === 'checklist' ? 'gestion' : 'seo'),
-  badge: p.badge || 'PRODUIT DIGITAL',
-  badgeBg: 'bg-[#18757d] text-white',
-  price: p.price,
-  originalPrice: p.originalPrice,
-  description: p.description,
-  features: p.features,
-  pagesOrDuration: p.category === 'formation' ? 'Formation Vidéo' : (p.category === 'checklist' ? 'Checklist PDF Interractive' : 'E-Book PDF HD'),
-  image: p.image
-}));
+const PRIORITY_ORDER: Record<string, { priority: number; isNew?: boolean; badge?: string; badgeBg?: string; detailsUrl?: string; buyUrl?: string; image?: string }> = {
+  'kit-serenite': {
+    priority: 1,
+    isNew: true,
+    badge: 'NOUVEAUTÉ',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/kit-serenite',
+    image: '/images/products/kit-serenite-posts-google.jpg'
+  },
+  'formation-fiche-google': {
+    priority: 2,
+    isNew: true,
+    badge: 'LANCEMENT -40%',
+    badgeBg: 'bg-[#c03823] text-white',
+    detailsUrl: '/formation/formation-fiche-google',
+    buyUrl: '/tunnel/formation-fiche-google',
+    image: '/images/products/formation-fiche-google-mockup.webp'
+  },
+  '17873181-7987-4000-a000-000000000000': {
+    priority: 2,
+    isNew: true,
+    badge: 'LANCEMENT -40%',
+    badgeBg: 'bg-[#c03823] text-white',
+    detailsUrl: '/formation/formation-fiche-google',
+    buyUrl: '/tunnel/formation-fiche-google',
+    image: '/images/products/formation-fiche-google-mockup.webp'
+  },
+  'orderbump-calculateur-score': {
+    priority: 3,
+    isNew: true,
+    badge: 'OUTIL EXCLUSIF',
+    badgeBg: 'bg-amber-600 text-white',
+    detailsUrl: '/outils/calculateur-fiche-google',
+    image: '/images/products/formation-fiche-google-bundle-hero.jpg'
+  },
+  'calculateur-fiche-google': {
+    priority: 3,
+    isNew: true,
+    badge: 'OUTIL EXCLUSIF',
+    badgeBg: 'bg-amber-600 text-white',
+    detailsUrl: '/outils/calculateur-fiche-google',
+    image: '/images/products/formation-fiche-google-bundle-hero.jpg'
+  },
+  'formation-wordpress': {
+    priority: 4,
+    badge: 'BEST-SELLER',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/formation/formation-wordpress',
+    buyUrl: '/tunnel/formation-wordpress',
+    image: '/images/products/formation-wordpress.webp'
+  },
+  '11111111-1111-4111-a111-111111111111': {
+    priority: 4,
+    badge: 'BEST-SELLER',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/formation/formation-wordpress',
+    buyUrl: '/tunnel/formation-wordpress',
+    image: '/images/products/formation-wordpress.webp'
+  },
+  'formation-ajouter-une-boutique-en-ligne-avec-woocommerce': {
+    priority: 5,
+    badge: 'POPULAIRE',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/formation/formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+    image: '/images/products/formation-woocommerce.jpg'
+  },
+  '22222222-2222-4222-a222-222222222222': {
+    priority: 5,
+    badge: 'POPULAIRE',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/formation/formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+    image: '/images/products/formation-woocommerce.jpg'
+  },
+  'bundle-vitrine-boutique-wordpress-le-combo-pour-vendre-en-ligne': {
+    priority: 6,
+    badge: 'ÉCONOMISE 48€',
+    badgeBg: 'bg-[#c03823] text-white',
+    detailsUrl: '/produit/bundle-vitrine-boutique-wordpress-le-combo-pour-vendre-en-ligne',
+    image: '/images/products/bundle-vitrine-boutique-wordpress.webp'
+  },
+  'coaching-site': {
+    priority: 7,
+    badge: 'ACCOMPAGNEMENT 1-SUR-1',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/coaching-site',
+    image: '/images/products/coaching-site.webp'
+  },
+  'mini-guide-seo-local': {
+    priority: 8,
+    badge: 'POPULAIRE',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/mini-guide-seo-local',
+    image: '/images/products/mini-guide-seo-local.webp'
+  },
+  'ebook-visibilite-ligne-artisan': {
+    priority: 9,
+    badge: 'GUIDE FONDATION',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/ebook-visibilite-ligne-artisan',
+    image: '/images/products/ebook-visibilite-ligne-artisan.webp'
+  },
+  'pack-guides': {
+    priority: 10,
+    badge: 'PACK ÉCONOMIQUE',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/pack-guides',
+    image: '/images/products/pack-guides.webp'
+  },
+  'checklist-google-business-profile': {
+    priority: 11,
+    badge: 'CHECKLIST RAPIDE',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/checklist-google-business-profile',
+    image: '/images/products/checklist-google-business-profile.webp'
+  },
+  'checklist-profil-reseaux-sociaux': {
+    priority: 12,
+    badge: 'RÉSEAUX SOCIAUX',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/checklist-profil-reseaux-sociaux',
+    image: '/images/products/checklist-profil-reseaux-sociaux.webp'
+  },
+  'checklist-securite-anti-spam-wordpress': {
+    priority: 13,
+    badge: 'SÉCURITÉ WEB',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/checklist-securite-anti-spam-wordpress',
+    image: '/images/products/checklist-securite-anti-spam-wordpress.webp'
+  },
+  'checklist-les-principes-ux': {
+    priority: 14,
+    badge: 'ERGONOMIE',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/checklist-les-principes-ux',
+    image: '/images/products/checklist-les-principes-ux.webp'
+  },
+  'checklist-verification-lancement-site': {
+    priority: 15,
+    badge: 'CHECKLIST PRÉ-LANCEMENT',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/checklist-verification-lancement-site',
+    image: '/images/products/checklist-verification-lancement-site.webp'
+  },
+  'mini-guide-ecrire-web-artisan': {
+    priority: 16,
+    badge: 'RÉDACTION WEB',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/mini-guide-ecrire-web-artisan',
+    image: '/images/products/mini-guide-ecrire-web-artisan.webp'
+  },
+  'mini-guide-optimiser-ses-photos': {
+    priority: 17,
+    badge: 'PERFORMANCE VITESSE',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/mini-guide-optimiser-ses-photos',
+    image: '/images/products/mini-guide-optimiser-ses-photos.webp'
+  },
+  'mini-guide-comprendre-ses-stats-sans-etre-data-scientist': {
+    priority: 18,
+    badge: 'STATISTIQUES & KPI',
+    badgeBg: 'bg-[#18757d] text-white',
+    detailsUrl: '/produit/mini-guide-comprendre-ses-stats-sans-etre-data-scientist',
+    image: '/images/products/mini-guide-comprendre-ses-stats.webp'
+  }
+};
 
-import { fetchCoursesFromDb } from '@/lib/supabaseLms';
+function mapToProductItem(p: any): ProductItem {
+  const meta = PRIORITY_ORDER[p.id] || PRIORITY_ORDER[p.slug] || {};
+  const isCoaching = p.id === 'coaching-site' || p.slug === 'coaching-site' || (p.title || '').toLowerCase().includes('coaching');
+  const category = isCoaching ? 'coaching' : (p.category === 'formation' ? 'formation' : (p.category === 'checklist' ? 'checklist' : 'ebook'));
+  const pagesOrDuration = isCoaching 
+    ? '2 sessions en visio' 
+    : (category === 'formation' ? 'Formation Vidéo' : (category === 'checklist' ? 'Checklist PDF' : 'E-Book PDF HD'));
+
+  return {
+    id: p.id,
+    slug: p.slug || p.id,
+    title: p.title,
+    category,
+    categoryLabel: p.categoryLabel || (category === 'formation' ? 'Formation' : (category === 'checklist' ? 'Checklist' : 'E-Book')),
+    badge: meta.badge || p.badge || (category === 'formation' ? 'FORMATION' : 'GUIDE PRATIQUE'),
+    badgeBg: meta.badgeBg || 'bg-[#18757d] text-white',
+    price: Number(p.price) || 0,
+    originalPrice: p.originalPrice ? Number(p.originalPrice) : (p.original_price ? Number(p.original_price) : undefined),
+    description: p.description || '',
+    features: Array.isArray(p.features) ? p.features : [],
+    pagesOrDuration,
+    image: meta.image || p.image || p.image_url || '/images/products/formation-wordpress.webp',
+    isNew: meta.isNew || false,
+    orderPriority: meta.priority ?? 50,
+    detailsUrl: meta.detailsUrl || `/produit/${p.slug || p.id}`,
+    buyUrl: meta.buyUrl
+  };
+}
+
+const INITIAL_PRODUCTS: ProductItem[] = DEFAULT_PRODUCTS
+  .filter(p => p.id !== 'precommande-fiche-google' && p.slug !== 'precommande-fiche-google')
+  .map(mapToProductItem)
+  .sort((a, b) => a.orderPriority - b.orderPriority);
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -76,7 +266,20 @@ export default function HomePage() {
   const [loadingCheckoutId, setLoadingCheckoutId] = useState<string | null>(null);
   const [newsletterEmail, setNewsletterEmail] = useState<string>('');
   const [newsletterSubmitted, setNewsletterSubmitted] = useState<boolean>(false);
-  const [productsList, setProductsList] = useState<ProductItem[]>(PRODUCTS);
+  const [productsList, setProductsList] = useState<ProductItem[]>(INITIAL_PRODUCTS);
+
+  const recentBlogArticles = useMemo(() => {
+    return BLOG_ARTICLES
+      .filter((article) => {
+        if (article.status === 'draft') return false;
+        if (article.status === 'scheduled' && article.scheduledAt) {
+          return new Date(article.scheduledAt).getTime() <= Date.now();
+        }
+        return true;
+      })
+      .sort((a, b) => getArticleTimestamp(b) - getArticleTimestamp(a))
+      .slice(0, 3);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash) {
@@ -93,73 +296,117 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    async function syncDynamicCourses() {
-      const dbCourses = await fetchCoursesFromDb();
-      if (dbCourses && dbCourses.length > 0) {
-        const now = new Date();
-        const publishedDbCourses = dbCourses.filter(c => {
-          if (c.status === 'Brouillon') return false;
-          if (c.status === 'Planifié') {
-            if (!c.scheduledPublishDate) return false;
-            return now >= new Date(c.scheduledPublishDate);
-          }
-          return true;
-        });
+    async function syncDynamicCatalog() {
+      try {
+        const [dbProducts, dbCourses] = await Promise.all([
+          fetchProductsFromDb(),
+          fetchCoursesFromDb()
+        ]);
 
-        const nonFormations = PRODUCTS.filter(p => 
-          p.category !== 'course' && 
-          (p.category as string) !== 'formation' &&
-          p.id !== 'precommande-fiche-google' &&
-          p.slug !== 'precommande-fiche-google' &&
-          !p.title.toLowerCase().includes('précommande')
-        );
+        const itemsMap = new Map<string, ProductItem>();
         
-        const validCourses = publishedDbCourses.filter(c => 
-          c.id !== 'precommande-fiche-google' && 
-          !c.title.toLowerCase().includes('précommande')
-        );
-
-        const dynamicFormations: ProductItem[] = validCourses.map(c => {
-          const staticMatch = PRODUCTS.find(p => {
-            if (p.id === c.id) return true;
-            const cT = c.title.toLowerCase();
-            const pT = p.title.toLowerCase();
-            if (cT.includes('woocommerce') && pT.includes('woocommerce')) return true;
-            if ((cT.includes('vitrine') || cT.includes('wordpress')) && (pT.includes('vitrine') && !pT.includes('combo'))) return true;
-            if (cT.includes('coaching') && pT.includes('coaching')) return true;
-            return false;
-          });
-          return {
-            id: c.id,
-            slug: c.title.toLowerCase().includes('woocommerce') ? 'formation-woocommerce' : 'creer-sa-vitrine-wordpress',
-            title: c.title,
-            category: 'formation',
-            badge: c.isPreorder ? 'PRÉCOMMANDE' : (staticMatch?.badge || (c.title.toLowerCase().includes('coaching') ? 'COACHING EN VISIO' : 'FORMATION VIDÉO')),
-            badgeBg: 'bg-[#18757d] text-white',
-            price: c.price || 99,
-            originalPrice: c.originalPrice,
-            image: staticMatch?.image || c.image || '/images/products/formation-wordpress.webp',
-            description: c.description || staticMatch?.description || 'Formation vidéo pas-à-pas.',
-            features: staticMatch?.features || [
-              'Accès illimité 24/7',
-              `${c.modules?.length || 0} Modules vidéo pas-à-pas`,
-              'Exercices pratiques & support',
-              'Mises à jour incluses'
-            ],
-            pagesOrDuration: staticMatch?.category === 'formation' && staticMatch?.id === 'coaching-site' ? '2 sessions' : (c.duration || '2h15')
-          };
+        // 1. Seed with DEFAULT_PRODUCTS
+        DEFAULT_PRODUCTS.forEach(p => {
+          if (p.id !== 'precommande-fiche-google' && p.slug !== 'precommande-fiche-google') {
+            itemsMap.set(p.id, mapToProductItem(p));
+          }
         });
 
-        setProductsList([...nonFormations, ...dynamicFormations]);
+        // 2. Override with DB products
+        if (dbProducts && dbProducts.length > 0) {
+          dbProducts.forEach(p => {
+            if (p.id !== 'precommande-fiche-google' && p.slug !== 'precommande-fiche-google' && !p.title?.toLowerCase().includes('précommande')) {
+              itemsMap.set(p.id, mapToProductItem(p));
+            }
+          });
+        }
+
+        // 3. Sync published courses
+        if (dbCourses && dbCourses.length > 0) {
+          const now = new Date();
+          const publishedCourses = dbCourses.filter(c => {
+            if (c.status === 'Brouillon') return false;
+            if (c.status === 'Planifié') {
+              if (!c.scheduledPublishDate) return false;
+              return now >= new Date(c.scheduledPublishDate);
+            }
+            return true;
+          });
+
+          publishedCourses.forEach(c => {
+            const titleLower = (c.title || '').toLowerCase().trim();
+            if (c.id === '17873181-7987-4000-a000-000000000000' || titleLower.includes('google')) {
+              const existing = itemsMap.get('formation-fiche-google') || itemsMap.get(c.id);
+              itemsMap.set('formation-fiche-google', {
+                ...(existing || mapToProductItem(c)),
+                id: 'formation-fiche-google',
+                slug: 'formation-fiche-google',
+                title: c.title || existing?.title || 'Cap Visibilité Google',
+                price: c.price || 29,
+                image: '/images/products/formation-fiche-google-mockup.webp',
+                detailsUrl: '/formation/formation-fiche-google',
+                buyUrl: '/tunnel/formation-fiche-google',
+                category: 'formation',
+                badge: 'LANCEMENT -40%',
+                badgeBg: 'bg-[#c03823] text-white',
+                isNew: true,
+                orderPriority: 2
+              });
+            } else if (c.id === '11111111-1111-4111-a111-111111111111' || titleLower.includes('vitrine') || titleLower.includes('wordpress')) {
+              const existing = itemsMap.get('formation-wordpress') || itemsMap.get(c.id);
+              itemsMap.set('formation-wordpress', {
+                ...(existing || mapToProductItem(c)),
+                id: 'formation-wordpress',
+                slug: 'formation-wordpress',
+                title: c.title || existing?.title || 'Formation : créer sa vitrine en ligne avec WordPress',
+                price: c.price || 199,
+                image: '/images/products/formation-wordpress.webp',
+                detailsUrl: '/formation/formation-wordpress',
+                buyUrl: '/tunnel/formation-wordpress',
+                category: 'formation',
+                badge: 'BEST-SELLER',
+                orderPriority: 4
+              });
+            } else if (c.id === '22222222-2222-4222-a222-222222222222' || titleLower.includes('woocommerce')) {
+              const existing = itemsMap.get('formation-ajouter-une-boutique-en-ligne-avec-woocommerce') || itemsMap.get(c.id);
+              itemsMap.set('formation-ajouter-une-boutique-en-ligne-avec-woocommerce', {
+                ...(existing || mapToProductItem(c)),
+                id: 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+                slug: 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+                title: c.title || existing?.title || 'Formation ajouter une boutique en ligne avec WooCommerce',
+                price: c.price || 99,
+                image: '/images/products/formation-woocommerce.jpg',
+                detailsUrl: '/formation/formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+                category: 'formation',
+                badge: 'POPULAIRE',
+                orderPriority: 5
+              });
+            }
+          });
+        }
+
+        const sorted = Array.from(itemsMap.values()).sort((a, b) => a.orderPriority - b.orderPriority);
+        setProductsList(sorted);
+      } catch (err) {
+        console.error('Error syncing homepage catalog:', err);
       }
     }
-    syncDynamicCourses();
+
+    syncDynamicCatalog();
   }, []);
 
   const filteredProducts = productsList.filter(product => {
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
+    let matchesCategory = true;
+    if (selectedCategory === 'nouveautes') {
+      matchesCategory = !!product.isNew;
+    } else if (selectedCategory !== 'all') {
+      matchesCategory = product.category === selectedCategory;
+    }
+    const matchesSearch = 
+      product.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.badge.toLowerCase().includes(searchQuery.toLowerCase());
+
     return matchesCategory && matchesSearch;
   });
 
@@ -441,25 +688,28 @@ export default function HomePage() {
       <section id="boutique" className="py-16 md:py-24 bg-[#faf8f5]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-[#c03823] block mb-2">Boutique en ligne</span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-[#332420]">
                 Nos Guides & Formations Disponibles
               </h2>
+              <p className="text-sm text-[#5e4d46] mt-2">
+                Les nouveautés et ajouts récents sont présentés en priorité. Choisis une catégorie pour filtrer.
+              </p>
             </div>
 
             <div className="relative w-full md:w-80">
               <label htmlFor="search-guides-input" className="sr-only">
-                Chercher un guide (SEO, Instagram...)
+                Chercher un guide (SEO, Google, Instagram...)
               </label>
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
               <input
                 id="search-guides-input"
                 name="search-guides"
                 type="text"
-                placeholder="Chercher un guide (SEO, Instagram...)"
-                aria-label="Chercher un guide (SEO, Instagram...)"
+                placeholder="Chercher un guide (SEO, Google...)"
+                aria-label="Chercher un guide (SEO, Google...)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-white border border-[#eee7da] rounded-2xl pl-10 pr-4 py-3 text-sm text-[#332420] placeholder-slate-400 focus:outline-none focus:border-[#18757d] transition-colors shadow-2xs"
@@ -467,94 +717,186 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* CATEGORY FILTER TABS */}
+          <div className="flex overflow-x-auto sm:flex-wrap items-center gap-2.5 pb-2 mb-10 scrollbar-none">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-4 sm:px-5 py-2.5 rounded-full text-xs font-bold transition-all shrink-0 ${
+                selectedCategory === 'all'
+                  ? 'bg-[#18757d] text-white shadow-sm'
+                  : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#eee7da]'
+              }`}
+            >
+              Tous les contenus ({productsList.length})
+            </button>
+
+            <button
+              onClick={() => setSelectedCategory('nouveautes')}
+              className={`px-4 sm:px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                selectedCategory === 'nouveautes'
+                  ? 'bg-[#c03823] text-white shadow-sm'
+                  : 'bg-white text-[#c03823] hover:bg-rose-50 border border-[#eee7da]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Nouveautés ({productsList.filter(p => p.isNew).length})
+            </button>
+
+            <button
+              onClick={() => setSelectedCategory('formation')}
+              className={`px-4 sm:px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                selectedCategory === 'formation'
+                  ? 'bg-[#18757d] text-white shadow-sm'
+                  : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#eee7da]'
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              Formations Vidéo ({productsList.filter(p => p.category === 'formation').length})
+            </button>
+
+            <button
+              onClick={() => setSelectedCategory('ebook')}
+              className={`px-4 sm:px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                selectedCategory === 'ebook'
+                  ? 'bg-[#18757d] text-white shadow-sm'
+                  : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#eee7da]'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              Kits & E-books ({productsList.filter(p => p.category === 'ebook').length})
+            </button>
+
+            <button
+              onClick={() => setSelectedCategory('checklist')}
+              className={`px-4 sm:px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                selectedCategory === 'checklist'
+                  ? 'bg-[#18757d] text-white shadow-sm'
+                  : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#eee7da]'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Checklists ({productsList.filter(p => p.category === 'checklist').length})
+            </button>
+
+            <button
+              onClick={() => setSelectedCategory('coaching')}
+              className={`px-4 sm:px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                selectedCategory === 'coaching'
+                  ? 'bg-[#18757d] text-white shadow-sm'
+                  : 'bg-white text-[#332420] hover:bg-[#e6f4f3] border border-[#eee7da]'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              Coaching ({productsList.filter(p => p.category === 'coaching').length})
+            </button>
+          </div>
+
           {/* Product Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-3xl p-7 border border-[#eee7da] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
+                className="relative bg-white rounded-3xl p-6 sm:p-7 border border-[#eee7da] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group cursor-pointer"
               >
                 <div>
                   {/* Product Cover Image */}
                   {product.image && (
-                    <Link
-                      href={`/produit/${product.slug || product.id}`}
-                      tabIndex={-1}
-                      aria-hidden="true"
-                      className="block relative w-full h-48 sm:h-52 mb-5 rounded-2xl overflow-hidden bg-[#f4ede0] border border-[#eee7da] shadow-xs"
+                    <div
+                      className="relative w-full h-48 sm:h-52 mb-5 rounded-2xl overflow-hidden bg-[#f4ede0] border border-[#eee7da] shadow-xs"
                     >
                       <Image
                         src={product.image}
                         alt=""
+                        aria-hidden="true"
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
                       />
-                    </Link>
+                      {product.isNew && (
+                        <span className="absolute top-3 left-3 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#c03823] text-white shadow-md flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" /> NOUVEAUTÉ
+                        </span>
+                      )}
+                    </div>
                   )}
 
-                  <div className="flex items-center justify-between mb-4">
-                    <span className={`px-3 py-1 rounded-full text-[11px] font-extrabold uppercase ${product.badgeBg}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${product.badgeBg}`}>
                       {product.badge}
                     </span>
-                    <span className="text-xs text-slate-500 font-medium">
+                    <span className="text-xs text-slate-500 font-semibold">
                       {product.pagesOrDuration}
                     </span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-[#332420] group-hover:text-[#18757d] transition-colors mb-3 leading-snug">
-                    <Link href={`/produit/${product.slug || product.id}`}>
+                  <h3 className="text-base sm:text-lg font-bold text-[#332420] group-hover:text-[#18757d] transition-colors mb-2 leading-snug line-clamp-2 h-14">
+                    <Link href={product.detailsUrl} className="after:absolute after:inset-0 after:z-0 focus:outline-none">
                       {product.title}
                     </Link>
                   </h3>
 
-                  <p className="text-xs text-[#5e4d46] mb-6 leading-relaxed">
+                  <p className="text-xs text-[#5e4d46] mb-5 leading-relaxed line-clamp-2 h-9">
                     {product.description}
                   </p>
 
-                  <ul className="space-y-2.5 mb-6 text-xs text-[#332420] border-t border-[#eee7da] pt-4">
-                    {product.features.map((feat, idx) => (
+                  <ul className="space-y-2 mb-6 text-xs text-[#332420] border-t border-[#eee7da] pt-4 min-h-[5.5rem]">
+                    {product.features.slice(0, 3).map((feat, idx) => (
                       <li key={idx} className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-[#18757d] shrink-0 mt-0.5" />
-                        <span>{feat}</span>
+                        <span className="line-clamp-1">{feat}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="border-t border-[#eee7da] pt-5 mt-2">
+                <div className="border-t border-[#eee7da] pt-4 mt-auto">
                   <div className="flex items-baseline justify-between mb-4">
-                    <div>
-                      <span className="text-3xl font-extrabold text-[#332420]">{product.price} €</span>
-                      {product.originalPrice && (
-                        <span className="ml-2 text-xs text-slate-400 line-through font-semibold">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl sm:text-3xl font-extrabold text-[#332420]">{product.price} €</span>
+                      {product.originalPrice && product.originalPrice > product.price && (
+                        <span className="text-xs text-slate-400 line-through font-semibold">
                           {product.originalPrice} €
                         </span>
                       )}
                     </div>
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <span className="text-[11px] font-bold text-[#c03823] bg-rose-50 px-2 py-0.5 rounded-md">
+                        -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                      </span>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <Link
-                      href={`/produit/${product.slug || product.id}`}
-                      aria-label={`Voir les détails du produit ${product.title}`}
-                      className="w-full py-3 px-3 text-xs font-extrabold text-[#332420] bg-[#f4ede0] hover:bg-[#e8ded0] rounded-xl transition-colors text-center flex items-center justify-center"
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <span
+                      aria-hidden="true"
+                      className="w-full py-2.5 px-3 text-xs font-extrabold text-[#332420] bg-[#f4ede0] group-hover:bg-[#e8ded0] rounded-xl transition-colors text-center flex items-center justify-center pointer-events-none"
                     >
                       Détails
-                    </Link>
-                    <button
-                      onClick={() => handleCheckout(product.id)}
-                      disabled={loadingCheckoutId === product.id}
-                      className="w-full py-3 px-3 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-                    >
-                      {loadingCheckoutId === product.id ? (
-                        <span className="animate-pulse">Chargement...</span>
-                      ) : (
-                        <>
-                          Acheter
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </>
-                      )}
-                    </button>
+                    </span>
+                    {product.buyUrl ? (
+                      <Link
+                        href={product.buyUrl}
+                        className="relative z-10 w-full py-2.5 px-3 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+                      >
+                        Commander
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => handleCheckout(product.id)}
+                        disabled={loadingCheckoutId === product.id}
+                        className="relative z-10 w-full py-2.5 px-3 text-xs font-extrabold text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        {loadingCheckoutId === product.id ? (
+                          <span className="animate-pulse">Chargement...</span>
+                        ) : (
+                          <>
+                            Commander
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -827,86 +1169,63 @@ export default function HomePage() {
           </div>
 
           {/* Blog Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-            
-            {/* Blog Post 1 */}
-            <div className="bg-white rounded-3xl p-7 border border-[#eee7da] shadow-sm hover:shadow-lg transition-all flex flex-col justify-between">
-              <div>
-                <div className="mb-4">
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
-                    VENDRE EN LIGNE
-                  </span>
-                </div>
-                <h3 className="text-base font-extrabold text-[#332420] leading-snug hover:text-[#18757d] transition-colors mb-6 cursor-pointer">
-                  Marketplace ou site e-commerce : quelle solution choisir quand on est artisan ou créateur ?
-                </h3>
-              </div>
-              <div className="flex items-center justify-between text-xs text-slate-400 border-t border-[#eee7da] pt-4">
-                <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-[#18757d]" />
-                  By Stephanie
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-[#18757d]" />
-                  26 mai 2026
-                </span>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+            {recentBlogArticles.map((article) => (
+              <Link
+                key={article.id}
+                href={`/blog/${article.slug}`}
+                className="group bg-white rounded-3xl overflow-hidden border border-[#eee7da] shadow-xs hover:shadow-xl hover:border-[#18757d]/40 transition-all duration-300 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="relative h-48 w-full bg-[#f4ede0] overflow-hidden">
+                    <Image
+                      src={article.image}
+                      alt={article.imageAlt || article.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3.5 left-3.5">
+                      <span className="inline-block px-3 py-1 rounded-full text-[11px] font-extrabold bg-[#faf8f5]/95 backdrop-blur-xs text-[#332420] uppercase tracking-wider border border-[#eee7da] shadow-xs">
+                        {article.category}
+                      </span>
+                    </div>
+                  </div>
 
-            {/* Blog Post 2 */}
-            <div className="bg-white rounded-3xl p-7 border border-[#eee7da] shadow-sm hover:shadow-lg transition-all flex flex-col justify-between">
-              <div>
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
-                    JE ME LANCE EN LIGNE
-                  </span>
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
-                    VENDRE EN LIGNE
-                  </span>
+                  <div className="p-6">
+                    <h3 className="text-base font-extrabold text-[#332420] group-hover:text-[#18757d] transition-colors leading-snug line-clamp-2 mb-3">
+                      {article.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-[#5e4d46] line-clamp-2 leading-relaxed">
+                      {article.excerpt}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-base font-extrabold text-[#332420] leading-snug hover:text-[#18757d] transition-colors mb-6 cursor-pointer">
-                  Vendre sans boutique physique : par où commencer quand on part de zéro ?
-                </h3>
-              </div>
-              <div className="flex items-center justify-between text-xs text-slate-400 border-t border-[#eee7da] pt-4">
-                <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-[#18757d]" />
-                  By Stephanie
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-[#18757d]" />
-                  2 mars 2026
-                </span>
-              </div>
-            </div>
 
-            {/* Blog Post 3 */}
-            <div className="bg-white rounded-3xl p-7 border border-[#eee7da] shadow-sm hover:shadow-lg transition-all flex flex-col justify-between">
-              <div>
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
-                    JE ME LANCE EN LIGNE
-                  </span>
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4ede0] text-[#332420] uppercase">
-                    ME FAIRE CONNAÎTRE
-                  </span>
+                <div className="p-6 pt-0">
+                  <div className="flex items-center justify-between text-xs text-slate-500 border-t border-[#eee7da] pt-4 font-medium">
+                    <span className="flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-[#18757d]" />
+                      {article.author || 'Stéphanie Rocq'}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-[#18757d]" />
+                      {article.date}
+                    </span>
+                  </div>
                 </div>
-                <h3 className="text-base font-extrabold text-[#332420] leading-snug hover:text-[#18757d] transition-colors mb-6 cursor-pointer">
-                  Réseaux sociaux : lequel choisir quand on est une petite entreprise et qu'on n'a pas de temps ?
-                </h3>
-              </div>
-              <div className="flex items-center justify-between text-xs text-slate-400 border-t border-[#eee7da] pt-4">
-                <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-[#18757d]" />
-                  By Stephanie
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-[#18757d]" />
-                  2 mars 2026
-                </span>
-              </div>
-            </div>
+              </Link>
+            ))}
+          </div>
 
+          {/* Bouton vers tous les articles de blog */}
+          <div className="text-center mb-16 sm:mb-20">
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-2.5 px-8 py-4 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <span>Voir tous les articles de blog</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
 
           {/* NEWSLETTER BAR: TÉLÉCHARGE TON MINI-GUIDE OFFERT 🎁 */}

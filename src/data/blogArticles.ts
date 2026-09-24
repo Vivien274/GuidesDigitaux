@@ -14,6 +14,39 @@ export interface BlogArticle {
   scheduledAt?: string;
 }
 
+const FRENCH_MONTHS: Record<string, number> = {
+  janvier: 0,
+  février: 1,
+  fevrier: 1,
+  mars: 2,
+  avril: 3,
+  mai: 4,
+  juin: 5,
+  juillet: 6,
+  août: 7,
+  aout: 7,
+  septembre: 8,
+  octobre: 9,
+  novembre: 10,
+  décembre: 11,
+  decembre: 11,
+};
+
+export function getArticleTimestamp(article: { date: string; scheduledAt?: string }): number {
+  if (article.scheduledAt) {
+    const t = new Date(article.scheduledAt).getTime();
+    if (!isNaN(t)) return t;
+  }
+  const parts = (article.date || '').trim().toLowerCase().split(/\s+/);
+  if (parts.length >= 3) {
+    const day = parseInt(parts[0], 10);
+    const month = FRENCH_MONTHS[parts[1]] ?? 0;
+    const year = parseInt(parts[2], 10);
+    return new Date(year, month, day).getTime();
+  }
+  return 0;
+}
+
 export const BLOG_ARTICLES: BlogArticle[] = [
   {
   "id": "4002",
