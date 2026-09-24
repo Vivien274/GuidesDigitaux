@@ -1404,6 +1404,67 @@ export default function TunnelFormationFicheGooglePage() {
               </div>
             </div>
 
+            {/* ÉTAPE 1 : ADRESSE EMAIL POUR LES ACCÈS */}
+            <div>
+              <label htmlFor="checkout-email" className="block text-xs font-black text-[#332420] uppercase tracking-wider mb-1.5">
+                Adresse e-mail (pour la réception instantanée des accès) :
+              </label>
+              <input
+                id="checkout-email"
+                name="email"
+                autoComplete="email"
+                aria-label="Adresse e-mail pour la réception des accès"
+                type="email"
+                placeholder="ex: marie.artisanat@gmail.com"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-[#eee7da] bg-[#faf8f5] text-sm text-[#332420] font-medium focus:ring-2 focus:ring-[#18757d] focus:bg-white focus:outline-hidden transition-all"
+              />
+            </div>
+
+            {/* ÉTAPE 2 : BOX OFFRE SPÉCIALE RECOMMANDÉE (ORDER BUMP ACTUEL DU CALCULATEUR) */}
+            <div
+              onClick={() => setHasOrderBump(!hasOrderBump)}
+              className={`p-5 rounded-2xl border-2 transition-all cursor-pointer select-none ${
+                hasOrderBump
+                  ? 'bg-amber-50/90 border-amber-500 shadow-md ring-2 ring-amber-400/30'
+                  : 'bg-[#faf8f5] border-dashed border-[#18757d]/40 hover:border-[#18757d] hover:bg-amber-50/40'
+              }`}
+            >
+              <label htmlFor="checkout-orderbump-optin" className="flex items-start gap-3.5 cursor-pointer">
+                <input
+                  id="checkout-orderbump-optin"
+                  name="orderBumpOptIn"
+                  aria-label="Ajouter l'accès illimité au calculateur de score et 3 quick wins pour 12 euros"
+                  type="checkbox"
+                  checked={hasOrderBump}
+                  onChange={() => {}}
+                  className="w-5 h-5 rounded text-[#18757d] focus:ring-[#18757d] mt-1 shrink-0 cursor-pointer"
+                />
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider bg-amber-400 text-[#332420] px-2.5 py-0.5 rounded-md shadow-xs">
+                      <Zap className="w-3.5 h-3.5 fill-current" />
+                      Offre Spéciale Unique
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-slate-600 line-through font-bold">49 €</span>
+                      <span className="text-sm font-black text-[#18757d] bg-white px-2 py-0.5 rounded-md border border-[#eee7da]">
+                        +12,00 €
+                      </span>
+                    </div>
+                  </div>
+                  <h4 className="text-sm font-black text-[#332420]">
+                    OUI ! J'ajoute l'Accès Illimité au Calculateur de Score &amp; Générateur de 3 Quick Wins Fiche Google
+                  </h4>
+                  <p className="text-xs text-[#5e4d46] leading-relaxed">
+                    Entre simplement l'URL de ta fiche pour calculer instantanément ta note d'optimisation de 0 à 100 et débloquer tes 3 actions correctives prioritaires à fort impact pour dépasser tes concurrents locaux.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {/* ÉTAPE 3 : CHOIX DU MODE DE PAIEMENT */}
             {/* BOUTONS PAIEMENT EXPRESS EN 1 CLIC (APPLE PAY & GOOGLE PAY) */}
             <div className="space-y-3 pt-1">
               <div className="flex items-center justify-between">
@@ -1479,23 +1540,6 @@ export default function TunnelFormationFicheGooglePage() {
 
             {/* FORMULAIRE DE PAIEMENT PAR CARTE DIRECT */}
             <div className="space-y-4">
-              <div>
-                <label htmlFor="checkout-email" className="block text-xs font-black text-[#332420] uppercase tracking-wider mb-1.5">
-                  Adresse e-mail (pour la réception instantanée des accès) :
-                </label>
-                <input
-                  id="checkout-email"
-                  name="email"
-                  autoComplete="email"
-                  aria-label="Adresse e-mail pour la réception des accès"
-                  type="email"
-                  placeholder="ex: marie.artisanat@gmail.com"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[#eee7da] bg-[#faf8f5] text-sm text-[#332420] font-medium focus:ring-2 focus:ring-[#18757d] focus:bg-white focus:outline-hidden transition-all"
-                />
-              </div>
-
               <div className="p-4 bg-[#faf8f5] rounded-2xl border border-[#eee7da] space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-[#332420] uppercase tracking-wider flex items-center gap-1.5">
@@ -1567,48 +1611,6 @@ export default function TunnelFormationFicheGooglePage() {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* BOX OFFRE SPÉCIALE RECOMMANDÉE (12 €) - POSITIONNÉE AU-DESSUS DU BOUTON DE PAIEMENT */}
-              <div
-                onClick={() => setHasOrderBump(!hasOrderBump)}
-                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer select-none ${
-                  hasOrderBump
-                    ? 'bg-amber-50/90 border-amber-500 shadow-md ring-2 ring-amber-400/30'
-                    : 'bg-[#faf8f5] border-dashed border-[#18757d]/40 hover:border-[#18757d] hover:bg-amber-50/40'
-                }`}
-              >
-                <label htmlFor="checkout-orderbump-optin" className="flex items-start gap-3.5 cursor-pointer">
-                  <input
-                    id="checkout-orderbump-optin"
-                    name="orderBumpOptIn"
-                    aria-label="Ajouter l'accès illimité au calculateur de score et 3 quick wins pour 12 euros"
-                    type="checkbox"
-                    checked={hasOrderBump}
-                    onChange={() => {}}
-                    className="w-5 h-5 rounded text-[#18757d] focus:ring-[#18757d] mt-1 shrink-0 cursor-pointer"
-                  />
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider bg-amber-400 text-[#332420] px-2.5 py-0.5 rounded-md shadow-xs">
-                        <Zap className="w-3.5 h-3.5 fill-current" />
-                        Offre Spéciale Unique
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-600 line-through font-bold">49 €</span>
-                        <span className="text-sm font-black text-[#18757d] bg-white px-2 py-0.5 rounded-md border border-[#eee7da]">
-                          +12,00 €
-                        </span>
-                      </div>
-                    </div>
-                    <h4 className="text-sm font-black text-[#332420]">
-                      OUI ! J'ajoute l'Accès Illimité au Calculateur de Score &amp; Générateur de 3 Quick Wins Fiche Google
-                    </h4>
-                    <p className="text-xs text-[#5e4d46] leading-relaxed">
-                      Entre simplement l'URL de ta fiche pour calculer instantanément ta note d'optimisation de 0 à 100 et débloquer tes 3 actions correctives prioritaires à fort impact pour dépasser tes concurrents locaux.
-                    </p>
-                  </div>
-                </label>
               </div>
 
               {/* CASE À COCHER OPTIONNELLE NEWSLETTER & EMAILING */}
