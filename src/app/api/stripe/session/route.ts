@@ -27,6 +27,23 @@ export async function GET(request: Request) {
       } catch (e) {}
     }
 
+    const hasOrderBump = session.metadata?.hasOrderBump === 'true' || session.metadata?.orderbump === '1';
+    if ((!cartItems || cartItems.length === 0) && hasOrderBump) {
+      cartItems = [
+        {
+          id: 'formation-fiche-google',
+          title: 'Cap Visibilité Google : Le GPS pour Artisans & Créateurs',
+          price: 29
+        },
+        {
+          id: 'kit-serenite',
+          title: 'Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA (Order Bump)',
+          price: 9,
+          downloadPdf: '/downloads/kit-serenite-52-posts-google-prompts-ia.pdf'
+        }
+      ];
+    }
+
     return NextResponse.json({
       sessionId: session.id,
       customerEmail: email,
@@ -34,6 +51,7 @@ export async function GET(request: Request) {
       courseId,
       productId: session.metadata?.productId || courseId,
       cartItems,
+      hasOrderBump,
       amountTotal: (session.amount_total !== null && session.amount_total !== undefined) ? session.amount_total / 100 : 0,
       paymentStatus: session.payment_status
     });

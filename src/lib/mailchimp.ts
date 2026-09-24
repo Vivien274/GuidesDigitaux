@@ -46,6 +46,11 @@ export const PRODUCT_MAILCHIMP_TAGS: Record<string, string[]> = {
   'calculateur-fiche-google': ['calculateur-gmb', 'client'],
   'calculateur-score': ['calculateur-gmb', 'client'],
 
+  // Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA (9 €)
+  'kit-serenite': ['kit-serenite', 'client'],
+  'orderbump-kit-serenite': ['kit-serenite', 'client'],
+  'kit-serenite-posts-google': ['kit-serenite', 'client'],
+
   // Pack Guides & Combo
   'pack-guides': ['pack-guides', 'client'],
   'bundle-vitrine-boutique-wordpress-le-combo-pour-vendre-en-ligne': ['formation-wordpress', 'formation-woocommerce', 'client'],

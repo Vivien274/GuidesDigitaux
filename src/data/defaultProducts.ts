@@ -457,5 +457,28 @@ export const DEFAULT_PRODUCTS: Product[] = [
       "Génération immédiate de 3 Quick Wins stratégiques et personnalisés",
       "Rapport d'audit imprimable et partageable"
     ]
+  },
+  {
+    "id": "kit-serenite",
+    "title": "Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA",
+    "slug": "kit-serenite",
+    "category": "ebook",
+    "categoryLabel": "Kit & Calendrier Éditorial",
+    "price": 9,
+    "originalPrice": 29,
+    "rating": 5,
+    "reviewsCount": 0,
+    "badge": "ORDER BUMP",
+    "image": "/images/products/kit-serenite-posts-google.jpg",
+    "imageAlt": "Le Kit Sérénité : 52 Idées de Posts Google et Prompts IA - Guides Digitaux",
+    "description": "Le calendrier annuel complet de 52 publications format long (jusqu'à 1 500 caractères) et 5 Super-Prompts IA calibrés pour booster votre référencement local en 5 minutes par semaine.",
+    "features": [
+      "Calendrier complet des 52 semaines (1 idée de publication prête à l'emploi par semaine)",
+      "Format développé calibré jusqu'à 1 500 caractères pour maximiser le SEO local",
+      "5 Super-Prompts IA haute précision pour ChatGPT, Claude et Gemini sans clichés",
+      "Idées de photos d'atelier authentiques à réaliser avec un simple smartphone",
+      "Format PDF HD interactif de 19 pages prêt à l'emploi"
+    ],
+    "downloadPdf": "/downloads/kit-serenite-52-posts-google-prompts-ia.pdf"
   }
 ];

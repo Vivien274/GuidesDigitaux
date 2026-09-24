@@ -66,6 +66,18 @@ const PDF_DOWNLOAD_LINKS: Record<string, { title: string; fileUrl: string }> = {
   'checklist-google-business-profile': {
     title: "Checklist : Optimisation Google Business Profile",
     fileUrl: "/downloads/1786961735239-checklist-fiche-google.pdf"
+  },
+  'kit-serenite': {
+    title: "Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA (Format PDF HD)",
+    fileUrl: "/downloads/kit-serenite-52-posts-google-prompts-ia.pdf"
+  },
+  'orderbump-kit-serenite': {
+    title: "Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA (Format PDF HD)",
+    fileUrl: "/downloads/kit-serenite-52-posts-google-prompts-ia.pdf"
+  },
+  'kit-serenite-posts-google': {
+    title: "Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA (Format PDF HD)",
+    fileUrl: "/downloads/kit-serenite-52-posts-google-prompts-ia.pdf"
   }
 };
 
@@ -239,9 +251,8 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
   const isFormation = (productId.includes('formation') || productId.includes('bundle') || productTitle.toLowerCase().includes('formation') || productId.includes('fiche-google')) && !productId.includes('pack-guides') && !isPreorder;
   const isPdf = !isCoaching && !isFormation && !isPreorder;
   const hasCalculatorTool = productId.includes('calculateur') || 
-    productId.includes('orderbump') || 
     productTitle.toLowerCase().includes('calculateur') || 
-    payload.cartItems?.some(it => it.id?.includes('calculateur') || it.id?.includes('orderbump'));
+    payload.cartItems?.some(it => it.id?.includes('calculateur'));
 
   const deduplicatedLinks = getDeduplicatedDownloadLinksForProduct(productId, payload.downloadPdf, payload.cartItems);
   const bookingUrl = payload.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18';

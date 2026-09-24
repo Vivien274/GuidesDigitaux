@@ -103,6 +103,22 @@ export async function POST(request: Request) {
         } catch (e) {}
       }
 
+      if ((!rawCartItems || rawCartItems.length === 0) && (session.metadata?.hasOrderBump === 'true' || session.metadata?.orderbump === '1')) {
+        rawCartItems = [
+          {
+            id: 'formation-fiche-google',
+            title: 'Cap Visibilité Google : Le GPS pour Artisans & Créateurs',
+            price: 29
+          },
+          {
+            id: 'kit-serenite',
+            title: 'Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA (Order Bump)',
+            price: 9,
+            downloadPdf: '/downloads/kit-serenite-52-posts-google-prompts-ia.pdf'
+          }
+        ];
+      }
+
       if (Array.isArray(rawCartItems) && rawCartItems.length > 0) {
         for (const cartIt of rawCartItems) {
           const itemPrice = Number(cartIt.price) || 0;
@@ -296,8 +312,21 @@ export async function POST(request: Request) {
           collectedTags.add('newsletter');
         }
 
-        // Tag calculateur-gmb si order bump ou produit calculateur
-        if (session.metadata?.hasOrderBump === 'true' || session.metadata?.orderbump === '1' || productId?.includes('calculateur') || productId?.includes('orderbump')) {
+        // Tag kit-serenite si order bump ou produit kit-serenite acheté
+        const hasKitSerenite = 
+          session.metadata?.hasOrderBump === 'true' || 
+          session.metadata?.orderbump === '1' || 
+          session.metadata?.orderBumpType === 'kit-serenite' ||
+          productId === 'kit-serenite' ||
+          productId?.includes('serenite') ||
+          rawCartItems?.some((it: any) => it.id === 'kit-serenite' || it.id?.includes('serenite'));
+
+        if (hasKitSerenite) {
+          collectedTags.add('kit-serenite');
+        }
+
+        // Tag calculateur-gmb uniquement si le calculateur de score a été acheté
+        if (productId?.includes('calculateur') || rawCartItems?.some((it: any) => it.id?.includes('calculateur'))) {
           collectedTags.add('calculateur-gmb');
         }
 

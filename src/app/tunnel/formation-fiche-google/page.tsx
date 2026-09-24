@@ -101,7 +101,7 @@ export default function TunnelFormationFicheGooglePage() {
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [optInError, setOptInError] = useState(false);
   const [expressProvider, setExpressProvider] = useState<'apple_pay' | 'google_pay' | null>(null);
-  const totalAmount = hasOrderBump ? 41 : 29;
+  const totalAmount = hasOrderBump ? 38 : 29;
 
   // Compte à rebours dynamique jusqu'au 15 octobre 2026 à 23:59:59
   const [timeLeft, setTimeLeft] = useState({
@@ -159,9 +159,9 @@ export default function TunnelFormationFicheGooglePage() {
 
     event('InitiateCheckout', {
       content_name: hasOrderBump
-        ? 'Cap Visibilité Google + Calculateur de Score Order Bump'
+        ? 'Cap Visibilité Google + Le Kit Sérénité Order Bump'
         : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
-      content_ids: hasOrderBump ? ['formation-fiche-google', 'orderbump-calculateur-score'] : ['formation-fiche-google'],
+      content_ids: hasOrderBump ? ['formation-fiche-google', 'kit-serenite'] : ['formation-fiche-google'],
       content_type: 'product',
       value: totalAmount,
       currency: 'EUR',
@@ -192,14 +192,14 @@ export default function TunnelFormationFicheGooglePage() {
         }
       }
 
-      // Inscription automatique Mailchimp si renseigné, avec tags formation-gmb, newsletter (si acceptée) et calculateur-gmb
+      // Inscription automatique Mailchimp si renseigné, avec tags formation-gmb, newsletter (si acceptée) et kit-serenite
       try {
         const directTags = ['formation-gmb', 'client'];
         if (newsletterOptIn) {
           directTags.push('newsletter');
         }
         if (hasOrderBump) {
-          directTags.push('calculateur-gmb');
+          directTags.push('kit-serenite');
         }
         fetch('/api/mailchimp/subscribe', {
           method: 'POST',
@@ -230,9 +230,9 @@ export default function TunnelFormationFicheGooglePage() {
 
     event('InitiateCheckout', {
       content_name: hasOrderBump
-        ? 'Cap Visibilité Google + Calculateur de Score Order Bump'
+        ? 'Cap Visibilité Google + Le Kit Sérénité Order Bump'
         : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
-      content_ids: hasOrderBump ? ['formation-fiche-google', 'orderbump-calculateur-score'] : ['formation-fiche-google'],
+      content_ids: hasOrderBump ? ['formation-fiche-google', 'kit-serenite'] : ['formation-fiche-google'],
       content_type: 'product',
       value: totalAmount,
       currency: 'EUR',
@@ -267,7 +267,7 @@ export default function TunnelFormationFicheGooglePage() {
         try {
           const directTags = ['formation-gmb', 'client'];
           if (newsletterOptIn) directTags.push('newsletter');
-          if (hasOrderBump) directTags.push('calculateur-gmb');
+          if (hasOrderBump) directTags.push('kit-serenite');
           fetch('/api/mailchimp/subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -287,10 +287,10 @@ export default function TunnelFormationFicheGooglePage() {
           courseId: 'formation-fiche-google',
           productId: 'formation-fiche-google',
           courseTitle: hasOrderBump
-            ? 'Cap Visibilité Google + Calculateur de Score & 3 Quick Wins'
+            ? 'Cap Visibilité Google + Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA'
             : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
           title: hasOrderBump
-            ? 'Cap Visibilité Google + Calculateur de Score & 3 Quick Wins'
+            ? 'Cap Visibilité Google + Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA'
             : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
           price: totalAmount,
           hasOrderBump,
@@ -322,9 +322,9 @@ export default function TunnelFormationFicheGooglePage() {
 
     event('InitiateCheckout', {
       content_name: hasOrderBump
-        ? 'Cap Visibilité Google + Calculateur de Score Order Bump'
+        ? 'Cap Visibilité Google + Le Kit Sérénité Order Bump'
         : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
-      content_ids: hasOrderBump ? ['formation-fiche-google', 'orderbump-calculateur-score'] : ['formation-fiche-google'],
+      content_ids: hasOrderBump ? ['formation-fiche-google', 'kit-serenite'] : ['formation-fiche-google'],
       content_type: 'product',
       value: totalAmount,
       currency: 'EUR',
@@ -362,10 +362,10 @@ export default function TunnelFormationFicheGooglePage() {
           courseId: 'formation-fiche-google',
           productId: 'formation-fiche-google',
           courseTitle: hasOrderBump
-            ? 'Cap Visibilité Google + Calculateur de Score & 3 Quick Wins'
+            ? 'Cap Visibilité Google + Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA'
             : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
           title: hasOrderBump
-            ? 'Cap Visibilité Google + Calculateur de Score & 3 Quick Wins'
+            ? 'Cap Visibilité Google + Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA'
             : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
           price: totalAmount,
           hasOrderBump,
@@ -1392,13 +1392,13 @@ export default function TunnelFormationFicheGooglePage() {
                 <h3 className="text-xl font-black text-[#332420] mt-1">Cap Visibilité Google : Le GPS pour Artisans & Créateurs</h3>
                 <p className="text-xs text-slate-500 font-semibold">
                   {hasOrderBump
-                    ? '7 Modules (27 Cours Vidéo) • Prompts IA • 3 Bonus PDF • Calculateur de Score & 3 Quick Wins'
+                    ? '7 Modules (27 Cours Vidéo) • Prompts IA • 3 Bonus PDF • Le Kit Sérénité (52 Posts & Prompts IA)'
                     : '7 Modules (27 Cours Vidéo) • Prompts IA Inclus • 3 Bonus PDF • Accès Immédiat à vie'}
                 </p>
               </div>
               <div className="text-right">
                 <span className="text-xs text-slate-600 line-through block font-bold">
-                  {hasOrderBump ? '118,00 €' : '69,00 €'}
+                  {hasOrderBump ? '98,00 €' : '69,00 €'}
                 </span>
                 <span className="text-3xl font-black text-[#18757d]">{totalAmount},00 €</span>
               </div>
@@ -1422,7 +1422,7 @@ export default function TunnelFormationFicheGooglePage() {
               />
             </div>
 
-            {/* ÉTAPE 2 : BOX OFFRE SPÉCIALE RECOMMANDÉE (ORDER BUMP ACTUEL DU CALCULATEUR) */}
+            {/* ÉTAPE 2 : BOX OFFRE SPÉCIALE RECOMMANDÉE (LE KIT SÉRÉNITÉ : 52 POSTS & PROMPTS IA) */}
             <div
               onClick={() => setHasOrderBump(!hasOrderBump)}
               className={`p-5 rounded-2xl border-2 transition-all cursor-pointer select-none ${
@@ -1435,31 +1435,41 @@ export default function TunnelFormationFicheGooglePage() {
                 <input
                   id="checkout-orderbump-optin"
                   name="orderBumpOptIn"
-                  aria-label="Ajouter l'accès illimité au calculateur de score et 3 quick wins pour 12 euros"
+                  aria-label="Ajouter le Kit Sérénité 52 Idées de Posts Google et Prompts IA pour 9 euros"
                   type="checkbox"
                   checked={hasOrderBump}
                   onChange={() => {}}
                   className="w-5 h-5 rounded text-[#18757d] focus:ring-[#18757d] mt-1 shrink-0 cursor-pointer"
                 />
-                <div className="space-y-1.5 flex-1">
+                <div className="space-y-2 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider bg-amber-400 text-[#332420] px-2.5 py-0.5 rounded-md shadow-xs">
                       <Zap className="w-3.5 h-3.5 fill-current" />
                       Offre Spéciale Unique
                     </span>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-slate-600 line-through font-bold">49 €</span>
+                      <span className="text-xs text-slate-600 line-through font-bold">29 €</span>
                       <span className="text-sm font-black text-[#18757d] bg-white px-2 py-0.5 rounded-md border border-[#eee7da]">
-                        +12,00 €
+                        +9,00 €
                       </span>
                     </div>
                   </div>
-                  <h4 className="text-sm font-black text-[#332420]">
-                    OUI ! J'ajoute l'Accès Illimité au Calculateur de Score &amp; Générateur de 3 Quick Wins Fiche Google
-                  </h4>
-                  <p className="text-xs text-[#5e4d46] leading-relaxed">
-                    Entre simplement l'URL de ta fiche pour calculer instantanément ta note d'optimisation de 0 à 100 et débloquer tes 3 actions correctives prioritaires à fort impact pour dépasser tes concurrents locaux.
-                  </p>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-0.5">
+                    <img
+                      src="/images/products/kit-serenite-posts-google.jpg"
+                      alt="Le Kit Sérénité 52 Posts Google"
+                      className="w-16 h-16 object-cover rounded-xl border border-amber-200 shadow-2xs shrink-0"
+                    />
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-black text-[#332420] leading-snug">
+                        OUI ! J'ajoute le Kit Sérénité : 52 Idées de Posts Google &amp; Prompts IA (Guide PDF HD 19 pages)
+                      </h4>
+                      <p className="text-xs text-[#5e4d46] leading-relaxed">
+                        Le calendrier annuel clé-en-main calibré au format 1 500 caractères et 5 Super-Prompts IA (ChatGPT, Claude &amp; Gemini) pour faire décoller ma visibilité locale en 5 minutes par semaine sans aucune panne d'inspiration.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </label>
             </div>

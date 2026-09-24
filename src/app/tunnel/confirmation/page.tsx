@@ -159,6 +159,27 @@ function ConfirmationContent() {
       if (isPreorder) {
         recordPreorderPurchaseInDb(courseId, emailToUse, customerName || emailToUse.split('@')[0], amountToSave);
       }
+
+      if (searchParams.get('orderbump') === '1' || resolvedPrice >= 38) {
+        const kitObj = {
+          id: 'kit-serenite',
+          title: 'Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA',
+          slug: 'kit-serenite',
+          type: 'ebook',
+          typeLabel: '📄 Kit & Calendrier PDF',
+          downloadPdf: '/downloads/kit-serenite-52-posts-google-prompts-ia.pdf',
+          progress: 0,
+          completedLessons: 0,
+          totalLessons: 1,
+          duration: '30 min',
+          instructor: 'Stéphanie ROCQ',
+          price: 9,
+          purchaseDate: new Date().toLocaleDateString('fr-FR')
+        };
+        addPurchaseToUser(emailToUse, kitObj);
+        saveOrderToDb(emailToUse, 'kit-serenite', 'paid', 9, `${sessionId}_kit`);
+        saveUserPurchaseToDb(emailToUse, kitObj);
+      }
     }
   };
 
@@ -346,34 +367,46 @@ function ConfirmationContent() {
             <span>Un e-mail contenant votre reçu, vos accès et vos liens de téléchargement PDF a été envoyé à <strong>{activeEmail}</strong></span>
           </div>
 
-          {/* ORDER BUMP UNLOCKED TOOL BOX */}
-          {isMounted && (searchParams.get('orderbump') === '1' || resolvedPrice >= 40) && (
+          {/* ORDER BUMP UNLOCKED KIT SÉRÉNITÉ BOX */}
+          {isMounted && (searchParams.get('orderbump') === '1' || resolvedPrice >= 38) && (
             <div className="p-6 bg-gradient-to-r from-amber-50 to-amber-100/70 rounded-3xl border-2 border-amber-300 text-left space-y-4 shadow-md">
               <div className="flex items-center justify-between gap-2 border-b border-amber-200 pb-3">
                 <div className="flex items-center gap-2 text-amber-950 font-extrabold text-sm">
                   <Sparkles className="w-5 h-5 text-amber-600 shrink-0" />
-                  <h3>Option Order Bump Débloquée : Calculateur de Score &amp; 3 Quick Wins</h3>
+                  <h3>Option Order Bump Débloquée : Le Kit Sérénité (52 Posts &amp; Prompts IA)</h3>
                 </div>
                 <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-extrabold uppercase rounded-full tracking-wider">
                   Accès Immédiat
                 </span>
               </div>
               <div className="p-4 bg-white rounded-2xl border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
-                <div className="space-y-1">
-                  <h4 className="text-xs font-black text-[#332420]">
-                    Calculateur de Score Fiche Google &amp; Audit Express
-                  </h4>
-                  <p className="text-[11px] text-[#5e4d46]">
-                    Calculez la note de votre fiche de 0 à 100 et débloquez vos 3 actions correctives prioritaires sur-mesure.
-                  </p>
+                <div className="flex items-center gap-3">
+                  <img
+                    src="/images/products/kit-serenite-posts-google.jpg"
+                    alt="Kit Sérénité 52 Posts Google"
+                    className="w-14 h-14 object-cover rounded-xl border border-amber-200 shrink-0 shadow-xs"
+                  />
+                  <div className="space-y-0.5">
+                    <h4 className="text-xs font-black text-[#332420]">
+                      Le Kit Sérénité : 52 Idées de Posts Google &amp; Prompts IA
+                    </h4>
+                    <p className="text-[11px] text-[#5e4d46]">
+                      Votre calendrier annuel clé-en-main au format 1 500 caractères et 5 Super-Prompts IA.
+                    </p>
+                    <span className="text-[10px] text-amber-700 font-bold block">
+                      Format PDF HD • 19 pages prêtes à l'emploi
+                    </span>
+                  </div>
                 </div>
-                <Link
-                  href="/outils/calculateur-fiche-google"
+                <a
+                  href={getEncryptedDownloadUrl('/downloads/kit-serenite-52-posts-google-prompts-ia.pdf', 'kit-serenite')}
+                  target="_blank"
+                  rel="noreferrer"
                   className="w-full sm:w-auto px-5 py-2.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                  Lancer mon Calculateur de Score →
-                </Link>
+                  <Download className="w-4 h-4" />
+                  Télécharger mon Kit PDF →
+                </a>
               </div>
             </div>
           )}

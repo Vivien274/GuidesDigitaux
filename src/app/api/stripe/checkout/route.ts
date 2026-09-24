@@ -5,7 +5,7 @@ import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const items = body.items;
+    let items = body.items;
     const courseId = body.courseId || body.productId || 'formation-wordpress';
     const matchedProduct = DEFAULT_PRODUCTS.find(p => p.id === courseId || p.slug === courseId || p.id === body.productId);
     const paymentOption = body.paymentOption || (body.price === 87 || body.price === 75 || body.price === 225 || body.price === 261 ? '3x' : '1x');
@@ -34,6 +34,27 @@ export async function POST(request: Request) {
       } catch (e) {}
     }
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || originUrl || 'https://www.guides-digitaux.com';
+
+    const hasOrderBump = body.hasOrderBump === true || body.hasOrderBump === 'true';
+    if ((!items || items.length === 0) && hasOrderBump && (courseId === 'formation-fiche-google' || courseId.includes('fiche-google'))) {
+      items = [
+        {
+          id: 'formation-fiche-google',
+          title: 'Cap Visibilité Google : Le GPS pour Artisans & Créateurs',
+          price: 29,
+          quantity: 1,
+          type: 'formation'
+        },
+        {
+          id: 'kit-serenite',
+          title: 'Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA (Order Bump)',
+          price: 9,
+          quantity: 1,
+          type: 'ebook',
+          downloadPdf: '/downloads/kit-serenite-52-posts-google-prompts-ia.pdf'
+        }
+      ];
+    }
 
     let lineItems: any[] = [];
     let totalPriceSum = 0;
@@ -109,6 +130,26 @@ export async function POST(request: Request) {
     if (hasRealStripeKey) {
       const stripe = new Stripe(secretKey);
 
+      const sessionMetadata = {
+        courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
+        productId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
+        isPreorder: isPreorder ? 'true' : 'false',
+        releaseDate: releaseDate || '',
+        hasOrderBump: hasOrderBump ? 'true' : 'false',
+        orderbump: hasOrderBump ? '1' : '0',
+        orderBumpType: hasOrderBump ? 'kit-serenite' : '',
+        newsletterOptIn: body.newsletterOptIn ? 'true' : 'false',
+        cartItemsJson: Array.isArray(items) && items.length > 0
+          ? JSON.stringify(items.map((it: any) => ({
+              id: it.id,
+              title: it.title,
+              price: Number(it.price || it.originalPrice || 0),
+              quantity: it.quantity || 1,
+              downloadPdf: it.downloadPdf || undefined
+            })))
+          : ''
+      };
+
       if (body.embedded) {
         const session = await stripe.checkout.sessions.create({
           ui_mode: 'embedded' as any,
@@ -118,13 +159,7 @@ export async function POST(request: Request) {
           mode: 'payment',
           allow_promotion_codes: true,
           return_url: resolvedSuccessUrl.includes('{CHECKOUT_SESSION_ID}') ? resolvedSuccessUrl : `${siteUrl}/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=${courseId || 'formation-fiche-google'}`,
-          metadata: {
-            courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
-            productId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
-            isPreorder: isPreorder ? 'true' : 'false',
-            releaseDate: releaseDate || '',
-            newsletterOptIn: body.newsletterOptIn ? 'true' : 'false',
-          },
+          metadata: sessionMetadata,
         });
 
         return NextResponse.json({ 
@@ -143,21 +178,7 @@ export async function POST(request: Request) {
         allow_promotion_codes: true,
         success_url: resolvedSuccessUrl,
         cancel_url: resolvedCancelUrl,
-        metadata: {
-          courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
-          productId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
-          isPreorder: isPreorder ? 'true' : 'false',
-          releaseDate: releaseDate || '',
-          newsletterOptIn: body.newsletterOptIn ? 'true' : 'false',
-          cartItemsJson: Array.isArray(items) && items.length > 0
-            ? JSON.stringify(items.map((it: any) => ({
-                id: it.id,
-                title: it.title,
-                price: Number(it.price || it.originalPrice || 0),
-                quantity: it.quantity || 1
-              })))
-            : ''
-        },
+        metadata: sessionMetadata,
       });
 
       return NextResponse.json({ url: session.url, sessionId: session.id, mode: 'live_stripe' });
