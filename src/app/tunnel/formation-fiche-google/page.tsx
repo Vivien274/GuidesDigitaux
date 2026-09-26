@@ -1463,7 +1463,7 @@ export default function TunnelFormationFicheGooglePage() {
                     />
                     <div className="space-y-1">
                       <h4 className="text-sm font-black text-[#332420] leading-snug">
-                        OUI ! J'ajoute le Kit Sérénité : 52 Idées de Posts Google &amp; Prompts IA (Guide PDF HD 19 pages)
+                        OUI ! J'ajoute le Kit Sérénité : 52 Idées de Posts Google, Prompts IA &amp; Guide Photo (Guide PDF HD 21 pages)
                       </h4>
                       <p className="text-xs text-[#5e4d46] leading-relaxed">
                         Le calendrier annuel clé-en-main calibré au format 1 500 caractères et 5 Super-Prompts IA (ChatGPT, Claude &amp; Gemini) pour faire décoller ma visibilité locale en 5 minutes par semaine sans aucune panne d'inspiration.

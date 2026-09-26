@@ -394,7 +394,7 @@ function ConfirmationContent() {
                       Votre calendrier annuel clé-en-main au format 1 500 caractères et 5 Super-Prompts IA.
                     </p>
                     <span className="text-[10px] text-amber-700 font-bold block">
-                      Format PDF HD • 19 pages prêtes à l'emploi
+                      Format PDF HD • 21 pages prêtes à l'emploi
                     </span>
                   </div>
                 </div>
