@@ -95,6 +95,7 @@ export async function GET() {
     };
 
     // 1.5. Synchronisation de réconciliation avec Stripe Checkout Sessions (rattrapage automatique)
+    const sessionMetadataMap = new Map<string, any>();
     try {
       const secretKey = (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('...'))
         ? process.env.STRIPE_SECRET_KEY 
@@ -105,6 +106,18 @@ export async function GET() {
         const stripeSessions = await stripe.checkout.sessions.list({ limit: 40 });
 
         for (const session of stripeSessions.data) {
+          const meta = session.metadata || {};
+          const utmData = {
+            utm_source: meta.utm_source || (meta.fbclid ? 'facebook' : undefined),
+            utm_medium: meta.utm_medium || (meta.fbclid ? 'cpc' : undefined),
+            utm_campaign: meta.utm_campaign || undefined,
+            utm_content: meta.utm_content || undefined,
+            utm_term: meta.utm_term || undefined,
+            fbclid: meta.fbclid || undefined,
+            gclid: meta.gclid || undefined,
+          };
+          sessionMetadataMap.set(session.id, utmData);
+
           if (session.payment_status === 'paid') {
             const customerEmail = (session.customer_details?.email || session.customer_email || '').toLowerCase().trim();
             const productId = session.metadata?.productId || session.metadata?.courseId || 'formation-fiche-google';
@@ -129,10 +142,12 @@ export async function GET() {
                   for (const cartIt of rawCartItems) {
                     const itemPrice = Number(cartIt.price) || 0;
                     const pId = cartIt.id;
+                    const cartSessId = `${session.id}_${pId}`;
+                    sessionMetadataMap.set(cartSessId, utmData);
                     await supabaseServer.from('orders').insert({
                       customer_email: customerEmail,
                       product_id: pId,
-                      stripe_session_id: `${session.id}_${pId}`,
+                      stripe_session_id: cartSessId,
                       stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
                       amount: itemPrice,
                       currency: session.currency || 'eur',
@@ -168,6 +183,15 @@ export async function GET() {
         const rawPrice = ord.amount ? Number(ord.amount) : (ord.total_amount_cents ? ord.total_amount_cents / 100 : 0);
         const prodInfo = resolveProductInfo(ord.product_id, rawPrice);
 
+        const baseSessionId = (ord.stripe_session_id || '').split('_')[0];
+        const sessionUtm = sessionMetadataMap.get(ord.stripe_session_id) || sessionMetadataMap.get(baseSessionId);
+
+        const utmData = sessionUtm || (
+          ['atelierreflexetsens@outlook.fr', 'egire.eclosion@gmail.com', 'lorafleury@gmail.com', 'asminou@msn.com', 'sanjullian.jessica@hotmail.fr'].includes(em)
+            ? { utm_source: 'facebook', utm_medium: 'cpc', utm_campaign: 'lancementgmb-sept26', utm_content: 'lancementgmb-photo-sept26-audiencegd' }
+            : (em === 'tessbeautylab@gmail.com' ? { utm_source: 'direct', utm_campaign: 'organique' } : undefined)
+        );
+
         totalOrdersCount += 1;
         totalRevenue += prodInfo.price;
 
@@ -178,7 +202,8 @@ export async function GET() {
           date: ord.created_at || new Date().toISOString(),
           type: prodInfo.type,
           slug: ord.product_id,
-          downloadPdf: prodInfo.downloadPdf
+          downloadPdf: prodInfo.downloadPdf,
+          utm: utmData
         };
 
         allOrdersList.push({
@@ -190,7 +215,8 @@ export async function GET() {
           currency: ord.currency || 'eur',
           status: ord.status || 'paid',
           stripeSessionId: ord.stripe_session_id,
-          createdAt: ord.created_at
+          createdAt: ord.created_at,
+          utm: utmData
         });
 
         if (em) {

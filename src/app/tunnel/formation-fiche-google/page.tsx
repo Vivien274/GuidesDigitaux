@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { event } from '@/lib/metaPixel';
+import { getStoredUtm } from '@/lib/utm';
 import {
   CheckCircle2,
   Star,
@@ -296,6 +297,7 @@ export default function TunnelFormationFicheGooglePage() {
           hasOrderBump,
           newsletterOptIn: !!newsletterOptIn,
           customerEmail: emailInput.trim() || undefined,
+          utm: getStoredUtm(),
           cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-fiche-google',
           successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&price=${totalAmount}&orderbump=${hasOrderBump ? '1' : '0'}${emailInput.trim() ? `&email=${encodeURIComponent(emailInput.trim())}` : ''}`
         })
@@ -371,6 +373,7 @@ export default function TunnelFormationFicheGooglePage() {
           hasOrderBump,
           newsletterOptIn: !!newsletterOptIn,
           customerEmail: emailInput.trim() || undefined,
+          utm: getStoredUtm(),
           cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-fiche-google',
           successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&price=${totalAmount}&orderbump=${hasOrderBump ? '1' : '0'}${emailInput.trim() ? `&email=${encodeURIComponent(emailInput.trim())}` : ''}`
         })

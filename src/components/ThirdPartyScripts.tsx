@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { FB_PIXEL_IDS } from '@/lib/metaPixel';
+import { captureAndStoreUtm } from '@/lib/utm';
 
 declare global {
   interface Window {
@@ -21,6 +22,9 @@ export default function ThirdPartyScripts({
 }: ThirdPartyScriptsProps) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // Capture & persist any incoming ad tracking parameters (UTMs, fbclid, gclid)
+    captureAndStoreUtm();
 
     // Detect bots, Lighthouse, headless testing tools to prevent unnecessary CPU throttling
     const isBot =

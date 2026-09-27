@@ -53,7 +53,16 @@ export async function GET(request: Request) {
       cartItems,
       hasOrderBump,
       amountTotal: (session.amount_total !== null && session.amount_total !== undefined) ? session.amount_total / 100 : 0,
-      paymentStatus: session.payment_status
+      paymentStatus: session.payment_status,
+      utm: {
+        utm_source: session.metadata?.utm_source || null,
+        utm_medium: session.metadata?.utm_medium || null,
+        utm_campaign: session.metadata?.utm_campaign || null,
+        utm_content: session.metadata?.utm_content || null,
+        utm_term: session.metadata?.utm_term || null,
+        fbclid: session.metadata?.fbclid || null,
+        gclid: session.metadata?.gclid || null,
+      }
     });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Error fetching Stripe session' }, { status: 500 });

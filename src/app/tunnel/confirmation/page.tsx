@@ -258,7 +258,7 @@ function ConfirmationContent() {
       }
     }
 
-    // 5. Track Meta Pixel Purchase event once per checkout session (always trigger for test sessions)
+    // 5. Track Meta Pixel & Google Analytics (GA4) Purchase event once per checkout session
     if (typeof window !== 'undefined') {
       try {
         const isTestVisit = !sessionId || sessionId.includes('test') || searchParams.get('test') === 'true';
@@ -266,18 +266,37 @@ function ConfirmationContent() {
         const currentOrderKey = sessionId;
         
         if (isTestVisit || (currentOrderKey && !trackedPixel.includes(currentOrderKey))) {
+          // Meta Pixel Purchase
           trackPurchase(Number(resolvedPrice) || 29, 'EUR', {
             content_name: resolvedTitle || courseId || 'Formation Fiche Google',
             content_ids: [courseId || 'formation-fiche-google'],
             content_type: 'product',
             order_id: sessionId || `test_${Date.now()}`,
           });
+
+          // Google Analytics (GA4) Enhanced E-Commerce Purchase
+          if (window.gtag) {
+            window.gtag('event', 'purchase', {
+              transaction_id: sessionId || `order_${Date.now()}`,
+              value: Number(resolvedPrice) || 29,
+              currency: 'EUR',
+              items: [
+                {
+                  item_id: courseId || 'formation-fiche-google',
+                  item_name: resolvedTitle || 'Formation Fiche Google',
+                  price: Number(resolvedPrice) || 29,
+                  quantity: 1,
+                }
+              ]
+            });
+          }
+
           if (currentOrderKey && !isTestVisit) {
             localStorage.setItem('gd_meta_pixel_tracked', JSON.stringify([...trackedPixel, currentOrderKey]));
           }
         }
       } catch (e) {
-        console.error('Erreur lors du suivi Meta Pixel Purchase:', e);
+        console.error('Erreur lors du suivi Meta Pixel / GA4 Purchase:', e);
       }
     }
   }, [sessionId, courseId, activeEmail, resolvedPrice]);

@@ -130,7 +130,8 @@ export async function POST(request: Request) {
     if (hasRealStripeKey) {
       const stripe = new Stripe(secretKey);
 
-      const sessionMetadata = {
+      const utmObj = body.utm || {};
+      const sessionMetadata: Record<string, string> = {
         courseId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
         productId: Array.isArray(items) && items.length > 0 ? 'cart_items' : (courseId || ''),
         isPreorder: isPreorder ? 'true' : 'false',
@@ -139,6 +140,13 @@ export async function POST(request: Request) {
         orderbump: hasOrderBump ? '1' : '0',
         orderBumpType: hasOrderBump ? 'kit-serenite' : '',
         newsletterOptIn: body.newsletterOptIn ? 'true' : 'false',
+        utm_source: String(body.utm_source || utmObj.utm_source || '').substring(0, 100),
+        utm_medium: String(body.utm_medium || utmObj.utm_medium || '').substring(0, 100),
+        utm_campaign: String(body.utm_campaign || utmObj.utm_campaign || '').substring(0, 100),
+        utm_content: String(body.utm_content || utmObj.utm_content || '').substring(0, 100),
+        utm_term: String(body.utm_term || utmObj.utm_term || '').substring(0, 100),
+        fbclid: String(body.fbclid || utmObj.fbclid || '').substring(0, 150),
+        gclid: String(body.gclid || utmObj.gclid || '').substring(0, 150),
         cartItemsJson: Array.isArray(items) && items.length > 0
           ? JSON.stringify(items.map((it: any) => ({
               id: it.id,

@@ -32,6 +32,8 @@ import {
   FileText
 } from 'lucide-react';
 
+import { formatUtmLabel } from '@/lib/utm';
+
 export interface UserPurchaseDetail {
   id: string;
   title: string;
@@ -40,6 +42,7 @@ export interface UserPurchaseDetail {
   type: string;
   slug?: string;
   downloadPdf?: string;
+  utm?: any;
 }
 
 interface AdminUserItem {
@@ -1252,7 +1255,8 @@ export default function SuperadminDashboardPage() {
                     type: p.type,
                     slug: p.slug || p.id,
                     userName: u.name,
-                    userEmail: u.email
+                    userEmail: u.email,
+                    utm: p.utm
                   }))
                 ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -1273,6 +1277,7 @@ export default function SuperadminDashboardPage() {
                           <th className="pb-3 px-3">Montant</th>
                           <th className="pb-3 px-3">Utilisateur</th>
                           <th className="pb-3 px-3">Produit</th>
+                          <th className="pb-3 px-3">Origine / UTM</th>
                           <th className="pb-3 px-3 text-center">E-mail</th>
                         </tr>
                       </thead>
@@ -1300,6 +1305,16 @@ export default function SuperadminDashboardPage() {
                                   <span className="font-bold text-[#332420] text-[11px] line-clamp-1">{ord.title}</span>
                                   <span className="text-[9px] font-extrabold text-[#18757d] uppercase">{ord.type}</span>
                                 </div>
+                              </td>
+                              <td className="py-3.5 px-3 whitespace-nowrap">
+                                {(() => {
+                                  const utmInfo = formatUtmLabel(ord.utm);
+                                  return (
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${utmInfo.badgeColor}`}>
+                                      {utmInfo.label}
+                                    </span>
+                                  );
+                                })()}
                               </td>
                               <td className="py-3.5 px-3 text-center whitespace-nowrap">
                                 <div className="flex items-center justify-center gap-1.5">
