@@ -20,6 +20,7 @@ export async function GET() {
       purchasesCount: number;
       totalSpent: number;
       purchasesDetails: any[];
+      utm?: any;
     }>();
 
     // Default known profiles fallback
@@ -175,6 +176,39 @@ export async function GET() {
       console.warn('[Dashboard Stats] Stripe sync notice:', stripeSyncErr);
     }
 
+    // Helper to resolve UTM attribution by session or user email
+    const resolveUserUtm = (em: string, stripeSessionId?: string) => {
+      const baseSessionId = (stripeSessionId || '').split('_')[0];
+      const sessionUtm = sessionMetadataMap.get(stripeSessionId || '') || sessionMetadataMap.get(baseSessionId);
+      if (sessionUtm && (sessionUtm.utm_source || sessionUtm.fbclid || sessionUtm.gclid)) {
+        return sessionUtm;
+      }
+
+      // Attribution des acheteurs des campagnes Meta Ads
+      const metaAdsBuyers = [
+        'atelierreflexetsens@outlook.fr',
+        'egire.eclosion@gmail.com',
+        'lorafleury@gmail.com',
+        'asminou@msn.com',
+        'sanjullian.jessica@hotmail.fr'
+      ];
+
+      if (metaAdsBuyers.includes(em)) {
+        return {
+          utm_source: 'facebook',
+          utm_medium: 'cpc',
+          utm_campaign: 'lancementgmb-sept26',
+          utm_content: 'lancementgmb-photo-sept26-audiencegd'
+        };
+      }
+
+      if (em === 'tessbeautylab@gmail.com') {
+        return { utm_source: 'direct', utm_campaign: 'organique' };
+      }
+
+      return undefined;
+    };
+
     // 2. Fetch orders
     const { data: orders } = await supabaseServer.from('orders').select('*').order('created_at', { ascending: false });
     if (orders && Array.isArray(orders)) {
@@ -182,15 +216,7 @@ export async function GET() {
         const em = (ord.customer_email || ord.user_email || '').toLowerCase().trim();
         const rawPrice = ord.amount ? Number(ord.amount) : (ord.total_amount_cents ? ord.total_amount_cents / 100 : 0);
         const prodInfo = resolveProductInfo(ord.product_id, rawPrice);
-
-        const baseSessionId = (ord.stripe_session_id || '').split('_')[0];
-        const sessionUtm = sessionMetadataMap.get(ord.stripe_session_id) || sessionMetadataMap.get(baseSessionId);
-
-        const utmData = sessionUtm || (
-          ['atelierreflexetsens@outlook.fr', 'egire.eclosion@gmail.com', 'lorafleury@gmail.com', 'asminou@msn.com', 'sanjullian.jessica@hotmail.fr'].includes(em)
-            ? { utm_source: 'facebook', utm_medium: 'cpc', utm_campaign: 'lancementgmb-sept26', utm_content: 'lancementgmb-photo-sept26-audiencegd' }
-            : (em === 'tessbeautylab@gmail.com' ? { utm_source: 'direct', utm_campaign: 'organique' } : undefined)
-        );
+        const utmData = resolveUserUtm(em, ord.stripe_session_id);
 
         totalOrdersCount += 1;
         totalRevenue += prodInfo.price;
@@ -225,6 +251,7 @@ export async function GET() {
             existing.purchasesCount += 1;
             existing.totalSpent += prodInfo.price;
             existing.purchasesDetails.push(purchaseDetail);
+            if (!existing.utm && utmData) existing.utm = utmData;
           } else {
             accountsMap.set(em, {
               id: ord.id || `o_${Date.now()}`,
@@ -233,7 +260,8 @@ export async function GET() {
               role: 'eleve',
               purchasesCount: 1,
               totalSpent: prodInfo.price,
-              purchasesDetails: [purchaseDetail]
+              purchasesDetails: [purchaseDetail],
+              utm: utmData
             });
           }
         }
@@ -247,6 +275,7 @@ export async function GET() {
         const em = (enr.user_email || enr.email || enr.customer_email || '').toLowerCase().trim();
         const rawPrice = enr.price ? Number(enr.price) : 0;
         const prodInfo = resolveProductInfo(enr.product_id || enr.course_id, rawPrice);
+        const utmData = resolveUserUtm(em, enr.stripe_session_id);
 
         if (em) {
           const existing = accountsMap.get(em);
@@ -257,7 +286,8 @@ export async function GET() {
             date: enr.enrolled_at || enr.created_at || new Date().toISOString(),
             type: enr.item_type || prodInfo.type,
             slug: enr.course_id || enr.product_id,
-            downloadPdf: prodInfo.downloadPdf
+            downloadPdf: prodInfo.downloadPdf,
+            utm: utmData
           };
 
           if (existing) {
@@ -265,6 +295,7 @@ export async function GET() {
               existing.purchasesCount += 1;
               existing.totalSpent += prodInfo.price;
               existing.purchasesDetails.push(detailItem);
+              if (!existing.utm && utmData) existing.utm = utmData;
               totalOrdersCount += 1;
               totalRevenue += prodInfo.price;
             }
@@ -276,7 +307,8 @@ export async function GET() {
               role: 'eleve',
               purchasesCount: 1,
               totalSpent: prodInfo.price,
-              purchasesDetails: [detailItem]
+              purchasesDetails: [detailItem],
+              utm: utmData
             });
             totalOrdersCount += 1;
             totalRevenue += prodInfo.price;

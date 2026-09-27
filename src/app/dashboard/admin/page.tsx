@@ -1256,7 +1256,7 @@ export default function SuperadminDashboardPage() {
                     slug: p.slug || p.id,
                     userName: u.name,
                     userEmail: u.email,
-                    utm: p.utm
+                    utm: p.utm || (u as any).utm
                   }))
                 ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
