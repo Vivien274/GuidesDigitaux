@@ -92,8 +92,11 @@ export function formatUtmLabel(utm?: UtmParams | Record<string, any>): { label: 
     if (content.toLowerCase().includes('carrousel') || content.toLowerCase().includes('carousel')) {
       return { label: 'Meta Ads • Carrousel', source: 'meta', badgeColor: 'bg-purple-100 text-purple-900 border border-purple-200' };
     }
-    if (content.toLowerCase().includes('photo') || content.toLowerCase().includes('postit') || campaign.toLowerCase().includes('photo')) {
-      return { label: 'Meta Ads • Photo Post-it', source: 'meta', badgeColor: 'bg-emerald-100 text-emerald-900 border border-emerald-200' };
+    if (content.toLowerCase().includes('postit')) {
+      return { label: 'Meta Ads • Photo Post-it', source: 'meta', badgeColor: 'bg-amber-100 text-amber-900 border border-amber-200' };
+    }
+    if (content.toLowerCase().includes('photo') || campaign.toLowerCase().includes('photo')) {
+      return { label: 'Meta Ads • Photo (Visage)', source: 'meta', badgeColor: 'bg-emerald-100 text-emerald-900 border border-emerald-200' };
     }
     return { label: content ? `Meta Ads • ${content}` : (campaign ? `Meta Ads • ${campaign}` : 'Meta Ads (Facebook/Insta)'), source: 'meta', badgeColor: 'bg-blue-100 text-blue-900 border border-blue-200' };
   }
