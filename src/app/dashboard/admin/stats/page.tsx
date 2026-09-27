@@ -254,7 +254,7 @@ export default function AdminStatsPage() {
               </div>
               <div>
                 <p className="text-3xl font-black text-emerald-700">
-                  {loading ? '...' : `${data?.summary.conversionRate ?? 0} %`}
+                  {loading ? '...' : (data?.summary.conversionRate ?? '0 %')}
                 </p>
                 <p className="text-xs text-slate-500 mt-1 font-medium">
                   Ratio Visiteurs → Achats validés
