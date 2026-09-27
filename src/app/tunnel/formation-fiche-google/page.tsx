@@ -145,6 +145,44 @@ export default function TunnelFormationFicheGooglePage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Capture et synchronisation de l'email et du panier en temps réel (Récupération des paniers abandonnés)
+  useEffect(() => {
+    const sessionId = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('gd_analytics_session') || `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
+      : '';
+    if (typeof window !== 'undefined' && !sessionStorage.getItem('gd_analytics_session')) {
+      sessionStorage.setItem('gd_analytics_session', sessionId);
+    }
+
+    const items = [
+      { id: 'formation-fiche-google', title: 'Formation Fiche Google (Accès VIP)', price: 29 },
+      ...(hasOrderBump ? [{ id: 'bump-kit-serenite-52-posts', title: 'Kit Sérénité : 52 Idées de Posts Google + Prompts IA', price: 9 }] : [])
+    ];
+
+    const timer = setTimeout(() => {
+      fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'cart_update',
+          session_id: sessionId,
+          page_path: '/tunnel/formation-fiche-google',
+          customer_email: emailInput.trim() || undefined,
+          utm: getStoredUtm(),
+          metadata: {
+            items,
+            total: totalAmount,
+            itemCount: items.length,
+            hasOrderBump,
+            email: emailInput.trim() || undefined
+          }
+        })
+      }).catch(() => {});
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [emailInput, hasOrderBump, totalAmount]);
+
   const handleDirectPayment = async () => {
     if (!emailInput.trim() || !emailInput.includes('@')) {
       alert('Merci de saisir une adresse e-mail valide pour recevoir tes accès.');

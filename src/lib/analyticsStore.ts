@@ -7,6 +7,7 @@ export interface AnalyticsEvent {
   timestamp: number;
   event_type: 'page_view' | 'cart_update';
   session_id: string;
+  customer_email?: string;
   page_path: string;
   page_title?: string;
   referrer?: string;
@@ -14,6 +15,7 @@ export interface AnalyticsEvent {
   device_type?: 'desktop' | 'mobile' | 'tablet';
   user_agent?: string;
   cart_items?: Array<{ id: string; title: string; price: number }>;
+  utm?: any;
 }
 
 const DATA_FILE_PATH = path.join(process.cwd(), 'data', 'analytics_events.json');
@@ -180,13 +182,15 @@ export async function recordAnalyticsEvent(eventData: Partial<AnalyticsEvent>) {
     timestamp: Date.now(),
     event_type: eventData.event_type || 'page_view',
     session_id: eventData.session_id || `sess-${Date.now()}`,
+    customer_email: eventData.customer_email || undefined,
     page_path: eventData.page_path || '/',
     page_title: eventData.page_title,
     referrer: eventData.referrer,
     referrer_category: refCat,
     device_type: eventData.device_type || 'desktop',
     user_agent: eventData.user_agent,
-    cart_items: eventData.cart_items || []
+    cart_items: eventData.cart_items || [],
+    utm: eventData.utm || undefined
   };
 
   events.push(event);
@@ -273,12 +277,30 @@ export async function getAnalyticsStats(period: string = '7d') {
     }))
     .sort((a, b) => b.count - a.count);
 
+  // Fetch actual completed buyer emails to exclude them from abandoned carts list
+  const buyerEmails = new Set<string>();
+  let completedOrdersCount = 0;
+  try {
+    const { data: ordersData, count } = await supabase.from('orders').select('customer_email', { count: 'exact' });
+    completedOrdersCount = count || 7;
+    if (ordersData) {
+      ordersData.forEach((o: any) => {
+        if (o.customer_email) buyerEmails.add(o.customer_email.toLowerCase().trim());
+      });
+    }
+  } catch (e) {
+    completedOrdersCount = 7;
+  }
+
   // Cart Abandonments
   const cartEvents = filteredEvents.filter(e => e.event_type === 'cart_update');
   const abandonedCartsMap = new Map<string, AnalyticsEvent>();
   cartEvents.forEach(e => {
     if (e.cart_items && e.cart_items.length > 0) {
-      abandonedCartsMap.set(e.session_id, e);
+      const em = e.customer_email ? e.customer_email.toLowerCase().trim() : null;
+      if (!em || !buyerEmails.has(em)) {
+        abandonedCartsMap.set(e.session_id, e);
+      }
     }
   });
 
@@ -286,26 +308,19 @@ export async function getAnalyticsStats(period: string = '7d') {
     const total = (e.cart_items || []).reduce((acc, item) => acc + (item.price || 0), 0);
     return {
       sessionId: e.session_id,
-      lastSeen: new Date(e.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      customerEmail: e.customer_email || null,
+      lastSeen: new Date(e.timestamp).toISOString(),
       pagePath: e.page_path,
       deviceType: e.device_type || 'mobile',
       items: e.cart_items || [],
       total,
-      itemCount: (e.cart_items || []).length
+      itemCount: (e.cart_items || []).length,
+      utm: e.utm || null
     };
   });
 
   const abandonedCartsCount = abandonedCartsList.length;
   const abandonedTotalValue = abandonedCartsList.reduce((acc, c) => acc + c.total, 0);
-
-  // Fetch actual completed orders from Supabase DB to compute real conversion rate
-  let completedOrdersCount = 0;
-  try {
-    const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true });
-    completedOrdersCount = count || 7;
-  } catch (e) {
-    completedOrdersCount = 7;
-  }
 
   const conversionRate = totalVisitors > 0 ? ((completedOrdersCount / totalVisitors) * 100).toFixed(1) : '0';
 
