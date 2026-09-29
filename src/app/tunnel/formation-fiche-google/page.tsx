@@ -521,7 +521,11 @@ export default function TunnelFormationFicheGooglePage() {
     },
     {
       q: "Est-ce accessible même si je ne suis pas à l'aise avec l'informatique ?",
-      a: "Absolument ! La formation a été pensée spécialement pour les artisans, créateurs et débutants. Tout est filmé en pas-à-pas avec des partages d'écran commentés simplement, sans aucun terme technique barbare."
+      a: "Absolument ! La formation a été pensée spécialement pour les artisans, créateurs, thérapeutes et indépendants débutants. Tout est filmé en pas-à-pas avec des partages d'écran commentés simplement, sans aucun terme technique barbare."
+    },
+    {
+      q: "Je suis thérapeute, psychologue, coach ou praticien bien-être : est-ce adapté à mon activité ?",
+      a: "Oui, à 100 % ! Les recherches locales sur Google pour les sophrologues, psychologues, naturopathes, ostéopathes ou praticiens bien-être font partie des plus fréquentes sur Google Maps. La formation t'explique précisément comment renseigner tes spécialités de consultation (cabinet ou visio), configurer tes prises de rendez-vous et rassurer tes futurs clients grâce aux avis vérifiés."
     },
     {
       q: "Je travaille à domicile ou sur chantier : dois-je afficher mon adresse personnelle ?",
@@ -587,7 +591,7 @@ export default function TunnelFormationFicheGooglePage() {
           
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#e6f4f3] text-[#18757d] text-xs font-black uppercase tracking-wider border border-[#bce3e0]">
             <MapPin className="w-4 h-4 text-[#18757d]" />
-            <span>Spécial Artisans, Créateurs & Commerçants Locaux</span>
+            <span>Spécial Artisans, Créateurs, Thérapeutes & Praticiens Locaux</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#332420] tracking-tight leading-tight max-w-4xl mx-auto">
@@ -595,7 +599,7 @@ export default function TunnelFormationFicheGooglePage() {
           </h1>
 
           <p className="text-base sm:text-lg text-[#5e4d46] max-w-3xl mx-auto leading-relaxed font-medium">
-            La méthode vidéo pas-à-pas, concrète et sans jargon pour positionner ton atelier, ta boutique ou tes prestations en haut des recherches Google et Google Maps dans ta ville.
+            La méthode vidéo pas-à-pas, concrète et sans jargon pour positionner ton atelier, ton cabinet, ta boutique ou tes prestations en haut des recherches Google et Google Maps dans ta ville.
           </p>
 
           {/* VISUEL MOCKUP HAUTE DÉFINITION */}
@@ -968,19 +972,19 @@ export default function TunnelFormationFicheGooglePage() {
               <ul className="space-y-3 text-xs sm:text-sm text-emerald-950 font-medium leading-relaxed">
                 <li className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 font-bold" />
-                  <span>Tu es <strong>artisan d'art ou du bâtiment</strong> (menuisier, céramiste, plombier, couturière, créateur de bijoux…).</span>
+                  <span>Tu es <strong>artisan d'art ou du bâtiment</strong> (céramiste, menuisier, plombier, couturière, créateur de bijoux…).</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 font-bold" />
-                  <span>Tu as une <strong>boutique, un atelier ou un commerce local</strong> et tu veux que tes voisins te trouvent immédiatement.</span>
+                  <span>Tu es <strong>thérapeute, psychologue, coach ou praticien bien-être</strong> (sophrologue, naturopathe, ostéopathe, hypnothérapeute…) et tu veux remplir ton cabinet ou tes consultations.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 font-bold" />
-                  <span>Tu es <strong>thérapeute, coach, photographe ou prestataire</strong> intervenant auprès d'une clientèle locale.</span>
+                  <span>Tu as une <strong>boutique, un atelier, un cabinet ou un commerce local</strong> et tu veux que tes voisins te trouvent immédiatement.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 font-bold" />
-                  <span>Tu souhaites une solution efficace et autonome sans payer une agence 500 € chaque mois.</span>
+                  <span>Tu souhaites une solution efficace et 100% autonome sans payer une agence 500 € chaque mois.</span>
                 </li>
               </ul>
             </div>
@@ -1430,7 +1434,7 @@ export default function TunnelFormationFicheGooglePage() {
                   <ShieldCheck className="w-3.5 h-3.5 text-[#18757d]" />
                   Paiement 100% Sécurisé Stripe
                 </span>
-                <h3 className="text-xl font-black text-[#332420] mt-1">Cap Visibilité Google : Le GPS pour Artisans & Créateurs</h3>
+                <h3 className="text-xl font-black text-[#332420] mt-1">Cap Visibilité Google : Le GPS pour Artisans, Créateurs & Praticiens</h3>
                 <p className="text-xs text-slate-500 font-semibold">
                   {hasOrderBump
                     ? '7 Modules (27 Cours Vidéo) • Prompts IA • 3 Bonus PDF • Le Kit Sérénité (52 Posts & Prompts IA)'
@@ -1456,7 +1460,7 @@ export default function TunnelFormationFicheGooglePage() {
                 autoComplete="email"
                 aria-label="Adresse e-mail pour la réception des accès"
                 type="email"
-                placeholder="ex: marie.artisanat@gmail.com"
+                placeholder="ex: contact@mon-activite.fr ou marie.atelier@gmail.com"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-[#eee7da] bg-[#faf8f5] text-sm text-[#332420] font-medium focus:ring-2 focus:ring-[#18757d] focus:bg-white focus:outline-hidden transition-all"
