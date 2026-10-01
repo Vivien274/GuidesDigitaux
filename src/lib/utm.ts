@@ -86,6 +86,9 @@ export function formatUtmLabel(utm?: UtmParams | Record<string, any>): { label: 
   const medium = (utm.utm_medium || utm.medium || '').toLowerCase();
 
   if (source.includes('facebook') || source.includes('instagram') || source.includes('meta') || utm.fbclid) {
+    if (content.toLowerCase().includes('retarget') || campaign.toLowerCase().includes('retarget')) {
+      return { label: 'Meta Ads • Retargeting 🔥', source: 'meta', badgeColor: 'bg-orange-100 text-orange-900 border border-orange-200' };
+    }
     if (content.toLowerCase().includes('reel') || medium.includes('reel') || campaign.toLowerCase().includes('reel')) {
       return { label: 'Meta Ads • Reel Vidéo', source: 'meta', badgeColor: 'bg-pink-100 text-pink-900 border border-pink-200' };
     }

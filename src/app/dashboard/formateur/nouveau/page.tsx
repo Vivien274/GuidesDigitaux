@@ -72,7 +72,7 @@ export default function NewCourseWizardPage() {
             {
               id: 'file-init-1',
               name: 'Support PDF N°1 - Feuille de route',
-              url: 'https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp'
+              url: ''
             }
           ],
           links: [
@@ -90,8 +90,8 @@ export default function NewCourseWizardPage() {
   // STEP 3: PARTAGE À LA FIN
   const [congratulationsMsg, setCongratulationsMsg] = useState('Bravo ! Tu as terminé avec succès l\'ensemble des leçons de cette formation.');
   const [certificateEnabled, setCertificateEnabled] = useState(true);
-  const [bonusDocTitle, setBonusDocTitle] = useState('Checklist ultime de contrôle post-formation');
-  const [bonusDocUrl, setBonusDocUrl] = useState('https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp');
+  const [bonusDocTitle, setBonusDocTitle] = useState('');
+  const [bonusDocUrl, setBonusDocUrl] = useState('');
   const [communityLink, setCommunityLink] = useState('');
 
   // Module & Lesson Handlers

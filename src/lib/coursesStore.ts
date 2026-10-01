@@ -591,8 +591,8 @@ const DEFAULT_COURSES: Course[] = [
     "status": "Planifié",
     "category": "formation",
     "congratulationsMsg": "Bravo ! Tu as terminé avec succès l'ensemble des leçons de cette formation.",
-    "bonusDocTitle": "Checklist ultime de contrôle post-formation",
-    "bonusDocUrl": "https://www.guides-digitaux.com/wp-content/uploads/2026/02/checklist-a-verifier-avant-le-lancement-du-site.webp",
+    "bonusDocTitle": "",
+    "bonusDocUrl": "",
     "modules": [
       {
         "id": "10000000-0000-4000-a000-000000000000",
@@ -924,7 +924,18 @@ export function getStoredCourses(): Course[] {
   try {
     const data = localStorage.getItem('gd_custom_courses');
     if (data) {
-      return JSON.parse(data);
+      const parsed: Course[] = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        return parsed.map(c => {
+          if (
+            (c.bonusDocUrl && c.bonusDocUrl.includes('checklist-a-verifier-avant-le-lancement-du-site')) ||
+            (c.bonusDocTitle && c.bonusDocTitle.includes('Checklist'))
+          ) {
+            return { ...c, bonusDocTitle: '', bonusDocUrl: '' };
+          }
+          return c;
+        });
+      }
     }
   } catch (e) {
     console.error('Failed to parse gd_custom_courses', e);
