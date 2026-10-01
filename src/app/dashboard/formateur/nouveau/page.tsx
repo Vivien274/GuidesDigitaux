@@ -90,6 +90,7 @@ export default function NewCourseWizardPage() {
   // STEP 3: PARTAGE À LA FIN
   const [congratulationsMsg, setCongratulationsMsg] = useState('Bravo ! Tu as terminé avec succès l\'ensemble des leçons de cette formation.');
   const [certificateEnabled, setCertificateEnabled] = useState(true);
+  const [bonusDocEnabled, setBonusDocEnabled] = useState(false);
   const [bonusDocTitle, setBonusDocTitle] = useState('');
   const [bonusDocUrl, setBonusDocUrl] = useState('');
   const [communityLink, setCommunityLink] = useState('');
@@ -285,8 +286,9 @@ export default function NewCourseWizardPage() {
       modules,
       congratulationsMsg,
       certificateEnabled,
-      bonusDocTitle,
-      bonusDocUrl,
+      bonusDocEnabled,
+      bonusDocTitle: bonusDocEnabled ? bonusDocTitle.trim() : '',
+      bonusDocUrl: bonusDocEnabled ? bonusDocUrl.trim() : '',
       communityLink
     };
 
@@ -1122,32 +1124,63 @@ export default function NewCourseWizardPage() {
                     />
                   </div>
 
-                  <div className="space-y-4 p-5 bg-[#faf8f5] rounded-2xl border border-[#eee7da]">
-                    <span className="text-xs font-extrabold text-[#18757d] uppercase tracking-wider block">
-                      Document / Fichier Bonus Partagé à la Fin
-                    </span>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-extrabold text-[#332420]">Nom du document final :</label>
-                        <input
-                          type="text"
-                          value={bonusDocTitle}
-                          onChange={(e) => setBonusDocTitle(e.target.value)}
-                          className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3 text-xs text-[#332420]"
-                        />
+                  {/* BONUS DOCUMENT TOGGLE & INPUTS */}
+                  <div className="space-y-4">
+                    <div className="p-5 bg-[#faf8f5] rounded-2xl border border-[#eee7da] flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Gift className="w-6 h-6 text-[#18757d] shrink-0" />
+                        <div>
+                          <h4 className="text-xs font-extrabold text-[#332420]">Document / Fichier bonus partagé à la fin</h4>
+                          <p className="text-[11px] text-slate-500">Offrir un document ou guide complémentaire téléchargeable lorsque l'élève termine la formation.</p>
+                        </div>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-extrabold text-[#332420]">Lien du PDF / Fichier final :</label>
-                        <input
-                          type="text"
-                          value={bonusDocUrl}
-                          onChange={(e) => setBonusDocUrl(e.target.value)}
-                          className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3 text-xs text-[#332420]"
-                        />
-                      </div>
+                      <input
+                        type="checkbox"
+                        checked={bonusDocEnabled}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setBonusDocEnabled(checked);
+                          if (!checked) {
+                            setBonusDocTitle('');
+                            setBonusDocUrl('');
+                          }
+                        }}
+                        className="w-5 h-5 accent-[#18757d] cursor-pointer"
+                      />
                     </div>
+
+                    {bonusDocEnabled && (
+                      <div className="space-y-4 p-5 bg-[#faf8f5] rounded-2xl border border-[#eee7da] animate-in fade-in duration-200">
+                        <span className="text-xs font-extrabold text-[#18757d] uppercase tracking-wider block">
+                          Configuration du Document Bonus
+                        </span>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-extrabold text-[#332420]">Nom du document final :</label>
+                            <input
+                              type="text"
+                              value={bonusDocTitle}
+                              onChange={(e) => setBonusDocTitle(e.target.value)}
+                              placeholder="Ex: Guide récapitulatif..."
+                              className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3 text-xs text-[#332420]"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-extrabold text-[#332420]">Lien du PDF / Fichier final :</label>
+                            <input
+                              type="text"
+                              value={bonusDocUrl}
+                              onChange={(e) => setBonusDocUrl(e.target.value)}
+                              placeholder="https://..."
+                              className="w-full bg-white border border-[#eee7da] rounded-xl px-4 py-3 text-xs text-[#332420]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">

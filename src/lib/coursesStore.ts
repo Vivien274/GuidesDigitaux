@@ -69,6 +69,7 @@ export interface Course {
   modules: Module[];
   congratulationsMsg?: string;
   certificateEnabled?: boolean;
+  bonusDocEnabled?: boolean;
   bonusDocTitle?: string;
   bonusDocUrl?: string;
   communityLink?: string;

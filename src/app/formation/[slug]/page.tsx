@@ -443,6 +443,18 @@ export default function FormationViewerPage() {
                         Afficher / Télécharger mon Certificat
                       </button>
 
+                      {((courseData?.bonusDocEnabled && courseData?.bonusDocUrl) || (courseData?.bonusDocUrl && courseData.bonusDocUrl.trim() !== '' && !courseData.bonusDocUrl.includes('checklist-a-verifier-avant-le-lancement-du-site'))) && (
+                        <a
+                          href={courseData.bonusDocUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full sm:w-auto px-6 py-3.5 text-xs font-extrabold text-white bg-white/20 hover:bg-white/30 rounded-xl border border-white/30 text-center uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          {courseData.bonusDocTitle || 'Télécharger le document bonus'}
+                        </a>
+                      )}
+
                       {courseData?.communityLink && courseData.communityLink.trim() !== '' && (
                         <a
                           href={courseData.communityLink}
