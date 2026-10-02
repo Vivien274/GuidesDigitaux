@@ -189,11 +189,6 @@ export default function TunnelFormationFicheGooglePage() {
       return;
     }
 
-    if (cardNumber.replace(/\s/g, '').length < 15) {
-      alert('Merci de renseigner un numéro de carte bancaire valide.');
-      return;
-    }
-
     setIsLoading(true);
 
     event('InitiateCheckout', {
@@ -231,7 +226,7 @@ export default function TunnelFormationFicheGooglePage() {
         }
       }
 
-      // Inscription automatique Mailchimp si renseigné, avec tags formation-gmb, newsletter (si acceptée) et kit-serenite
+      // Inscription automatique Mailchimp si renseigné
       try {
         const directTags = ['formation-gmb', 'client'];
         if (newsletterOptIn) {
@@ -251,10 +246,36 @@ export default function TunnelFormationFicheGooglePage() {
         }).catch(err => console.warn('Notice Mailchimp direct subscribe:', err));
       } catch (e) {}
 
-      // Simulation ou appel API de finalisation
-      await new Promise(r => setTimeout(r, 1200));
+      // Création de la session Stripe Checkout officielle
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId: 'formation-fiche-google',
+          productId: 'formation-fiche-google',
+          courseTitle: hasOrderBump
+            ? 'Cap Visibilité Google + Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA'
+            : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
+          title: hasOrderBump
+            ? 'Cap Visibilité Google + Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA'
+            : 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
+          price: totalAmount,
+          hasOrderBump,
+          newsletterOptIn: !!newsletterOptIn,
+          customerEmail: emailInput.trim(),
+          utm: getStoredUtm(),
+          cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-fiche-google',
+          successUrl: `https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-fiche-google&price=${totalAmount}&orderbump=${hasOrderBump ? '1' : '0'}&email=${encodeURIComponent(emailInput.trim())}`
+        })
+      });
 
-      router.push(`/tunnel/confirmation?id=formation-fiche-google&session_id=stripe_direct_${Date.now()}&price=${totalAmount}&orderbump=${hasOrderBump ? '1' : '0'}&email=${encodeURIComponent(emailInput.trim())}`);
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Une erreur est survenue lors de l\'initialisation du paiement sécurisé Stripe.');
+        setIsLoading(false);
+      }
     } catch (e) {
       console.error('Direct checkout error', e);
       alert('Une erreur est survenue lors de la validation du paiement.');
