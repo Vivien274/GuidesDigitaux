@@ -3257,5 +3257,79 @@
     "referrer": "https://www.google.fr/",
     "referrer_category": "Google Search",
     "device_type": "desktop"
+  },
+  {
+    "id": "evt-1790667694862-dugmi",
+    "timestamp": 1790667694862,
+    "event_type": "page_view",
+    "session_id": "sess-1790667694446-lanfu0n",
+    "page_path": "/tunnel/formation-fiche-google",
+    "page_title": "Guides Digitaux | Formations & Guides pour Artisans et Créateurs",
+    "referrer": "",
+    "referrer_category": "Accès Direct",
+    "device_type": "desktop",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "cart_items": []
+  },
+  {
+    "id": "evt-1790667695072-ow95h",
+    "timestamp": 1790667695072,
+    "event_type": "cart_update",
+    "session_id": "sess-1790667694446-lanfu0n",
+    "page_path": "/tunnel/formation-fiche-google",
+    "referrer_category": "Accès Direct",
+    "device_type": "desktop",
+    "cart_items": [],
+    "utm": {}
+  },
+  {
+    "id": "evt-1790946265806-5n1c6",
+    "timestamp": 1790946265807,
+    "event_type": "page_view",
+    "session_id": "sess-1790946265585-urwbvpc",
+    "page_path": "/produit/kit-serenite",
+    "page_title": "Guides Digitaux | Formations & Guides pour Artisans et Créateurs",
+    "referrer": "",
+    "referrer_category": "Accès Direct",
+    "device_type": "desktop",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "cart_items": []
+  },
+  {
+    "id": "evt-1790946451560-d9lkv",
+    "timestamp": 1790946451560,
+    "event_type": "page_view",
+    "session_id": "sess-1790946451232-6a1qgh2",
+    "page_path": "/tunnel/formation-fiche-google",
+    "page_title": "Guides Digitaux | Formations & Guides pour Artisans et Créateurs",
+    "referrer": "",
+    "referrer_category": "Accès Direct",
+    "device_type": "desktop",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "cart_items": []
+  },
+  {
+    "id": "evt-1790946451903-3hyh0",
+    "timestamp": 1790946451903,
+    "event_type": "cart_update",
+    "session_id": "sess-1790946451232-6a1qgh2",
+    "page_path": "/tunnel/formation-fiche-google",
+    "referrer_category": "Accès Direct",
+    "device_type": "desktop",
+    "cart_items": [],
+    "utm": {}
+  },
+  {
+    "id": "evt-1790946490292-p1utu",
+    "timestamp": 1790946490292,
+    "event_type": "page_view",
+    "session_id": "sess-1790946265585-urwbvpc",
+    "page_path": "/produit/kit-serenite",
+    "page_title": "Guides Digitaux | Formations & Guides pour Artisans et Créateurs",
+    "referrer": "",
+    "referrer_category": "Accès Direct",
+    "device_type": "desktop",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "cart_items": []
   }
 ]
