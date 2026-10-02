@@ -27,7 +27,9 @@ import {
   Copy,
   Check,
   X,
-  Tag
+  Tag,
+  ShoppingBag,
+  CheckCircle2
 } from 'lucide-react';
 
 interface StatsData {
@@ -35,6 +37,8 @@ interface StatsData {
     totalVisitors: number;
     totalPageViews: number;
     pagesPerSession: string;
+    completedOrdersCount: number;
+    completedTotalRevenue: number;
     abandonedCartsCount: number;
     abandonedTotalValue: number;
     conversionRate: string;
@@ -187,77 +191,101 @@ export default function AdminStatsPage() {
       <section className="py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           
-          {/* KPI CARDS GRID */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* KPI CARDS GRID (5 Colonnes) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Visitors Card */}
-            <div className="bg-white p-6 rounded-3xl border border-[#eee7da] shadow-sm flex flex-col justify-between space-y-3">
+            <div className="bg-white p-5 rounded-3xl border border-[#eee7da] shadow-sm flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Visiteurs Uniques</span>
-                <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#18757d] flex items-center justify-center font-bold">
-                  <Users className="w-5 h-5" />
+                <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Visiteurs Uniques</span>
+                <div className="w-9 h-9 rounded-2xl bg-teal-50 text-[#18757d] flex items-center justify-center font-bold">
+                  <Users className="w-4 h-4" />
                 </div>
               </div>
               <div>
                 <p className="text-3xl font-black text-[#332420]">
                   {loading ? '...' : (data?.summary.totalVisitors ?? 0)}
                 </p>
-                <p className="text-xs text-slate-500 mt-1 font-medium flex items-center gap-1">
-                  <TrendingUp className="w-3.5 h-3.5 text-emerald-600 inline" />
-                  {data?.summary.pagesPerSession ?? 0} pages / session en moyenne
+                <p className="text-[11px] text-slate-500 mt-1 font-medium flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-emerald-600 inline shrink-0" />
+                  {data?.summary.pagesPerSession ?? 0} pages / session
                 </p>
               </div>
             </div>
 
             {/* Pageviews Card */}
-            <div className="bg-white p-6 rounded-3xl border border-[#eee7da] shadow-sm flex flex-col justify-between space-y-3">
+            <div className="bg-white p-5 rounded-3xl border border-[#eee7da] shadow-sm flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Pages Vues Totales</span>
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                  <Eye className="w-5 h-5" />
+                <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Pages Vues</span>
+                <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                  <Eye className="w-4 h-4" />
                 </div>
               </div>
               <div>
                 <p className="text-3xl font-black text-[#332420]">
                   {loading ? '...' : (data?.summary.totalPageViews ?? 0)}
                 </p>
-                <p className="text-xs text-slate-500 mt-1 font-medium">
-                  Pages vues cumulées sur la période
+                <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                  Pages vues cumulées
+                </p>
+              </div>
+            </div>
+
+            {/* Ventes / Commandes Validées Card */}
+            <div className="bg-white p-5 rounded-3xl border-2 border-emerald-200 bg-emerald-50/20 shadow-sm flex flex-col justify-between space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black text-emerald-800 uppercase tracking-wider">Ventes Validées</span>
+                <div className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <ShoppingBag className="w-4 h-4" />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-black text-emerald-700">
+                    {loading ? '...' : (data?.summary.completedOrdersCount ?? 0)}
+                  </p>
+                  <span className="text-xs font-black text-emerald-600 uppercase">
+                    {(data?.summary.completedOrdersCount ?? 0) > 1 ? 'commandes' : 'commande'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-700 font-black mt-1 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 inline shrink-0" />
+                  {loading ? '...' : `${data?.summary.completedTotalRevenue ?? 0} € encaissés`}
+                </p>
+              </div>
+            </div>
+
+            {/* Conversion Rate Card */}
+            <div className="bg-white p-5 rounded-3xl border border-[#eee7da] shadow-sm flex flex-col justify-between space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Taux Conversion</span>
+                <div className="w-9 h-9 rounded-2xl bg-teal-50 text-[#18757d] flex items-center justify-center font-bold">
+                  <Percent className="w-4 h-4" />
+                </div>
+              </div>
+              <div>
+                <p className="text-3xl font-black text-[#18757d]">
+                  {loading ? '...' : (data?.summary.conversionRate ?? '0 %')}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                  Visiteurs → Achats
                 </p>
               </div>
             </div>
 
             {/* Cart Abandonments Card */}
-            <div className="bg-white p-6 rounded-3xl border border-[#eee7da] shadow-sm flex flex-col justify-between space-y-3">
+            <div className="bg-white p-5 rounded-3xl border border-[#eee7da] shadow-sm flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Paniers Abandonnés</span>
-                <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-                  <ShoppingCart className="w-5 h-5" />
+                <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Paniers Non Finalisés</span>
+                <div className="w-9 h-9 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+                  <ShoppingCart className="w-4 h-4" />
                 </div>
               </div>
               <div>
                 <p className="text-3xl font-black text-rose-600">
                   {loading ? '...' : (data?.summary.abandonedCartsCount ?? 0)}
                 </p>
-                <p className="text-xs text-rose-500 font-bold mt-1">
-                  {loading ? '...' : `${data?.summary.abandonedTotalValue ?? 0} €`} d'opportunités à relancer
-                </p>
-              </div>
-            </div>
-
-            {/* Conversion Rate Card */}
-            <div className="bg-white p-6 rounded-3xl border border-[#eee7da] shadow-sm flex flex-col justify-between space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Taux de Conversion</span>
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                  <Percent className="w-5 h-5" />
-                </div>
-              </div>
-              <div>
-                <p className="text-3xl font-black text-emerald-700">
-                  {loading ? '...' : (data?.summary.conversionRate ?? '0 %')}
-                </p>
-                <p className="text-xs text-slate-500 mt-1 font-medium">
-                  Ratio Visiteurs → Achats validés
+                <p className="text-[11px] text-rose-500 font-bold mt-1 truncate">
+                  {loading ? '...' : `${data?.summary.abandonedTotalValue ?? 0} €`} à relancer
                 </p>
               </div>
             </div>

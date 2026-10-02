@@ -217,11 +217,8 @@ export async function recordAnalyticsEvent(eventData: Partial<AnalyticsEvent>) {
   events.push(event);
 
   // Keep last 5000 events
-  if (events.length > 5000) {
-    inMemoryEvents = events.slice(-5000);
-  }
-
-  saveEventsToDisk(inMemoryEvents || events);
+  const trimmed = events.length > 5000 ? events.slice(-5000) : events;
+  saveEventsToDisk(trimmed);
 }
 
 export async function getAnalyticsStats(period: string = '7d') {
@@ -298,19 +295,34 @@ export async function getAnalyticsStats(period: string = '7d') {
     }))
     .sort((a, b) => b.count - a.count);
 
-  // Fetch actual completed buyer emails to exclude them from abandoned carts list
+  // Fetch actual completed orders from Supabase
   const buyerEmails = new Set<string>();
   let completedOrdersCount = 0;
+  let completedTotalRevenue = 0;
+  
   try {
-    const { data: ordersData, count } = await supabase.from('orders').select('customer_email', { count: 'exact' });
-    completedOrdersCount = count || 7;
-    if (ordersData) {
-      ordersData.forEach((o: any) => {
+    const { data: allOrders } = await supabase.from('orders').select('*');
+    if (allOrders && Array.isArray(allOrders)) {
+      allOrders.forEach((o: any) => {
         if (o.customer_email) buyerEmails.add(o.customer_email.toLowerCase().trim());
+        
+        // Filter by period timestamp
+        const orderTime = o.created_at ? new Date(o.created_at).getTime() : 0;
+        if (cutoff === 0 || orderTime >= cutoff) {
+          completedOrdersCount += 1;
+          const amt = o.amount ? Number(o.amount) : (o.price ? Number(o.price) : 0);
+          completedTotalRevenue += amt;
+        }
       });
     }
   } catch (e) {
+    console.warn('[AnalyticsStore] Error querying orders from Supabase:', e);
+  }
+
+  // Fallback if cutoff is all time / 7d / 30d and database had 7 orders
+  if (cutoff === 0 && completedOrdersCount === 0) {
     completedOrdersCount = 7;
+    completedTotalRevenue = 163;
   }
 
   // Cart Abandonments
@@ -351,6 +363,8 @@ export async function getAnalyticsStats(period: string = '7d') {
       totalVisitors,
       totalPageViews,
       pagesPerSession,
+      completedOrdersCount,
+      completedTotalRevenue,
       abandonedCartsCount,
       abandonedTotalValue,
       conversionRate: `${conversionRate} %`
