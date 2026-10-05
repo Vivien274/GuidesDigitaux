@@ -34,7 +34,7 @@ import {
 import { useRouter } from 'next/navigation';
 
 export default function FormateurDashboardPage() {
-  const { user, role, logout } = useAuth();
+  const { user, role, logout, isAuthLoading } = useAuth();
   const router = useRouter();
   const [coursesList, setCoursesList] = useState<Course[]>([]);
   const [statsMap, setStatsMap] = useState<Record<string, { enrolledCount: number; completedCount: number; completionPercentage: number }>>({});
@@ -62,15 +62,16 @@ export default function FormateurDashboardPage() {
   };
 
   useEffect(() => {
+    if (isAuthLoading) return;
     if (!user) {
-      router.push('/mon-compte');
+      router.replace('/mon-compte');
       return;
     }
     if (role !== 'formateur' && role !== 'superadmin') {
-      router.push('/dashboard/eleve');
+      router.replace('/dashboard/eleve');
       return;
     }
-  }, [user, role, router]);
+  }, [isAuthLoading, user, role, router]);
 
   useEffect(() => {
     async function loadData() {

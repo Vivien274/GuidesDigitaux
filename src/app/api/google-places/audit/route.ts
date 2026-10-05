@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getRequestSession } from '@/lib/routeAuth';
 
 // Helper pour résoudre les redirections de liens courts Google Maps (ex: maps.app.goo.gl, share.google) et extraire le Place ID
 async function resolveGoogleMapsInput(rawInput: string): Promise<{ placeId?: string; resolvedQuery: string }> {
@@ -91,48 +91,38 @@ async function resolveGoogleMapsInput(rawInput: string): Promise<{ placeId?: str
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { query, url, businessName, city, clientToken, userEmail, manualRating, manualReviewCount } = body;
+    const { query, url, businessName, city, manualRating, manualReviewCount } = body;
 
-    // 1. Contrôle de sécurité d'accès Acheteur / Membre
-    const referer = req.headers.get('referer') || '';
-    const isInternalRequest = referer.includes('/outils/calculateur-fiche-google') || referer.includes('/tunnel/confirmation') || referer.includes('/dashboard/eleve');
-    
-    // Vérification de la session utilisateur Supabase SSR
-    let isAuthorized = false;
-    let authUserEmail = userEmail;
+    // 1. Access is derived exclusively from the signed server session and paid orders.
+    const session = await getRequestSession();
+    let isAuthorized = session?.role === 'superadmin' || session?.role === 'formateur';
 
-    try {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        authUserEmail = user.email;
-        const { data: orders } = await supabaseAdmin
+    if (session && !isAuthorized) {
+      const [{ data: ordersByUser, error: userOrdersError }, { data: ordersByEmail, error: emailOrdersError }] = await Promise.all([
+        supabaseAdmin
           .from('orders')
-          .select('id, product_id')
-          .eq('user_id', user.id)
-          .eq('status', 'paid');
+          .select('product_id')
+          .eq('user_id', session.userId)
+          .eq('status', 'paid'),
+        supabaseAdmin
+          .from('orders')
+          .select('product_id')
+          .eq('customer_email', session.email)
+          .eq('status', 'paid'),
+      ]);
 
-        const hasProduct = orders?.some(o => 
-          o.product_id.includes('google') || 
-          o.product_id.includes('calculateur') ||
-          o.product_id.includes('orderbump')
-        );
-
-        if (
-          hasProduct || 
-          user.email === 'contact@guides-digitaux.com' || 
-          user.email?.includes('admin') || 
-          user.email?.includes('stephanie') || 
-          user.email?.includes('stratec-digital.com')
-        ) {
-          isAuthorized = true;
-        }
+      if (userOrdersError || emailOrdersError) {
+        throw userOrdersError || emailOrdersError;
       }
-    } catch (authCheckErr) {
-      // Session non active
+
+      const paidOrders = [...(ordersByUser || []), ...(ordersByEmail || [])];
+      isAuthorized = paidOrders.some(order => {
+        const productId = String(order.product_id || '').toLowerCase();
+        return productId.includes('google') || productId.includes('calculateur') || productId.includes('orderbump');
+      });
     }
 
-    if (clientToken || isInternalRequest || isAuthorized || process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development') {
       isAuthorized = true;
     }
 
@@ -143,7 +133,10 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    const apiKey = process.env.GOOGLE_PLACES_API_KEY || 'AIzaSyCrvvH4CDd2aloQA4vXacXUGzYbiYpcqZU';
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY?.trim();
+    if (!apiKey) {
+      return NextResponse.json({ found: false, error: 'Service Google Places indisponible.' }, { status: 503 });
+    }
 
     // Résolution du terme de recherche ou du Place ID direct
     let directPlaceId: string | undefined;

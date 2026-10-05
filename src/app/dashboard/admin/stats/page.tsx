@@ -73,7 +73,7 @@ interface StatsData {
 }
 
 export default function AdminStatsPage() {
-  const { user, role } = useAuth();
+  const { user, role, isAuthLoading } = useAuth();
   const router = useRouter();
 
   const [period, setPeriod] = useState<string>('7d');
@@ -90,19 +90,15 @@ export default function AdminStatsPage() {
   const [copiedBody, setCopiedBody] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('gd_auth_user');
-      const parsedRole = savedUser ? JSON.parse(savedUser).role : role;
-      if (!savedUser && !user) {
-        router.push('/mon-compte');
-        return;
-      }
-      if (parsedRole !== 'superadmin' && role !== 'superadmin') {
-        router.push('/dashboard/eleve');
-        return;
-      }
+    if (isAuthLoading) return;
+    if (!user) {
+      router.replace('/mon-compte');
+      return;
     }
-  }, [user, role, router]);
+    if (role !== 'superadmin') {
+      router.replace('/dashboard/eleve');
+    }
+  }, [isAuthLoading, user, role, router]);
 
   const loadStats = async (selectedPeriod: string = period) => {
     setLoading(true);

@@ -25,21 +25,6 @@ export interface EnrolledCourseItem {
   productType?: 'simple' | 'bundle';
 }
 
-export function isSuperAdminEmail(email?: string | null): boolean {
-  if (!email) return false;
-  const normalized = email.toLowerCase().trim();
-  return (
-    normalized === 'contact@guides-digitaux.com' ||
-    normalized === 'stephanie@stratec-digital.com' ||
-    normalized === 'stephanie@guides-digitaux.com' ||
-    normalized === 'vivien274@gmail.com' ||
-    normalized.includes('stratec-digital.com') ||
-    normalized.includes('guides-digitaux.com') ||
-    normalized.includes('admin') ||
-    normalized.includes('stephanie')
-  );
-}
-
 export function getAllCatalogProductsAsPurchases(): EnrolledCourseItem[] {
   return DEFAULT_PRODUCTS.map((prod) => {
     const isPdf = prod.category === 'ebook' || prod.category === 'checklist' || !!prod.downloadPdf;
@@ -92,11 +77,6 @@ export function getUserPurchases(email?: string | null): EnrolledCourseItem[] {
   const normalized = (email || '').toLowerCase().trim();
   if (!normalized || typeof window === 'undefined') return [];
 
-  // 1. Accès Super-Admin : Accès complet à l'ensemble du catalogue
-  if (isSuperAdminEmail(normalized)) {
-    return getAllCatalogProductsAsPurchases();
-  }
-
   try {
     const raw = localStorage.getItem(getUserPurchasesKey(normalized));
     if (raw) {
@@ -109,17 +89,6 @@ export function getUserPurchases(email?: string | null): EnrolledCourseItem[] {
 export async function getUserPurchasesAsync(email?: string | null): Promise<EnrolledCourseItem[]> {
   if (!email) return [];
   const normalized = email.toLowerCase().trim();
-
-  // 1. Accès Super-Admin : Accès complet à l'ensemble du catalogue
-  if (isSuperAdminEmail(normalized)) {
-    const fullCatalog = getAllCatalogProductsAsPurchases();
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(getUserPurchasesKey(normalized), JSON.stringify(fullCatalog));
-      } catch (e) {}
-    }
-    return fullCatalog;
-  }
 
   let dbList: EnrolledCourseItem[] = [];
   try {
@@ -182,7 +151,7 @@ export async function hasUserCourseAccess(
   const cleanTarget = decodeURIComponent(courseSlugOrId).toLowerCase().trim();
 
   // 1. SuperAdmin / Formateur : accès illimité garanti
-  if (role === 'superadmin' || role === 'formateur' || isSuperAdminEmail(normalizedEmail)) {
+  if (role === 'superadmin' || role === 'formateur') {
     return true;
   }
 
@@ -269,4 +238,3 @@ export async function hasUserCourseAccess(
     return pId === cleanTarget || pSlug === cleanTarget;
   });
 }
-

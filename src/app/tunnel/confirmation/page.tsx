@@ -64,24 +64,12 @@ function ConfirmationContent() {
     searchParams.get('email') || ''
   );
 
-  const [savedUserEmail, setSavedUserEmail] = useState<string>('');
-
   useEffect(() => {
     setIsMounted(true);
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('gd_auth_user');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (parsed?.email) setSavedUserEmail(parsed.email);
-        } catch (e) {}
-      }
-    }
   }, []);
 
-  // Explicit priority: customerEmail from Stripe > searchParams email > savedUserEmail > user.email
-  // Fallback to client-side localStorage/context only after mount (isMounted === true) to prevent SSR hydration mismatch
-  const activeEmail = customerEmail || searchParams.get('email') || (isMounted ? (savedUserEmail || user?.email) : '') || '';
+  // Explicit priority: customerEmail from Stripe > searchParams email > authenticated session.
+  const activeEmail = customerEmail || searchParams.get('email') || (isMounted ? user?.email : '') || '';
 
   // Helper to process single or multi-item cart purchases
   const processPurchasesForEmail = (emailToUse: string, stripeAmount?: number, customerName?: string, stripeCartItems?: any[]) => {

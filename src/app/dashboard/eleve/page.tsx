@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 import { fetchCoursesFromDb, saveUserPurchaseToDb } from '@/lib/supabaseLms';
-import { getUserPurchases, getUserPurchasesAsync, addPurchaseToUser, isSuperAdminEmail, getAllCatalogProductsAsPurchases } from '@/lib/userPurchasesStore';
+import { getUserPurchases, getUserPurchasesAsync, addPurchaseToUser, getAllCatalogProductsAsPurchases } from '@/lib/userPurchasesStore';
 import { getEncryptedDownloadUrl } from '@/lib/downloadSecurity';
 import { getCoachingStatusForUser } from '@/lib/coachingStore';
 import { getDeduplicatedDownloadLinksForProduct } from '@/lib/orderEmailService';
@@ -49,34 +49,15 @@ function EleveDashboardContent() {
   const [certModalCourse, setCertModalCourse] = useState<{ title: string; date?: string } | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('gd_auth_user');
-      if (!savedUser && !user) {
-        const superAdminProfile = {
-          id: 'admin_super_01',
-          email: 'contact@guides-digitaux.com',
-          fullName: 'Stéphanie (Super-Admin)',
-          role: 'superadmin'
-        };
-        localStorage.setItem('gd_auth_user', JSON.stringify(superAdminProfile));
-      }
-    }
-  }, [user]);
-
-  useEffect(() => {
     async function syncEnrolledCourses() {
       try {
-        let activeEmail = user?.email;
-        if (!activeEmail && typeof window !== 'undefined') {
-          try {
-            const saved = localStorage.getItem('gd_auth_user');
-            if (saved) activeEmail = JSON.parse(saved)?.email;
-          } catch (e) {}
+        if (!user?.email) {
+          setCourses([]);
+          return;
         }
 
-        // Identification du compte
-        const userEmail = (activeEmail || 'contact@guides-digitaux.com').toLowerCase().trim();
-        const isSuperAdmin = user?.role === 'superadmin' || isSuperAdminEmail(userEmail) || isSuperAdminEmail(user?.email) || isSuperAdminEmail(activeEmail);
+        const userEmail = user.email.toLowerCase().trim();
+        const isSuperAdmin = user.role === 'superadmin';
 
         const dbCourses = await fetchCoursesFromDb();
         setCoachingStatus(getCoachingStatusForUser(userEmail));
@@ -146,7 +127,7 @@ function EleveDashboardContent() {
       }
     }
     syncEnrolledCourses();
-  }, [user?.email]);
+  }, [user]);
 
   // Only real video formations or preorders are eligible for the hero banner
   const featuredFormation = courses.find(c => !c.isPdf && !c.isCoaching && !c.isPreorder);
@@ -197,7 +178,7 @@ function EleveDashboardContent() {
               <span className="inline-block px-3 py-0.5 rounded-full text-[11px] font-extrabold bg-[#e6f4f3] text-[#18757d] uppercase tracking-wider">
                 Espace Élève / Apprenant
               </span>
-              {(user?.email?.toLowerCase().trim() === 'contact@guides-digitaux.com' || user?.role === 'superadmin') && (
+              {user?.role === 'superadmin' && (
                 <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300 uppercase tracking-wider">
                   <Sparkles className="w-3 h-3 text-amber-600" />
                   Accès Super-Admin (Catalogue Intégral Débloqué)
@@ -208,7 +189,7 @@ function EleveDashboardContent() {
               Bonjour, <span className="text-[#18757d]">{user?.fullName || (user?.email?.includes('contact') ? 'Stéphanie (Super-Admin)' : 'Stéphanie')}</span> 👋
             </h1>
             <p className="text-xs text-[#5e4d46] font-medium">
-              {(user?.email?.toLowerCase().trim() === 'contact@guides-digitaux.com' || user?.role === 'superadmin')
+              {user?.role === 'superadmin'
                 ? 'En tant que Super-Administrateur, vous disposez d\'un accès illimité et permanent à l\'ensemble des formations, guides PDF, checklists et outils.'
                 : 'Retrouve ici tous tes contenus débloqués et poursuis ton apprentissage.'}
             </p>

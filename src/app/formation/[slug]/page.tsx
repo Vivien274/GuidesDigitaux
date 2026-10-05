@@ -48,7 +48,7 @@ const getShuffledOptions = (options: string[], qId: string) => {
 };
 
 export default function FormationViewerPage() {
-  const { user } = useAuth();
+  const { user, isAuthLoading } = useAuth();
   const params = useParams();
   const router = useRouter();
   const rawSlug = (params?.slug as string) || '';
@@ -81,21 +81,11 @@ export default function FormationViewerPage() {
     let isCancelled = false;
 
     async function verifyAccess() {
+      if (isAuthLoading) return;
       setIsVerifyingAccess(true);
 
-      let currentEmail = user?.email;
-      let currentRole = user?.role;
-
-      if (!currentEmail && typeof window !== 'undefined') {
-        try {
-          const stored = localStorage.getItem('gd_auth_user');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            currentEmail = parsed.email;
-            currentRole = parsed.role;
-          }
-        } catch (e) {}
-      }
+      const currentEmail = user?.email;
+      const currentRole = user?.role;
 
       if (!currentEmail) {
         if (!isCancelled) {
@@ -127,17 +117,14 @@ export default function FormationViewerPage() {
     return () => {
       isCancelled = true;
     };
-  }, [user?.email, user?.role, slug]);
+  }, [isAuthLoading, user?.email, user?.role, slug]);
 
   // Si l'utilisateur n'est pas connecté du tout, redirection vers /mon-compte
   useEffect(() => {
-    if (!isVerifyingAccess && hasAccess === false) {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('gd_auth_user') : null;
-      if (!user && !stored) {
-        router.replace(`/mon-compte?redirect=${encodeURIComponent(`/formation/${slug}`)}`);
-      }
+    if (!isAuthLoading && !isVerifyingAccess && hasAccess === false && !user) {
+      router.replace(`/mon-compte?redirect=${encodeURIComponent(`/formation/${slug}`)}`);
     }
-  }, [isVerifyingAccess, hasAccess, user, slug, router]);
+  }, [isAuthLoading, isVerifyingAccess, hasAccess, user, slug, router]);
 
   useEffect(() => {
     async function syncCourse() {

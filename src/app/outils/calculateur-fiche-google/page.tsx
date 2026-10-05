@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { getUserPurchasesAsync, isSuperAdminEmail } from '@/lib/userPurchasesStore';
+import { getUserPurchasesAsync } from '@/lib/userPurchasesStore';
 import {
   Sparkles,
   Gauge,
@@ -63,7 +63,7 @@ interface AuditResult {
 function CalculateurFicheGoogleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, isAuthLoading } = useAuth();
 
   // Contrôle d'accès membre et essai gratuit
   const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
@@ -87,10 +87,7 @@ function CalculateurFicheGoogleContent() {
     async function verifyAccess() {
       setIsCheckingAccess(true);
 
-      const token = searchParams.get('token');
       const sessionId = searchParams.get('session_id') || searchParams.get('sessionId');
-      const authParam = searchParams.get('auth');
-      const purchasedParam = searchParams.get('purchased');
 
       // Vérification essai gratuit dans localStorage
       if (typeof window !== 'undefined') {
@@ -100,33 +97,35 @@ function CalculateurFicheGoogleContent() {
         }
       }
 
-      if (token || sessionId || authParam === 'granted' || purchasedParam === 'true') {
-        setIsUnlocked(true);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('gd_unlocked_tool_google_calc', 'true');
+      if (sessionId) {
+        try {
+          const response = await fetch(`/api/stripe/session?session_id=${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
+          const session = await response.json();
+          const productId = String(session.productId || session.courseId || '').toLowerCase();
+          if (
+            response.ok &&
+            session.paymentStatus === 'paid' &&
+            (productId.includes('calculateur') || productId.includes('orderbump'))
+          ) {
+            setIsUnlocked(true);
+            setIsCheckingAccess(false);
+            return;
+          }
+        } catch (error) {
+          console.warn('Impossible de vérifier la session Stripe du calculateur', error);
         }
-        setIsCheckingAccess(false);
+      }
+
+      if (isAuthLoading) {
         return;
       }
 
-      if (typeof window !== 'undefined') {
-        const storedUnlock = localStorage.getItem('gd_unlocked_tool_google_calc');
-        if (storedUnlock === 'true') {
-          setIsUnlocked(true);
-          setIsCheckingAccess(false);
-          return;
-        }
-      }
-
-      const currentEmail = user?.email || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('gd_auth_user') || '{}')?.email : null);
+      const currentEmail = user?.email;
 
       if (currentEmail) {
         const cleanEmail = currentEmail.toLowerCase().trim();
-        if (isSuperAdminEmail(cleanEmail) || user?.role === 'superadmin') {
+        if (user?.role === 'superadmin' || user?.role === 'formateur') {
           setIsUnlocked(true);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('gd_unlocked_tool_google_calc', 'true');
-          }
           setIsCheckingAccess(false);
           return;
         }
@@ -142,9 +141,6 @@ function CalculateurFicheGoogleContent() {
 
           if (hasCalculatorProduct) {
             setIsUnlocked(true);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('gd_unlocked_tool_google_calc', 'true');
-            }
             setIsCheckingAccess(false);
             return;
           }
@@ -158,7 +154,7 @@ function CalculateurFicheGoogleContent() {
     }
 
     verifyAccess();
-  }, [user?.email, user?.role, searchParams]);
+  }, [isAuthLoading, user?.email, user?.role, searchParams]);
 
   // Achat direct Stripe 12 € (accès illimité à vie)
   const handleBuyUnlimited = async () => {
@@ -173,7 +169,7 @@ function CalculateurFicheGoogleContent() {
           price: 12,
           title: 'Calculateur & Auditeur de Score Google Maps (Accès Illimité à Vie)',
           customerEmail: user?.email || unlockEmailInput || undefined,
-          successUrl: `${window.location.origin}/outils/calculateur-fiche-google?purchased=true`,
+          successUrl: `${window.location.origin}/outils/calculateur-fiche-google?session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: `${window.location.origin}/outils/calculateur-fiche-google`
         })
       });
@@ -203,12 +199,8 @@ function CalculateurFicheGoogleContent() {
     }
 
     try {
-      if (isSuperAdminEmail(emailToTest)) {
-        setUnlockSuccess(true);
-        setIsUnlocked(true);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('gd_unlocked_tool_google_calc', 'true');
-        }
+      if (!user?.email || user.email.toLowerCase().trim() !== emailToTest) {
+        setUnlockError('Connectez-vous avec cette adresse e-mail pour vérifier votre achat.');
         return;
       }
 
@@ -223,9 +215,6 @@ function CalculateurFicheGoogleContent() {
       if (hasPurchasedCalculator) {
         setUnlockSuccess(true);
         setIsUnlocked(true);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('gd_unlocked_tool_google_calc', 'true');
-        }
       } else {
         setUnlockError('Aucun achat du Calculateur à 12 € trouvé pour cet e-mail. Le calculateur est un produit séparé de la formation.');
       }

@@ -147,7 +147,7 @@ function resolveProductInfo(rawTitle?: string, productId?: string, slug?: string
 import { useRouter } from 'next/navigation';
 
 export default function SuperadminDashboardPage() {
-  const { user, role } = useAuth();
+  const { user, role, isAuthLoading } = useAuth();
   const router = useRouter();
 
   const [usersList, setUsersList] = useState<AdminUserItem[]>([]);
@@ -231,19 +231,15 @@ export default function SuperadminDashboardPage() {
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('gd_auth_user');
-      const parsedRole = savedUser ? JSON.parse(savedUser).role : role;
-      if (!savedUser && !user) {
-        router.push('/mon-compte');
-        return;
-      }
-      if (parsedRole !== 'superadmin' && role !== 'superadmin') {
-        router.push('/dashboard/eleve');
-        return;
-      }
+    if (isAuthLoading) return;
+    if (!user) {
+      router.replace('/mon-compte');
+      return;
     }
-  }, [user, role, router]);
+    if (role !== 'superadmin') {
+      router.replace('/dashboard/eleve');
+    }
+  }, [isAuthLoading, user, role, router]);
 
   // Load real accounts & purchases via secure server API route (bypassing client RLS restrictions)
   const loadDashboardData = async () => {
@@ -504,7 +500,7 @@ export default function SuperadminDashboardPage() {
             const list = JSON.parse(enrolledRaw);
             if (Array.isArray(list)) {
               list.forEach((item: any) => {
-                const em = (item.email || item.customerEmail || (localStorage.getItem('gd_auth_user') ? JSON.parse(localStorage.getItem('gd_auth_user')!).email : '')).toLowerCase().trim();
+                const em = (item.email || item.customerEmail || user?.email || '').toLowerCase().trim();
                 if (em) {
                   const price = item.price || 29;
                   const info = resolveProductInfo(item.title, item.id, item.slug, item.downloadPdf, price);

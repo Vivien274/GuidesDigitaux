@@ -46,24 +46,20 @@ import {
 
 function CourseEditorContent() {
   const router = useRouter();
-  const { user, role } = useAuth();
+  const { user, role, isAuthLoading } = useAuth();
   const searchParams = useSearchParams();
   const courseId = searchParams.get('id');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('gd_auth_user');
-      const parsedRole = savedUser ? JSON.parse(savedUser).role : role;
-      if (!savedUser && !user) {
-        router.push('/mon-compte');
-        return;
-      }
-      if (parsedRole !== 'formateur' && parsedRole !== 'superadmin' && role !== 'formateur' && role !== 'superadmin') {
-        router.push('/dashboard/eleve');
-        return;
-      }
+    if (isAuthLoading) return;
+    if (!user) {
+      router.replace('/mon-compte');
+      return;
     }
-  }, [user, role, router]);
+    if (role !== 'formateur' && role !== 'superadmin') {
+      router.replace('/dashboard/eleve');
+    }
+  }, [isAuthLoading, user, role, router]);
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [course, setCourse] = useState<Course | null>(null);

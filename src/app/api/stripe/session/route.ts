@@ -9,9 +9,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing session_id' }, { status: 400 });
   }
 
-  const secretKey = (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('...'))
-    ? process.env.STRIPE_SECRET_KEY 
-    : 'sk_test_51TAqk4D882WcsUbmbsySyL6DrZMMa6PPMsFdk2DJ9xa7iakf5XKBp9baIF69AsOxZE1ZWpfok6cZQxPbQQOYW6y500qA4E6NRT';
+  const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!secretKey || !secretKey.startsWith('sk_')) {
+    return NextResponse.json({ error: 'Service de paiement indisponible.' }, { status: 503 });
+  }
 
   try {
     const stripe = new Stripe(secretKey);

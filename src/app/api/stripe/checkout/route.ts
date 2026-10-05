@@ -21,9 +21,7 @@ export async function POST(request: Request) {
     const releaseDate = body.releaseDate || '15 septembre 2026';
     const customerEmail = body.customerEmail;
 
-    const secretKey = (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('...'))
-      ? process.env.STRIPE_SECRET_KEY 
-      : 'sk_test_51TAqk4D882WcsUbmbsySyL6DrZMMa6PPMsFdk2DJ9xa7iakf5XKBp9baIF69AsOxZE1ZWpfok6cZQxPbQQOYW6y500qA4E6NRT';
+    const secretKey = process.env.STRIPE_SECRET_KEY?.trim() || '';
 
     const hasRealStripeKey = (secretKey.startsWith('sk_test_') || secretKey.startsWith('sk_live_')) && secretKey.length > 20;
     const requestOrigin = request.headers.get('origin') || request.headers.get('referer');
@@ -192,7 +190,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ url: session.url, sessionId: session.id, mode: 'live_stripe' });
     }
 
-    // 2. Fallback for test environment without key: simulated instant Stripe checkout test flow
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Service de paiement indisponible.' }, { status: 503 });
+    }
+
+    // 2. Development-only fallback without a Stripe key.
     const testSessionId = `test_cs_${Date.now()}`;
     const simulatedUrl = Array.isArray(items) && items.length > 0
       ? `${siteUrl}/tunnel/confirmation?session_id=${testSessionId}&cart_checkout=true&price=${totalPriceSum}${emailParam}&test_mode=true`

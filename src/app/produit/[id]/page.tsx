@@ -245,8 +245,7 @@ export default function ProductDetailPage() {
 
       async function checkPurchased() {
         try {
-          const savedEmail = typeof window !== 'undefined' && localStorage.getItem('gd_auth_user') ? JSON.parse(localStorage.getItem('gd_auth_user')!).email : '';
-          const userEmail = user?.email || savedEmail;
+          const userEmail = user?.email;
           if (userEmail) {
             setCoachingStatus(getCoachingStatusForUser(userEmail));
             const purchases = await getUserPurchasesAsync(userEmail);

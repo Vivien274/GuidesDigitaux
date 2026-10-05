@@ -16,43 +16,24 @@ export interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   role: UserRole;
-  setRole: (role: UserRole) => void;
   login: (email: string, password?: string, checkoutSessionId?: string) => Promise<{ success: boolean; error?: string; role?: UserRole }>;
   logout: () => void;
   isLoggedIn: boolean;
+  isAuthLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('gd_auth_user');
-        if (saved) return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return null;
-  });
-
-  const [role, setRoleState] = useState<UserRole>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('gd_auth_user');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          return parsed.role || 'eleve';
-        }
-      } catch (e) {}
-    }
-    return 'eleve';
-  });
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [role, setRoleState] = useState<UserRole>('eleve');
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // Load user session from server cookie on mount
   useEffect(() => {
     async function syncAuthSession() {
       try {
-        const res = await fetch('/api/auth/session');
+        const res = await fetch('/api/auth/session', { cache: 'no-store' });
         const data = await res.json();
         if (data.authenticated && data.user) {
           const userObj: UserProfile = {
@@ -63,32 +44,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           setUser(userObj);
           setRoleState(userObj.role);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('gd_auth_user', JSON.stringify(userObj));
-          }
           return;
         }
 
-        // If no server session, clear state
         setUser(null);
         setRoleState('eleve');
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('gd_auth_user');
-        }
       } catch (e) {
         console.error('Failed to load auth session from server', e);
+        setUser(null);
+        setRoleState('eleve');
+      } finally {
+        setIsAuthLoading(false);
       }
     }
     syncAuthSession();
   }, []);
-
-  const setRole = (newRole: UserRole) => {
-    setRoleState(newRole);
-    if (user) {
-      const updated = { ...user, role: newRole };
-      setUser(updated);
-    }
-  };
 
   const login = async (email: string, password?: string, checkoutSessionId?: string): Promise<{ success: boolean; error?: string; role?: UserRole }> => {
     const normalizedEmail = email.toLowerCase().trim();
@@ -130,10 +100,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(loggedUser);
       setRoleState(loggedUser.role);
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('gd_auth_user', JSON.stringify(loggedUser));
-      }
-
       return { success: true, role: loggedUser.role };
     } catch (err: any) {
       return { success: false, error: err?.message || 'Erreur réseau lors de la connexion' };
@@ -150,10 +116,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setUser(null);
     setRoleState('eleve');
-
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('gd_auth_user');
-    }
   };
 
   return (
@@ -161,10 +123,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         role,
-        setRole,
         login,
         logout,
-        isLoggedIn: !!user
+        isLoggedIn: !!user,
+        isAuthLoading,
       }}
     >
       {children}
