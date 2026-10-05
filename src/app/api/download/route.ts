@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
+import type Stripe from 'stripe';
 import { stripe } from '@/lib/stripe/client';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { verifySession, type SessionData } from '@/lib/auth';
@@ -18,9 +19,33 @@ const BONUS_FILES: Record<string, string> = {
 
 const BONUS_PARENT_PRODUCT = 'formation-fiche-google';
 
+const COURSE_EQUIVALENCE_GROUPS = [
+  new Set([
+    'formation-fiche-google',
+    'precommande-fiche-google',
+    '17873181-7987-4000-a000-000000000000',
+    '33333333-3333-4333-a333-333333333333',
+  ]),
+  new Set([
+    'formation-wordpress',
+    'creer-sa-vitrine-wordpress',
+    '11111111-1111-4111-a111-111111111111',
+  ]),
+  new Set([
+    'formation-woocommerce',
+    'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+    '22222222-2222-4222-a222-222222222222',
+  ]),
+];
+
+function equivalentProductIds(left: string, right: string): boolean {
+  if (left === right) return true;
+  return COURSE_EQUIVALENCE_GROUPS.some(group => group.has(left) && group.has(right));
+}
+
 function matchesPurchasedProduct(purchasedId: string | null | undefined, requestedId: string): boolean {
   if (!purchasedId) return false;
-  if (purchasedId === requestedId) return true;
+  if (equivalentProductIds(purchasedId, requestedId)) return true;
 
   const purchasedProduct = DEFAULT_PRODUCTS.find(
     product => product.id === purchasedId || product.slug === purchasedId
@@ -46,6 +71,57 @@ function resolveFilePath(productId: string): string | null {
   return product?.downloadPdf ?? null;
 }
 
+function resourceBasename(resourceUrl: string): string {
+  try {
+    return path.basename(new URL(resourceUrl, 'https://www.guides-digitaux.com').pathname);
+  } catch {
+    return path.basename(resourceUrl.split('?')[0]);
+  }
+}
+
+async function resolveDownloadRequest(productId: string | null, filename: string | null): Promise<{
+  productId: string;
+  filePath: string;
+} | null> {
+  const knownProductId = resolveProductId(productId, filename);
+  if (knownProductId) {
+    const knownFilePath = resolveFilePath(knownProductId);
+    if (knownFilePath) return { productId: knownProductId, filePath: knownFilePath };
+  }
+
+  if (!filename) return null;
+  const safeFilename = path.basename(filename);
+
+  const { data: courses } = await supabaseAdmin
+    .from('courses')
+    .select('id, bonus_doc_url')
+    .not('bonus_doc_url', 'is', null);
+  const matchingCourse = (courses ?? []).find(course =>
+    course.bonus_doc_url && resourceBasename(course.bonus_doc_url) === safeFilename
+  );
+  if (matchingCourse?.bonus_doc_url) {
+    return { productId: matchingCourse.id, filePath: matchingCourse.bonus_doc_url };
+  }
+
+  const { data: lessons } = await supabaseAdmin
+    .from('lessons')
+    .select('module_id, pdf_url')
+    .not('pdf_url', 'is', null);
+  const matchingLesson = (lessons ?? []).find(lesson =>
+    lesson.pdf_url && resourceBasename(lesson.pdf_url) === safeFilename
+  );
+  if (!matchingLesson?.module_id || !matchingLesson.pdf_url) return null;
+
+  const { data: module } = await supabaseAdmin
+    .from('modules')
+    .select('course_id')
+    .eq('id', matchingLesson.module_id)
+    .maybeSingle();
+  if (!module?.course_id) return null;
+
+  return { productId: module.course_id, filePath: matchingLesson.pdf_url };
+}
+
 async function hasDatabaseAccess(session: SessionData, productId: string): Promise<boolean> {
   if (session.role === 'superadmin' || session.role === 'formateur') return true;
 
@@ -65,21 +141,18 @@ async function hasDatabaseAccess(session: SessionData, productId: string): Promi
     return false;
   }
 
-  const { data: enrollments } = await supabaseAdmin
-    .from('enrollments')
-    .select('product_id, course_id')
-    .eq('user_id', session.userId);
+  const [{ data: enrollmentsByUser }, { data: enrollmentsByEmail }] = await Promise.all([
+    supabaseAdmin.from('enrollments').select('course_id').eq('user_id', session.userId),
+    supabaseAdmin.from('enrollments').select('course_id').eq('user_email', session.email),
+  ]);
+  const enrollments = [...(enrollmentsByUser ?? []), ...(enrollmentsByEmail ?? [])];
 
   return (enrollments ?? []).some(enrollment =>
-    matchesPurchasedProduct(enrollment.product_id, entitlementId) ||
     matchesPurchasedProduct(enrollment.course_id, entitlementId)
   );
 }
 
-async function hasCheckoutAccess(checkoutSessionId: string, productId: string): Promise<boolean> {
-  if (!checkoutSessionId.startsWith('cs_')) return false;
-
-  const checkoutSession = await stripe.checkout.sessions.retrieve(checkoutSessionId);
+function checkoutSessionGrants(checkoutSession: Stripe.Checkout.Session, productId: string): boolean {
   if (checkoutSession.payment_status !== 'paid') return false;
 
   const entitlementId = BONUS_FILES[productId] ? BONUS_PARENT_PRODUCT : productId;
@@ -101,33 +174,47 @@ async function hasCheckoutAccess(checkoutSessionId: string, productId: string): 
   return [...purchasedIds].some(purchasedId => matchesPurchasedProduct(purchasedId, entitlementId));
 }
 
+async function hasCheckoutAccess(checkoutSessionId: string, productId: string): Promise<boolean> {
+  if (!checkoutSessionId.startsWith('cs_')) return false;
+
+  const checkoutSession = await stripe.checkout.sessions.retrieve(checkoutSessionId);
+  return checkoutSessionGrants(checkoutSession, productId);
+}
+
+async function hasRecentStripeAccess(session: SessionData, productId: string): Promise<boolean> {
+  const checkoutSessions = await stripe.checkout.sessions.list({ limit: 100 });
+
+  return checkoutSessions.data.some(checkoutSession => {
+    const checkoutEmail = (checkoutSession.customer_details?.email || checkoutSession.customer_email || '')
+      .toLowerCase()
+      .trim();
+    return checkoutEmail === session.email && checkoutSessionGrants(checkoutSession, productId);
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const productId = resolveProductId(
+    const resolvedDownload = await resolveDownloadRequest(
       request.nextUrl.searchParams.get('productId'),
       request.nextUrl.searchParams.get('file')
     );
-    if (!productId) {
+    if (!resolvedDownload) {
       return NextResponse.json({ error: 'Produit introuvable.' }, { status: 404 });
     }
+    const { productId, filePath: targetFilePath } = resolvedDownload;
 
     const token = request.cookies.get('gd_session')?.value;
     const session = token ? await verifySession(token) : null;
     const checkoutSessionId = request.nextUrl.searchParams.get('session_id');
 
     const authorized = session
-      ? await hasDatabaseAccess(session, productId)
+      ? (await hasDatabaseAccess(session, productId)) || (await hasRecentStripeAccess(session, productId))
       : checkoutSessionId
         ? await hasCheckoutAccess(checkoutSessionId, productId)
         : false;
 
     if (!authorized) {
       return NextResponse.json({ error: 'Vous ne possédez pas ce produit.' }, { status: session ? 403 : 401 });
-    }
-
-    const targetFilePath = resolveFilePath(productId);
-    if (!targetFilePath) {
-      return NextResponse.json({ error: 'Fichier produit introuvable.' }, { status: 404 });
     }
 
     if (/^https?:\/\//i.test(targetFilePath)) {

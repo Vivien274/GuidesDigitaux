@@ -7,6 +7,64 @@ import { sendServerPurchaseEvent } from '@/lib/metaCapi';
 import { processOrderEmails } from '@/lib/orderEmailService';
 import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
 
+const COURSE_IDS_BY_PRODUCT: Record<string, string[]> = {
+  'formation-fiche-google': [
+    '17873181-7987-4000-a000-000000000000',
+    '33333333-3333-4333-a333-333333333333',
+  ],
+  'precommande-fiche-google': [
+    '17873181-7987-4000-a000-000000000000',
+    '33333333-3333-4333-a333-333333333333',
+  ],
+  'formation-wordpress': ['11111111-1111-4111-a111-111111111111'],
+  'creer-sa-vitrine-wordpress': ['11111111-1111-4111-a111-111111111111'],
+  'formation-ajouter-une-boutique-en-ligne-avec-woocommerce': ['22222222-2222-4222-a222-222222222222'],
+  'formation-woocommerce': ['22222222-2222-4222-a222-222222222222'],
+};
+
+async function grantCourseEnrollment(
+  userId: string | null,
+  customerEmail: string,
+  productId: string,
+  price: number,
+): Promise<void> {
+  if (!userId) return;
+
+  const candidateCourseIds = COURSE_IDS_BY_PRODUCT[productId] || [];
+  if (candidateCourseIds.length === 0) return;
+
+  const { data: courses, error: courseError } = await supabaseAdmin
+    .from('courses')
+    .select('id')
+    .in('id', candidateCourseIds)
+    .limit(1);
+  if (courseError) throw courseError;
+
+  const courseId = courses?.[0]?.id;
+  if (!courseId) return;
+
+  const { data: existingEnrollment, error: lookupError } = await supabaseAdmin
+    .from('enrollments')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('course_id', courseId)
+    .maybeSingle();
+  if (lookupError) throw lookupError;
+  if (existingEnrollment) return;
+
+  const product = DEFAULT_PRODUCTS.find(item => item.id === productId || item.slug === productId);
+  const { error: enrollmentError } = await supabaseAdmin.from('enrollments').insert({
+    user_id: userId,
+    user_email: customerEmail,
+    course_id: courseId,
+    item_title: product?.title || productId,
+    item_type: 'formation',
+    download_pdf: product?.downloadPdf || null,
+    price,
+  });
+  if (enrollmentError) throw enrollmentError;
+}
+
 export async function POST(request: Request) {
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
@@ -79,7 +137,7 @@ export async function POST(request: Request) {
 
       const isValidUuid = (val?: string | null): boolean => 
         !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
-      const safeUserId = isValidUuid(userId) ? userId : null;
+      const safeUserId: string | null = isValidUuid(userId) ? userId! : null;
 
       // 2. Assurer la présence de l'entrée profile si un UUID valide existe
       if (safeUserId) {
@@ -137,7 +195,6 @@ export async function POST(request: Request) {
               customer_email: customerEmail,
               product_id: pId,
               stripe_session_id: cartSessionId,
-              stripe_payment_intent_id: session.payment_intent as string,
               amount: itemPrice,
               currency: session.currency || 'eur',
               status: 'paid'
@@ -155,14 +212,10 @@ export async function POST(request: Request) {
 
           for (const subId of subItemsToGrant) {
             try {
-              if (safeUserId) {
-                await supabaseAdmin.from('enrollments').insert({
-                  user_id: safeUserId,
-                  course_id: subId,
-                  status: 'active'
-                });
-              }
-            } catch (e) {}
+              await grantCourseEnrollment(safeUserId, customerEmail, subId, itemPrice);
+            } catch (enrollmentError) {
+              console.error('[Stripe Webhook] Erreur attribution formation panier:', enrollmentError);
+            }
           }
         }
       } else {
@@ -180,7 +233,6 @@ export async function POST(request: Request) {
               customer_email: customerEmail,
               product_id: productId,
               stripe_session_id: session.id,
-              stripe_payment_intent_id: session.payment_intent as string,
               amount: amountEur,
               currency: session.currency || 'eur',
               status: 'paid'
@@ -204,17 +256,10 @@ export async function POST(request: Request) {
 
         for (const pId of productsToGrant) {
           try {
-            await supabaseAdmin.from('enrollments').insert({
-              user_id: userId,
-              user_email: customerEmail,
-              product_id: pId,
-              course_id: pId,
-              item_title: pId,
-              item_type: 'formation',
-              price: amountEur,
-              stripe_session_id: session.id
-            });
-          } catch (e) {}
+            await grantCourseEnrollment(safeUserId, customerEmail, pId, amountEur);
+          } catch (enrollmentError) {
+            console.error('[Stripe Webhook] Erreur attribution formation:', enrollmentError);
+          }
         }
       }
 
@@ -346,4 +391,3 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ received: true });
 }
-

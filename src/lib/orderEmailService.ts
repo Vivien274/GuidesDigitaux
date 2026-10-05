@@ -123,9 +123,9 @@ export function getDeduplicatedDownloadLinksForProduct(
         addLink(PDF_DOWNLOAD_LINKS[item.id].title, PDF_DOWNLOAD_LINKS[item.id].fileUrl, item.id);
       }
       if (item.id.includes('precommande') || item.id.includes('preorder') || item.id === 'precommande-fiche-google') {
-        addLink('Bonus 1 : Checklist Audit Rapide Fiche Google', '/downloads/bonus-1-checklist-audit-fiche-google.pdf', item.id);
-        addLink('Bonus 2 : Kit 10 Modèles Avis Google', '/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf', item.id);
-        addLink('Bonus 3 : Scripts WhatsApp & SMS Avis 5★', '/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf', item.id);
+        addLink('Bonus 1 : Checklist Audit Rapide Fiche Google', '/downloads/bonus-1-checklist-audit-fiche-google.pdf', 'bonus-1');
+        addLink('Bonus 2 : Kit 10 Modèles Avis Google', '/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf', 'bonus-2');
+        addLink('Bonus 3 : Scripts WhatsApp & SMS Avis 5★', '/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf', 'bonus-3');
       }
     }
     if (linksMap.size > 0) {
@@ -160,9 +160,9 @@ export function getDeduplicatedDownloadLinksForProduct(
 
   // 3. Preorder bonus PDFs (e.g. Fiche Google Business Profile)
   if (productId.includes('precommande') || productId.includes('preorder') || productId === 'precommande-fiche-google') {
-    addLink('Bonus 1 : Checklist Audit Rapide Fiche Google', '/downloads/bonus-1-checklist-audit-fiche-google.pdf');
-    addLink('Bonus 2 : Kit 10 Modèles Avis Google', '/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf');
-    addLink('Bonus 3 : Scripts WhatsApp & SMS Avis 5★', '/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf');
+    addLink('Bonus 1 : Checklist Audit Rapide Fiche Google', '/downloads/bonus-1-checklist-audit-fiche-google.pdf', 'bonus-1');
+    addLink('Bonus 2 : Kit 10 Modèles Avis Google', '/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf', 'bonus-2');
+    addLink('Bonus 3 : Scripts WhatsApp & SMS Avis 5★', '/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf', 'bonus-3');
   }
 
   // 4. Bundled custom items
