@@ -7,7 +7,8 @@ export function getEncryptedDownloadUrl(_filePath: string, productId?: string, _
 
   const params = new URLSearchParams({ productId });
   if (typeof window !== 'undefined') {
-    const checkoutSessionId = new URLSearchParams(window.location.search).get('session_id');
+    const searchParams = new URLSearchParams(window.location.search);
+    const checkoutSessionId = searchParams.get('session_id') || searchParams.get('sessionId');
     if (checkoutSessionId) params.set('session_id', checkoutSessionId);
   }
 

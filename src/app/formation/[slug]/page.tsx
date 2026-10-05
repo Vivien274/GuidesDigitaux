@@ -714,6 +714,31 @@ export default function FormationViewerPage() {
                     </div>
                   ) : null}
 
+                  {/* External Link if single link provided */}
+                  {activeLesson?.externalLink && activeLesson.externalLink.trim() !== '' && (!activeLesson?.links || activeLesson.links.length === 0) && (
+                    <div className="p-5 bg-[#faf8f5] rounded-2xl border border-[#eee7da] flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#e6f4f3] text-[#18757d] flex items-center justify-center shrink-0">
+                          <Download className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-extrabold text-[#332420]">Document joint de la leçon</h4>
+                          <p className="text-[11px] text-slate-500">Ressource ou feuille de route à télécharger</p>
+                        </div>
+                      </div>
+
+                      <a
+                        href={activeLesson.externalLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-5 py-2.5 text-xs font-extrabold text-[#18757d] bg-white border border-[#eee7da] hover:bg-[#18757d] hover:text-white rounded-xl transition-colors uppercase tracking-wider shrink-0 flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        TÉLÉCHARGER LE DOCUMENT
+                      </a>
+                    </div>
+                  )}
+
                   {/* Multiple External Links Boxes */}
                   {activeLesson?.links && activeLesson.links.length > 0 && (
                     <div className="space-y-3 pt-2">

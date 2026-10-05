@@ -512,16 +512,57 @@ function EleveDashboardContent() {
                             ACCÉDER AUX COURS
                           </Link>
                           {(item.id?.includes('google') || item.slug?.includes('google')) && (
-                            <Link
-                              href="/outils/calculateur-fiche-google"
-                              className="w-full py-2.5 px-3 text-[11px] font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-between"
-                            >
-                              <span className="flex items-center gap-1.5 truncate">
-                                <Sparkles className="w-3.5 h-3.5 text-[#18757d]" />
-                                Outil Inclus : Calculateur de Score Google Maps
-                              </span>
-                              <ArrowRight className="w-3.5 h-3.5 text-[#18757d]" />
-                            </Link>
+                            <>
+                              <Link
+                                href="/outils/calculateur-fiche-google"
+                                className="w-full py-2.5 px-3 text-[11px] font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-between"
+                              >
+                                <span className="flex items-center gap-1.5 truncate">
+                                  <Sparkles className="w-3.5 h-3.5 text-[#18757d]" />
+                                  Outil Inclus : Calculateur de Score Google Maps
+                                </span>
+                                <ArrowRight className="w-3.5 h-3.5 text-[#18757d]" />
+                              </Link>
+
+                              <a
+                                href={getEncryptedDownloadUrl('/downloads/bonus-1-checklist-audit-fiche-google.pdf', 'bonus-1')}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-full py-2.5 px-3 text-[11px] font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-between"
+                              >
+                                <span className="flex items-center gap-1.5 truncate">
+                                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                                  Bonus 1 : Checklist Audit Fiche Google
+                                </span>
+                                <Download className="w-3.5 h-3.5 shrink-0 text-[#18757d]" />
+                              </a>
+
+                              <a
+                                href={getEncryptedDownloadUrl('/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf', 'bonus-2')}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-full py-2.5 px-3 text-[11px] font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-between"
+                              >
+                                <span className="flex items-center gap-1.5 truncate">
+                                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                                  Bonus 2 : Kit 10 Modèles Avis Google
+                                </span>
+                                <Download className="w-3.5 h-3.5 shrink-0 text-[#18757d]" />
+                              </a>
+
+                              <a
+                                href={getEncryptedDownloadUrl('/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf', 'bonus-3')}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-full py-2.5 px-3 text-[11px] font-extrabold text-[#18757d] bg-[#e6f4f3] hover:bg-[#d4edea] rounded-xl transition-colors flex items-center justify-between"
+                              >
+                                <span className="flex items-center gap-1.5 truncate">
+                                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                                  Bonus 3 : Scripts WhatsApp Avis 5★
+                                </span>
+                                <Download className="w-3.5 h-3.5 shrink-0 text-[#18757d]" />
+                              </a>
+                            </>
                           )}
                         </div>
                       ) : (

@@ -137,18 +137,19 @@ async function hasDatabaseAccess(session: SessionData, productId: string): Promi
   });
   if (paidOrder) return true;
 
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(session.userId)) {
-    return false;
-  }
+  const hasValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(session.userId);
 
   const [{ data: enrollmentsByUser }, { data: enrollmentsByEmail }] = await Promise.all([
-    supabaseAdmin.from('enrollments').select('course_id').eq('user_id', session.userId),
-    supabaseAdmin.from('enrollments').select('course_id').eq('user_email', session.email),
+    hasValidUuid
+      ? supabaseAdmin.from('enrollments').select('course_id, product_id').eq('user_id', session.userId)
+      : Promise.resolve({ data: [] }),
+    supabaseAdmin.from('enrollments').select('course_id, product_id').eq('user_email', session.email),
   ]);
   const enrollments = [...(enrollmentsByUser ?? []), ...(enrollmentsByEmail ?? [])];
 
   return (enrollments ?? []).some(enrollment =>
-    matchesPurchasedProduct(enrollment.course_id, entitlementId)
+    matchesPurchasedProduct(enrollment.course_id, entitlementId) ||
+    matchesPurchasedProduct((enrollment as any).product_id, entitlementId)
   );
 }
 
@@ -159,6 +160,13 @@ function checkoutSessionGrants(checkoutSession: Stripe.Checkout.Session, product
   const purchasedIds = new Set<string>();
   const primaryId = checkoutSession.metadata?.productId || checkoutSession.metadata?.courseId;
   if (primaryId) purchasedIds.add(primaryId);
+
+  if (checkoutSession.metadata?.hasOrderBump === 'true' || checkoutSession.metadata?.orderbump === '1') {
+    purchasedIds.add('kit-serenite');
+    if (checkoutSession.metadata?.orderBumpType) {
+      purchasedIds.add(checkoutSession.metadata.orderBumpType);
+    }
+  }
 
   if (checkoutSession.metadata?.cartItemsJson) {
     try {
@@ -207,14 +215,13 @@ export async function GET(request: NextRequest) {
     const session = token ? await verifySession(token) : null;
     const checkoutSessionId = request.nextUrl.searchParams.get('session_id');
 
-    const authorized = session
-      ? (await hasDatabaseAccess(session, productId)) || (await hasRecentStripeAccess(session, productId))
-      : checkoutSessionId
-        ? await hasCheckoutAccess(checkoutSessionId, productId)
-        : false;
+    const authorized = (
+      (checkoutSessionId ? await hasCheckoutAccess(checkoutSessionId, productId) : false) ||
+      (session ? ((await hasDatabaseAccess(session, productId)) || (await hasRecentStripeAccess(session, productId))) : false)
+    );
 
     if (!authorized) {
-      return NextResponse.json({ error: 'Vous ne possédez pas ce produit.' }, { status: session ? 403 : 401 });
+      return NextResponse.json({ error: 'Vous ne possédez pas ce produit.' }, { status: (session || checkoutSessionId) ? 403 : 401 });
     }
 
     if (/^https?:\/\//i.test(targetFilePath)) {

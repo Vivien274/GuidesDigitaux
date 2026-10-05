@@ -67,7 +67,8 @@ export async function middleware(request: NextRequest) {
 
   // 5. Route every direct PDF request through the ownership-checked API.
   if (pathname.startsWith('/downloads/') && pathname.endsWith('.pdf')) {
-    if (!token) {
+    const sessionParam = request.nextUrl.searchParams.get('session_id') || request.nextUrl.searchParams.get('sessionId');
+    if (!token && !sessionParam) {
       const loginUrl = new URL('/mon-compte', request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
@@ -75,6 +76,9 @@ export async function middleware(request: NextRequest) {
 
     const secureDownloadUrl = new URL('/api/download', request.url);
     secureDownloadUrl.searchParams.set('file', pathname.split('/').pop() || '');
+    if (sessionParam) {
+      secureDownloadUrl.searchParams.set('session_id', sessionParam);
+    }
     return NextResponse.redirect(secureDownloadUrl);
   }
 

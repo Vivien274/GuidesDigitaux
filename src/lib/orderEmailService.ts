@@ -87,7 +87,8 @@ const PDF_DOWNLOAD_LINKS: Record<string, { title: string; fileUrl: string }> = {
 export function getDeduplicatedDownloadLinksForProduct(
   productId: string, 
   payloadDownloadPdf?: string,
-  cartItems?: { id: string; title?: string; downloadPdf?: string }[]
+  cartItems?: { id: string; title?: string; downloadPdf?: string }[],
+  checkoutSessionId?: string,
 ): { title: string; url: string }[] {
   const linksMap = new Map<string, { title: string; url: string }>();
 
@@ -97,6 +98,9 @@ export function getDeduplicatedDownloadLinksForProduct(
     
     // Encrypt raw PDF path into secure URL (valid for 30 days in emails)
     let secureUrl = getEncryptedDownloadUrl(url, targetId, 720);
+    if (checkoutSessionId?.startsWith('cs_')) {
+      secureUrl += `${secureUrl.includes('?') ? '&' : '?'}session_id=${encodeURIComponent(checkoutSessionId)}`;
+    }
     if (secureUrl.startsWith('/')) {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://www.guides-digitaux.com';
       secureUrl = `${baseUrl}${secureUrl}`;
@@ -122,7 +126,14 @@ export function getDeduplicatedDownloadLinksForProduct(
       if (PDF_DOWNLOAD_LINKS[item.id]) {
         addLink(PDF_DOWNLOAD_LINKS[item.id].title, PDF_DOWNLOAD_LINKS[item.id].fileUrl, item.id);
       }
-      if (item.id.includes('precommande') || item.id.includes('preorder') || item.id === 'precommande-fiche-google') {
+      if (
+        item.id.includes('precommande') || 
+        item.id.includes('preorder') || 
+        item.id === 'precommande-fiche-google' ||
+        item.id === 'formation-fiche-google' ||
+        item.id === '17873181-7987-4000-a000-000000000000' ||
+        item.id === '33333333-3333-4333-a333-333333333333'
+      ) {
         addLink('Bonus 1 : Checklist Audit Rapide Fiche Google', '/downloads/bonus-1-checklist-audit-fiche-google.pdf', 'bonus-1');
         addLink('Bonus 2 : Kit 10 Modèles Avis Google', '/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf', 'bonus-2');
         addLink('Bonus 3 : Scripts WhatsApp & SMS Avis 5★', '/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf', 'bonus-3');
@@ -158,8 +169,15 @@ export function getDeduplicatedDownloadLinksForProduct(
     }
   }
 
-  // 3. Preorder bonus PDFs (e.g. Fiche Google Business Profile)
-  if (productId.includes('precommande') || productId.includes('preorder') || productId === 'precommande-fiche-google') {
+  // 3. Preorder and course bonus PDFs (e.g. Fiche Google Business Profile)
+  if (
+    productId.includes('precommande') || 
+    productId.includes('preorder') || 
+    productId === 'precommande-fiche-google' ||
+    productId === 'formation-fiche-google' ||
+    productId === '17873181-7987-4000-a000-000000000000' ||
+    productId === '33333333-3333-4333-a333-333333333333'
+  ) {
     addLink('Bonus 1 : Checklist Audit Rapide Fiche Google', '/downloads/bonus-1-checklist-audit-fiche-google.pdf', 'bonus-1');
     addLink('Bonus 2 : Kit 10 Modèles Avis Google', '/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf', 'bonus-2');
     addLink('Bonus 3 : Scripts WhatsApp & SMS Avis 5★', '/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf', 'bonus-3');
@@ -254,7 +272,12 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
     productTitle.toLowerCase().includes('calculateur') || 
     payload.cartItems?.some(it => it.id?.includes('calculateur'));
 
-  const deduplicatedLinks = getDeduplicatedDownloadLinksForProduct(productId, payload.downloadPdf, payload.cartItems);
+  const deduplicatedLinks = getDeduplicatedDownloadLinksForProduct(
+    productId,
+    payload.downloadPdf,
+    payload.cartItems,
+    orderId,
+  );
   const bookingUrl = payload.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18';
   const courseUrl = `https://www.guides-digitaux.com/dashboard/eleve`;
   const accountUrl = `https://www.guides-digitaux.com/mon-compte`;
