@@ -74,6 +74,21 @@ export async function GET() {
       return { title, price, type, downloadPdf };
     };
 
+    const normalizeProductKey = (slugOrId?: string, title?: string) => {
+      const s = (slugOrId || '').toLowerCase();
+      const t = (title || '').toLowerCase();
+      if (s.includes('fiche-google') || s.includes('precommande') || s.startsWith('po-') || t.includes('fiche google') || t.includes('visibilité google')) {
+        return 'formation-fiche-google';
+      }
+      if (s.includes('kit-serenite') || t.includes('kit sérénité') || t.includes('kit serenite')) {
+        return 'kit-serenite';
+      }
+      if (s.includes('wordpress') || t.includes('wordpress')) {
+        return 'formation-wordpress';
+      }
+      return s || t || 'autre';
+    };
+
     // 1.5. Synchronisation de réconciliation avec Stripe Checkout Sessions (rattrapage automatique)
     const sessionMetadataMap = new Map<string, any>();
     try {
@@ -102,72 +117,115 @@ export async function GET() {
             const customerEmail = (session.customer_details?.email || session.customer_email || '').toLowerCase().trim();
             const productId = session.metadata?.productId || session.metadata?.courseId || 'formation-fiche-google';
             const amountEur = (session.amount_total ?? 0) / 100;
+            const sessionDateIso = new Date(session.created * 1000).toISOString();
+
+            const isPreorder =
+              session.metadata?.isPreorder === 'true' ||
+              productId.includes('precommande') ||
+              productId.startsWith('po-') ||
+              (session.metadata?.courseId || '').includes('precommande') ||
+              (session.metadata?.courseId || '').startsWith('po-');
 
             if (customerEmail && productId) {
-              const { data: existingOrd } = await supabaseServer
-                .from('orders')
-                .select('id')
-                .or(`stripe_session_id.eq.${session.id},stripe_session_id.like.${session.id}%`)
-                .limit(1)
-                .maybeSingle();
+              if (isPreorder) {
+                // Pour les précommandes : s'assurer qu'elles sont dans preorder_buyers et PAS en doublon dans orders
+                const { data: existingPb } = await supabaseServer
+                  .from('preorder_buyers')
+                  .select('id')
+                  .eq('customer_email', customerEmail)
+                  .limit(1)
+                  .maybeSingle();
 
-              if (!existingOrd) {
-                let rawCartItems: any[] = [];
-                if (session.metadata?.cartItemsJson) {
-                  try {
-                    rawCartItems = JSON.parse(session.metadata.cartItemsJson);
-                  } catch (e) {}
-                }
-
-                const hasOrderBump = session.metadata?.hasOrderBump === 'true' || session.metadata?.orderbump === '1';
-                if ((!rawCartItems || rawCartItems.length === 0) && hasOrderBump) {
-                  rawCartItems = [
-                    {
-                      id: 'formation-fiche-google',
-                      title: 'Cap Visibilité Google : Le GPS pour Artisans & Créateurs',
-                      price: 29
-                    },
-                    {
-                      id: 'kit-serenite',
-                      title: 'Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA (Order Bump)',
-                      price: 9,
-                      downloadPdf: '/downloads/kit-serenite-52-posts-google-prompts-ia.pdf'
-                    }
-                  ];
-                }
-
-                if (Array.isArray(rawCartItems) && rawCartItems.length > 0) {
-                  for (const cartIt of rawCartItems) {
-                    const itemPrice = Number(cartIt.price) || 0;
-                    const pId = cartIt.id;
-                    const cartSessId = `${session.id}_${pId}`;
-                    sessionMetadataMap.set(cartSessId, utmData);
-                    const { error: insCartErr } = await supabaseServer.from('orders').insert({
-                      customer_email: customerEmail,
-                      product_id: pId,
-                      stripe_session_id: cartSessId,
-                      amount: itemPrice,
-                      currency: session.currency || 'eur',
-                      status: 'paid'
-                    });
-                    if (insCartErr) {
-                      console.error('[Dashboard Stats] Erreur insertion order cart:', insCartErr);
-                    }
-                  }
-                } else {
-                  const { error: insSingleErr } = await supabaseServer.from('orders').insert({
+                if (!existingPb) {
+                  await supabaseServer.from('preorder_buyers').insert({
+                    campaign_id: productId || 'precommande-fiche-google',
                     customer_email: customerEmail,
-                    product_id: productId,
-                    stripe_session_id: session.id,
-                    amount: amountEur,
-                    currency: session.currency || 'eur',
-                    status: 'paid'
+                    customer_name: session.customer_details?.name || customerEmail.split('@')[0],
+                    price: amountEur,
+                    created_at: sessionDateIso
                   });
-                  if (insSingleErr) {
-                    console.error('[Dashboard Stats] Erreur insertion order single:', insSingleErr);
-                  }
                 }
-                console.log(`[Dashboard Stats] Synchronisation réussie de la commande Stripe ${session.id} pour ${customerEmail}`);
+
+                // Supprimer tout doublon accidentel dans orders avec la date du jour
+                await supabaseServer
+                  .from('orders')
+                  .delete()
+                  .or(`stripe_session_id.eq.${session.id},stripe_session_id.like.${session.id}%`);
+              } else {
+                // Commandes standards
+                const { data: existingOrd } = await supabaseServer
+                  .from('orders')
+                  .select('id, created_at')
+                  .or(`stripe_session_id.eq.${session.id},stripe_session_id.like.${session.id}%`)
+                  .limit(1)
+                  .maybeSingle();
+
+                if (!existingOrd) {
+                  let rawCartItems: any[] = [];
+                  if (session.metadata?.cartItemsJson) {
+                    try {
+                      rawCartItems = JSON.parse(session.metadata.cartItemsJson);
+                    } catch (e) {}
+                  }
+
+                  const hasOrderBump = session.metadata?.hasOrderBump === 'true' || session.metadata?.orderbump === '1';
+                  if ((!rawCartItems || rawCartItems.length === 0) && hasOrderBump) {
+                    rawCartItems = [
+                      {
+                        id: 'formation-fiche-google',
+                        title: 'Cap Visibilité Google : Le GPS pour Artisans & Créateurs',
+                        price: 29
+                      },
+                      {
+                        id: 'kit-serenite',
+                        title: 'Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA (Order Bump)',
+                        price: 9,
+                        downloadPdf: '/downloads/kit-serenite-52-posts-google-prompts-ia.pdf'
+                      }
+                    ];
+                  }
+
+                  if (Array.isArray(rawCartItems) && rawCartItems.length > 0) {
+                    for (const cartIt of rawCartItems) {
+                      const itemPrice = Number(cartIt.price) || 0;
+                      const pId = cartIt.id;
+                      const cartSessId = `${session.id}_${pId}`;
+                      sessionMetadataMap.set(cartSessId, utmData);
+                      const { error: insCartErr } = await supabaseServer.from('orders').insert({
+                        customer_email: customerEmail,
+                        product_id: pId,
+                        stripe_session_id: cartSessId,
+                        amount: itemPrice,
+                        currency: session.currency || 'eur',
+                        status: 'paid',
+                        created_at: sessionDateIso
+                      });
+                      if (insCartErr) {
+                        console.error('[Dashboard Stats] Erreur insertion order cart:', insCartErr);
+                      }
+                    }
+                  } else {
+                    const { error: insSingleErr } = await supabaseServer.from('orders').insert({
+                      customer_email: customerEmail,
+                      product_id: productId,
+                      stripe_session_id: session.id,
+                      amount: amountEur,
+                      currency: session.currency || 'eur',
+                      status: 'paid',
+                      created_at: sessionDateIso
+                    });
+                    if (insSingleErr) {
+                      console.error('[Dashboard Stats] Erreur insertion order single:', insSingleErr);
+                    }
+                  }
+                  console.log(`[Dashboard Stats] Synchronisation réussie de la commande Stripe ${session.id} pour ${customerEmail} (Date: ${sessionDateIso})`);
+                } else {
+                  // Mettre à jour la date réelle de création depuis Stripe si elle avait été enregistrée à la date du jour
+                  await supabaseServer
+                    .from('orders')
+                    .update({ created_at: sessionDateIso })
+                    .or(`stripe_session_id.eq.${session.id},stripe_session_id.like.${session.id}%`);
+                }
               }
 
               // Update full_name in profile if missing or incomplete
@@ -234,9 +292,6 @@ export async function GET() {
         const prodInfo = resolveProductInfo(ord.product_id, rawPrice);
         const utmData = resolveUserUtm(em, ord.stripe_session_id);
 
-        totalOrdersCount += 1;
-        totalRevenue += prodInfo.price;
-
         const purchaseDetail = {
           id: ord.id || `ord_${Date.now()}`,
           title: prodInfo.title,
@@ -248,25 +303,42 @@ export async function GET() {
           utm: utmData
         };
 
-        allOrdersList.push({
-          id: ord.id,
-          customerEmail: em,
-          productId: ord.product_id,
-          productTitle: prodInfo.title,
-          amount: prodInfo.price,
-          currency: ord.currency || 'eur',
-          status: ord.status || 'paid',
-          stripeSessionId: ord.stripe_session_id,
-          createdAt: ord.created_at,
-          utm: utmData
-        });
+        const isDuplicateOrder = allOrdersList.some(o => 
+          (ord.stripe_session_id && o.stripeSessionId === ord.stripe_session_id) ||
+          (o.id === ord.id)
+        );
+
+        if (!isDuplicateOrder) {
+          totalOrdersCount += 1;
+          totalRevenue += prodInfo.price;
+
+          allOrdersList.push({
+            id: ord.id,
+            customerEmail: em,
+            productId: ord.product_id,
+            productTitle: prodInfo.title,
+            amount: prodInfo.price,
+            currency: ord.currency || 'eur',
+            status: ord.status || 'paid',
+            stripeSessionId: ord.stripe_session_id,
+            createdAt: ord.created_at,
+            utm: utmData
+          });
+        }
 
         if (em) {
           const existing = accountsMap.get(em);
           if (existing) {
-            existing.purchasesCount += 1;
-            existing.totalSpent += prodInfo.price;
-            existing.purchasesDetails.push(purchaseDetail);
+            const alreadyHasDetail = existing.purchasesDetails.some(d => 
+              d.id === purchaseDetail.id || 
+              (purchaseDetail.slug && d.slug && d.slug === purchaseDetail.slug) ||
+              (normalizeProductKey(d.slug, d.title) === normalizeProductKey(purchaseDetail.slug, purchaseDetail.title))
+            );
+            if (!alreadyHasDetail) {
+              existing.purchasesCount += 1;
+              existing.totalSpent += prodInfo.price;
+              existing.purchasesDetails.push(purchaseDetail);
+            }
             if (!existing.utm && utmData) existing.utm = utmData;
           } else {
             accountsMap.set(em, {
@@ -307,7 +379,11 @@ export async function GET() {
           };
 
           if (existing) {
-            if (!existing.purchasesDetails.some(d => d.title === detailItem.title || d.id === detailItem.id)) {
+            const alreadyEnrolled = existing.purchasesDetails.some(d => 
+              d.id === detailItem.id ||
+              normalizeProductKey(d.slug, d.title) === normalizeProductKey(detailItem.slug, detailItem.title)
+            );
+            if (!alreadyEnrolled) {
               existing.purchasesCount += 1;
               existing.totalSpent += prodInfo.price;
               existing.purchasesDetails.push(detailItem);
@@ -352,27 +428,39 @@ export async function GET() {
           slug: campaignId
         };
 
-        allOrdersList.push({
-          id: pb.id,
-          customerEmail: em,
-          productId: campaignId,
-          productTitle: detailItem.title,
-          amount: price,
-          currency: 'eur',
-          status: 'paid',
-          stripeSessionId: `pb_sess_${pb.id}`,
-          createdAt: pb.created_at || new Date().toISOString()
-        });
+        const isAlreadyInAllOrders = allOrdersList.some(o => 
+          (o.customerEmail || '').toLowerCase().trim() === em &&
+          normalizeProductKey(o.productId, o.productTitle) === normalizeProductKey(campaignId, detailItem.title)
+        );
+
+        if (!isAlreadyInAllOrders) {
+          totalOrdersCount += 1;
+          totalRevenue += price;
+
+          allOrdersList.push({
+            id: pb.id,
+            customerEmail: em,
+            productId: campaignId,
+            productTitle: detailItem.title,
+            amount: price,
+            currency: 'eur',
+            status: 'paid',
+            stripeSessionId: `pb_sess_${pb.id}`,
+            createdAt: pb.created_at || new Date().toISOString()
+          });
+        }
 
         if (em) {
           const existing = accountsMap.get(em);
           if (existing) {
-            if (!existing.purchasesDetails.some(d => d.title === detailItem.title || d.id === detailItem.id)) {
+            const alreadyInPurchases = existing.purchasesDetails.some(d => 
+              d.id === detailItem.id ||
+              normalizeProductKey(d.slug, d.title) === normalizeProductKey(detailItem.slug, detailItem.title)
+            );
+            if (!alreadyInPurchases) {
               existing.purchasesCount += 1;
               existing.totalSpent += price;
               existing.purchasesDetails.push(detailItem);
-              totalOrdersCount += 1;
-              totalRevenue += price;
             }
           } else {
             accountsMap.set(em, {
@@ -384,8 +472,6 @@ export async function GET() {
               totalSpent: price,
               purchasesDetails: [detailItem]
             });
-            totalOrdersCount += 1;
-            totalRevenue += price;
           }
         }
       });
