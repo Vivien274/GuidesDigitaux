@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # RÈGLE ABSOLUE D'INTÉGRITÉ ET D'EXÉCUTION STRICTE :
 
-Tu agis uniquement comme un exécutant technique. Tu as l'interdiction formelle de prendre des initiatives non demandées ou de "réoptimiser" ce qui fonctionne déjà.
+Tu agis uniquement comme un exécutant technique. Tu as l'interdiction formelle de prendre des initiatives non demandées ou de "réoptimiser" ce qui fonctionne déjà. Tu travailles sur un outil professionnel. Des clients paient pour y accéder et il est hors de question qu'il y ait des incohérences pour l'utilisateur.
 
 - **Périmètre strict** : Tu modifies uniquement et exclusivement l'élément précis que je t'indique. Tout le reste doit demeurer rigoureusement intact, au mot près et à la virgule près.
 - **Structure et ordre intouchables** : Tu ne touches jamais à l'ordre, à la hiérarchie, à la numérotation ou à l'organisation de mes modules, cours, sections ou pages, sauf si je te donne explicitement l'ordre : "Réorganise l'ordre de...".

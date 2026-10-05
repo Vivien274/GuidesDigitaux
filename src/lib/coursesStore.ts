@@ -682,7 +682,7 @@ const DEFAULT_COURSES: Course[] = [
             "videoUrl": "https://youtu.be/_LRRK58pOuA",
             "notes": "<p>La validation est l'étape où beaucoup d'indépendants se découragent : vidéo d'entreprise demandée, code postal qui tarde… Découvrons ensemble comment franchir ce cap avec sérénité.</p>\n\n<p>Pour lutter contre les fausses entreprises et les arnaques, Google impose une procédure de vérification obligatoire avant de publier officiellement ta fiche sur Google Maps et dans les résultats de recherche. Tant que cette validation n'est pas effectuée, ta fiche reste invisible pour le grand public.</p>\n\n<h3>🔍 Les différentes méthodes de vérification proposées :</h3>\n<ul>\n  <li><strong>La vérification par vidéo enregistrée</strong> : de plus en plus courante, elle te demande de filmer en une seule prise continue ton environnement de travail (devanture, véhicule professionnel floqué, outils de travail, badge, facture ou extrait de registre d'entreprise).</li>\n  <li><strong>La vérification par SMS ou appel téléphonique</strong> : la plus rapide, avec un code à 6 chiffres envoyé instantanément sur ton téléphone professionnel.</li>\n  <li><strong>La vérification par e-mail professionnel</strong> : disponible si tu possèdes une adresse mail liée au nom de domaine officiel de ton entreprise.</li>\n  <li><strong>Le courrier postal classique</strong> : l'envoi d'une carte postale contenant un code secret sous 5 à 10 jours ouvrés.</li>\n</ul>\n\n<h3>🛠️ Que faire en cas de blocage ou de rejet ?</h3>\n<p>Si ta vidéo n'est pas acceptée du premier coup ou si le courrier n'arrive pas, pas de panique ! Dans ce cours, je te donne toutes les astuces pratiques pour préparer tes justificatifs officiels (extrait d'immatriculation, carte professionnelle, devis avec en-tête) et contacter directement le support d'assistance pour débloquer la situation rapidement.</p><ul>\n</ul>\n\n<blockquote><strong>💡 Le Mémo de l'Expert</strong> : Choisis la méthode de validation proposée, prépare tes justificatifs et filme ton matériel avec calme. Si tu rencontres la moindre difficulté, consulte le guide joint pour débloquer ton dossier !</blockquote>",
             "pdfUrl": "",
-            "externalLink": "https://notion.so",
+            "externalLink": "",
             "duration": "",
             "order_index": 5
           }
@@ -810,7 +810,7 @@ const DEFAULT_COURSES: Course[] = [
           {
             "id": "17884305-1315-4000-a000-000000000000",
             "title": "Demander des avis sans être insistant",
-            "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            "videoUrl": "https://youtu.be/FfmpP3IvB_k",
             "notes": "<p>Tu as peur de déranger tes clients ou de passer pour un mendiant d'étoiles ? Voici la méthode simple et respectueuse pour faire de tes clients satisfaits tes meilleurs ambassadeurs.</p>\n\n<p>La plupart des artisans et indépendants font un travail formidable, mais commettent une erreur classique : ils attendent que le client pense spontanément à laisser un avis. La réalité, c'est qu'un client très satisfait passe vite à autre chose dans son quotidien si on ne lui tend pas une perche facile au bon moment.</p>\n\n<p>Demander un avis ne doit jamais ressembler à une obligation ni à une démarche insistante. C'est simplement <strong>la conclusion naturelle d'une collaboration réussie</strong>.</p>\n\n<h3>🎁 Le moment parfait : la phase d'enthousiasme client</h3>\n<p>Il existe une fenêtre d'opportunité idéale : <strong>le moment précis de la livraison ou de la finalisation</strong>.</p>\n<ul>\n  <li>Quand le client découvre sa cuisine posée, sa création sur-mesure ou son projet terminé et qu'il s'exclame : <em>« C'est magnifique, merci beaucoup ! »</em>.</li>\n  <li>C'est exactement à cet instant que tu réponds avec le sourire : <em>« Je suis tellement ravi que ça vous plaise ! Votre satisfaction est ma meilleure récompense. Comme je suis un artisan indépendant, un petit mot sur ma fiche Google m'aide énormément à me faire connaître dans la région. Je peux vous envoyer un petit lien par SMS ? »</em>.</li>\n</ul>\n\n<h3>📱 Les supports pratiques à mettre en place :</h3>\n<ol>\n  <li><strong>Le SMS court et personnalisé</strong> : envoyé 24h après la fin de la prestation avec ton lien direct.</li>\n  <li><strong>Le QR Code pratique</strong> : imprimé sur ta carte de visite, ton devis ou glissé dans le colis de livraison (le client le scanne avec son smartphone et dépose son avis en 30 secondes).</li>\n  <li><strong>L'e-mail de remerciement et de suivi de fin de prestation</strong>.</li></ol><ul>\n</ul>\n\n<blockquote><strong>💡 Le Mémo de l'Expert</strong> : Intègre la demande d'avis dans ta routine de fin de prestation. En formulant ta demande avec le cœur et en facilitant l'accès au formulaire, tu obtiendras un taux de réponse exceptionnel !</blockquote>",
             "pdfUrl": "",
             "externalLink": "",
@@ -855,16 +855,6 @@ const DEFAULT_COURSES: Course[] = [
             "order_index": 2
           },
           {
-            "id": "17884306-4697-4000-a000-000000000000",
-            "title": "Messagerie et module Questions/Réponses",
-            "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-            "notes": "<p>Recevoir des demandes de devis par message écrit directement depuis l'application Google Maps : aubaine pour ton chiffre d'affaires ou source de stress supplémentaire ? Faisons le bon choix pour ton organisation.</p>\n\n<p>Google propose une fonctionnalité de <strong>messagerie instantanée</strong> qui fait apparaître un bouton bleu « Discuter » ou « Envoyer un message » sur ta fiche d'établissement lorsque les internautes te consultent sur leur téléphone portable.</p>\n\n<p>Cette option est particulièrement appréciée par les jeunes générations et les personnes qui préfèrent envoyer quelques photos de leur besoin par message plutôt que de téléphoner.</p>\n\n<h3>🤔 Faut-il activer la messagerie pour ton activité ?</h3>\n<p>La réponse dépend exclusivement de ton mode de travail au quotidien :</p>\n<ul>\n  <li><strong>Active-la si</strong> : tu gardes ton smartphone à portée de main, tu aimes échanger par message court, et tu as la capacité de répondre en moins de quelques heures.</li>\n  <li><strong>Désactive-la si</strong> : tu es sur chantier toute la journée sans pouvoir regarder ton écran, ou si tu préfères concentrer toutes tes demandes sur ton formulaire de contact de site internet et tes appels téléphoniques.</li>\n</ul>\n\n<h3>💬 Les bonnes pratiques si tu choisis de l'activer :</h3>\n<p>Dans cette leçon, nous voyons comment :</p>\n<ol>\n  <li>Configurer un <strong>message d'accueil automatique chaleureux</strong> qui remercie l'internaute et lui indique tes horaires de réponse habituels.</li>\n  <li>Définir des réponses rapides types pour gagner du temps.</li>\n  <li>Éviter d'être pénalisé par Google (un délai de réponse trop long peut amener Google à désactiver automatiquement la messagerie de ta fiche).</li></ol><ul>\n</ul>\n\n<blockquote><strong>💡 Le Mémo de l'Expert</strong> : Choisis le mode de contact qui te correspond le mieux. Si tu actives la messagerie, personnalise ton message d'accueil automatique pour poser un cadre clair et accueillant dès la première seconde !</blockquote>",
-            "pdfUrl": "",
-            "externalLink": "",
-            "duration": "",
-            "order_index": 3
-          },
-          {
             "id": "17890461-3401-4000-a000-000000000000",
             "title": "10 min par mois pour mettre à jour",
             "videoUrl": "https://youtu.be/YDEz8kwtrbA",
@@ -872,7 +862,7 @@ const DEFAULT_COURSES: Course[] = [
             "pdfUrl": "",
             "externalLink": "https://drive.google.com/file/d/1stUvYoYScKbwn8mOR47o-9hZFVpdblaj/view?usp=drive_link",
             "duration": "",
-            "order_index": 4
+            "order_index": 3
           }
         ],
         "order_index": 6
@@ -1010,12 +1000,12 @@ export function getRealCourseStats(courseId: string, courseTitle?: string): Real
     });
 
     const enrolledCount = matchingEnrollments.length;
-    
+
     // Calculate completed count from matching enrollments having progress >= 100
-    const completedCount = matchingEnrollments.filter((item: any) => 
+    const completedCount = matchingEnrollments.filter((item: any) =>
       item.progress >= 100 || (item.completedLessons && item.totalLessons && item.completedLessons >= item.totalLessons)
     ).length;
-    
+
     const completionPercentage = enrolledCount > 0 ? Math.round((completedCount / enrolledCount) * 100) : 0;
 
     return {
@@ -1204,7 +1194,7 @@ export async function fetchRealCourseStatsFromDb(coursesList: Course[]): Promise
             });
           });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Compile final stats per course

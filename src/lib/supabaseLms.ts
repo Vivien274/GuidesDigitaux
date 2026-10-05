@@ -12,6 +12,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  */
 export async function fetchCoursesFromDb(): Promise<Course[]> {
   try {
+    // 1. Try fetching from server API (which uses service role key and bypasses RLS for full database records)
+    if (typeof window !== 'undefined') {
+      try {
+        const apiRes = await fetch('/api/courses');
+        if (apiRes.ok) {
+          const apiData = await apiRes.json();
+          if (apiData.success && Array.isArray(apiData.courses) && apiData.courses.length > 0) {
+            return apiData.courses;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('API /api/courses fetch error, falling back to direct query:', apiErr);
+      }
+    }
+
     const fetchPromise = supabase
       .from('courses')
       .select(`
@@ -145,6 +160,27 @@ export async function saveCourseToDb(course: Course): Promise<Course[]> {
   const courseWithUuid = { ...course, id: courseUuid };
   const updatedLocal = saveLocalCourse(courseWithUuid);
 
+  // 1. Primary Save: Call secure server API endpoint to save directly to Supabase DB (bypasses RLS with admin key)
+  try {
+    const res = await fetch('/api/admin/courses/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ course: courseWithUuid }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success) {
+        return updatedLocal;
+      }
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      console.warn('API /api/admin/courses/save warning:', errData.error || res.statusText);
+    }
+  } catch (apiErr) {
+    console.warn('Could not call /api/admin/courses/save, falling back to direct client save:', apiErr);
+  }
+
+  // 2. Client-side fallback if server API is unavailable
   try {
     const { error: courseErr } = await supabase.from('courses').upsert({
       id: courseUuid,
