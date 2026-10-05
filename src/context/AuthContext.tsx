@@ -108,14 +108,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await Promise.all([
+      await Promise.allSettled([
         fetch('/api/auth/logout', { method: 'POST' }),
         supabase.auth.signOut(),
       ]);
     } catch (e) {}
 
+    if (typeof document !== 'undefined') {
+      document.cookie = 'gd_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    }
+
     setUser(null);
     setRoleState('eleve');
+
+    if (typeof window !== 'undefined') {
+      window.location.assign('/mon-compte?logout=true');
+    }
   };
 
   return (

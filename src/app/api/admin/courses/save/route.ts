@@ -5,16 +5,12 @@ import type { Course } from '@/lib/coursesStore';
 
 function toUuid(id: string): string {
   if (!id) return '00000000-0000-4000-a000-000000000000';
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-    return id;
-  }
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash << 5) - hash + id.charCodeAt(i);
-    hash |= 0;
-  }
-  const hex = Math.abs(hash).toString(16).padStart(8, '0');
-  return `00000000-0000-4000-a000-${hex.padEnd(12, '0').slice(0, 12)}`;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(id)) return id;
+
+  const numericStr = id.replace(/[^0-9]/g, '') || '123456789';
+  const padded = (numericStr + '00000000000000000000000000000000').slice(0, 32);
+  return `${padded.slice(0,8)}-${padded.slice(8,12)}-4${padded.slice(13,16)}-a${padded.slice(17,20)}-${padded.slice(20,32)}`;
 }
 
 export async function POST(request: Request) {

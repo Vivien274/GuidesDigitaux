@@ -257,10 +257,7 @@ export default function Header() {
 
             {mounted && isLoggedIn && (
               <button
-                onClick={() => {
-                  logout();
-                  window.location.href = '/mon-compte';
-                }}
+                onClick={() => logout()}
                 title="Se déconnecter"
                 aria-label="Se déconnecter"
                 className="hidden sm:flex px-3 py-2 text-xs font-bold text-slate-600 hover:text-[#e05a47] hover:bg-rose-50 rounded-xl transition-colors border border-transparent hover:border-rose-200 items-center gap-1.5 cursor-pointer"
@@ -463,7 +460,6 @@ export default function Header() {
                         onClick={() => {
                           setIsMobileMenuOpen(false);
                           logout();
-                          window.location.href = '/mon-compte';
                         }}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-slate-600 hover:text-[#c43c1d] rounded-xl transition-colors cursor-pointer"
                       >

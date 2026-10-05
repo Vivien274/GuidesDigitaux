@@ -216,10 +216,7 @@ export default function FormateurDashboardPage() {
             </Link>
 
             <button
-              onClick={() => {
-                logout();
-                window.location.href = '/mon-compte';
-              }}
+              onClick={() => logout()}
               className="px-4 py-4 text-xs font-extrabold text-slate-600 bg-white hover:bg-rose-50 hover:text-[#e05a47] rounded-2xl border border-[#eee7da] shadow-2xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               <LogOut className="w-4 h-4" />

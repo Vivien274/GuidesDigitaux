@@ -94,7 +94,7 @@ export default function MonComptePage() {
             Espace Membre & Authentification
           </span>
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-[#332420] tracking-tight">
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-[#332420] tracking-tight mb-2">
             Connexion & <span className="text-[#18757d]">Espace Client</span>
           </h1>
 

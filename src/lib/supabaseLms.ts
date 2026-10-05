@@ -15,7 +15,7 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
     // 1. Try fetching from server API (which uses service role key and bypasses RLS for full database records)
     if (typeof window !== 'undefined') {
       try {
-        const apiRes = await fetch('/api/courses');
+        const apiRes = await fetch('/api/courses', { cache: 'no-store' });
         if (apiRes.ok) {
           const apiData = await apiRes.json();
           if (apiData.success && Array.isArray(apiData.courses) && apiData.courses.length > 0) {
@@ -157,7 +157,18 @@ export function toUuid(id: string): string {
  */
 export async function saveCourseToDb(course: Course): Promise<Course[]> {
   const courseUuid = toUuid(course.id);
-  const courseWithUuid = { ...course, id: courseUuid };
+  const courseWithUuid = {
+    ...course,
+    id: courseUuid,
+    modules: (course.modules || []).map(m => ({
+      ...m,
+      id: toUuid(m.id),
+      lessons: (m.lessons || []).map(l => ({
+        ...l,
+        id: toUuid(l.id)
+      }))
+    }))
+  };
   const updatedLocal = saveLocalCourse(courseWithUuid);
 
   // 1. Primary Save: Call secure server API endpoint to save directly to Supabase DB (bypasses RLS with admin key)
@@ -172,9 +183,14 @@ export async function saveCourseToDb(course: Course): Promise<Course[]> {
       if (data.success) {
         return updatedLocal;
       }
+      throw new Error(data.error || 'Erreur lors de l’enregistrement de la formation.');
     } else {
       const errData = await res.json().catch(() => ({}));
-      console.warn('API /api/admin/courses/save warning:', errData.error || res.statusText);
+      const errorMsg = errData.error || `Erreur serveur (${res.status}): impossible d'enregistrer dans Supabase.`;
+      console.error('API /api/admin/courses/save warning:', errorMsg);
+      if (typeof window !== 'undefined') {
+        alert(`Attention : ${errorMsg}`);
+      }
     }
   } catch (apiErr) {
     console.warn('Could not call /api/admin/courses/save, falling back to direct client save:', apiErr);
