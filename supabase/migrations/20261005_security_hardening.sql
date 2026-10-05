@@ -55,23 +55,23 @@ END;
 $$;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT
+CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT TO authenticated
   USING (auth_user_id = auth.uid() OR public.is_privileged_user());
-CREATE POLICY "Privileged users can insert profiles" ON public.profiles FOR INSERT
+CREATE POLICY "Privileged users can insert profiles" ON public.profiles FOR INSERT TO authenticated
   WITH CHECK (public.is_privileged_user());
-CREATE POLICY "Privileged users can update profiles" ON public.profiles FOR UPDATE
+CREATE POLICY "Privileged users can update profiles" ON public.profiles FOR UPDATE TO authenticated
   USING (public.is_privileged_user())
   WITH CHECK (public.is_privileged_user());
 
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Published products are publicly readable" ON public.products FOR SELECT
+CREATE POLICY "Published products are publicly readable" ON public.products FOR SELECT TO anon, authenticated
   USING (true);
-CREATE POLICY "Privileged users can manage products" ON public.products FOR ALL
+CREATE POLICY "Privileged users can manage products" ON public.products FOR ALL TO authenticated
   USING (public.is_privileged_user())
   WITH CHECK (public.is_privileged_user());
 
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own orders" ON public.orders FOR SELECT
+CREATE POLICY "Users can view their own orders" ON public.orders FOR SELECT TO authenticated
   USING (
     auth.uid() = user_id
     OR customer_email = (auth.jwt() ->> 'email')
@@ -79,14 +79,14 @@ CREATE POLICY "Users can view their own orders" ON public.orders FOR SELECT
   );
 
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Course catalog is publicly readable" ON public.courses FOR SELECT
+CREATE POLICY "Course catalog is publicly readable" ON public.courses FOR SELECT TO anon, authenticated
   USING (true);
-CREATE POLICY "Privileged users can manage courses" ON public.courses FOR ALL
+CREATE POLICY "Privileged users can manage courses" ON public.courses FOR ALL TO authenticated
   USING (public.is_privileged_user())
   WITH CHECK (public.is_privileged_user());
 
 ALTER TABLE public.modules ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enrolled users can view modules" ON public.modules FOR SELECT
+CREATE POLICY "Enrolled users can view modules" ON public.modules FOR SELECT TO authenticated
   USING (
     public.is_privileged_user()
     OR EXISTS (
@@ -98,12 +98,12 @@ CREATE POLICY "Enrolled users can view modules" ON public.modules FOR SELECT
         AND enrollment.user_id IS NOT NULL
     )
   );
-CREATE POLICY "Privileged users can manage modules" ON public.modules FOR ALL
+CREATE POLICY "Privileged users can manage modules" ON public.modules FOR ALL TO authenticated
   USING (public.is_privileged_user())
   WITH CHECK (public.is_privileged_user());
 
 ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enrolled users can view lessons" ON public.lessons FOR SELECT
+CREATE POLICY "Enrolled users can view lessons" ON public.lessons FOR SELECT TO authenticated
   USING (
     public.is_privileged_user()
     OR EXISTS (
@@ -116,36 +116,36 @@ CREATE POLICY "Enrolled users can view lessons" ON public.lessons FOR SELECT
         AND enrollment.user_id IS NOT NULL
     )
   );
-CREATE POLICY "Privileged users can manage lessons" ON public.lessons FOR ALL
+CREATE POLICY "Privileged users can manage lessons" ON public.lessons FOR ALL TO authenticated
   USING (public.is_privileged_user())
   WITH CHECK (public.is_privileged_user());
 
 ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own enrollments" ON public.enrollments FOR SELECT
+CREATE POLICY "Users can view their own enrollments" ON public.enrollments FOR SELECT TO authenticated
   USING (auth.uid() = user_id OR public.is_privileged_user());
-CREATE POLICY "Privileged users can manage enrollments" ON public.enrollments FOR ALL
+CREATE POLICY "Privileged users can manage enrollments" ON public.enrollments FOR ALL TO authenticated
   USING (public.is_privileged_user())
   WITH CHECK (public.is_privileged_user());
 
 ALTER TABLE public.lesson_progress ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage their own lesson progress" ON public.lesson_progress FOR ALL
+CREATE POLICY "Users can manage their own lesson progress" ON public.lesson_progress FOR ALL TO authenticated
   USING (auth.uid() = user_id OR public.is_privileged_user())
   WITH CHECK (auth.uid() = user_id OR public.is_privileged_user());
 
 ALTER TABLE public.preorders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Preorders are publicly readable" ON public.preorders FOR SELECT
+CREATE POLICY "Preorders are publicly readable" ON public.preorders FOR SELECT TO anon, authenticated
   USING (true);
-CREATE POLICY "Privileged users can manage preorders" ON public.preorders FOR ALL
+CREATE POLICY "Privileged users can manage preorders" ON public.preorders FOR ALL TO authenticated
   USING (public.is_privileged_user())
   WITH CHECK (public.is_privileged_user());
 
 ALTER TABLE public.preorder_buyers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own preorders" ON public.preorder_buyers FOR SELECT
+CREATE POLICY "Users can view their own preorders" ON public.preorder_buyers FOR SELECT TO authenticated
   USING (
     customer_email = (auth.jwt() ->> 'email')
     OR public.is_privileged_user()
   );
-CREATE POLICY "Privileged users can manage preorder buyers" ON public.preorder_buyers FOR ALL
+CREATE POLICY "Privileged users can manage preorder buyers" ON public.preorder_buyers FOR ALL TO authenticated
   USING (public.is_privileged_user())
   WITH CHECK (public.is_privileged_user());
 
