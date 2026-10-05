@@ -168,3 +168,105 @@ export function purgeAllUserPurchases(): void {
     });
   }
 }
+
+/**
+ * Vérifie si un utilisateur a légitimement acheté et a accès à une formation spécifique.
+ */
+export async function hasUserCourseAccess(
+  email?: string | null,
+  courseSlugOrId?: string | null,
+  role?: string | null
+): Promise<boolean> {
+  if (!email || !courseSlugOrId) return false;
+  const normalizedEmail = email.toLowerCase().trim();
+  const cleanTarget = decodeURIComponent(courseSlugOrId).toLowerCase().trim();
+
+  // 1. SuperAdmin / Formateur : accès illimité garanti
+  if (role === 'superadmin' || role === 'formateur' || isSuperAdminEmail(normalizedEmail)) {
+    return true;
+  }
+
+  // 2. Récupérer les achats réels de l'utilisateur (depuis Supabase DB avec fallback local)
+  let purchases: EnrolledCourseItem[] = [];
+  try {
+    purchases = await getUserPurchasesAsync(normalizedEmail);
+  } catch (e) {
+    purchases = getUserPurchases(normalizedEmail);
+  }
+
+  if (!purchases || purchases.length === 0) {
+    return false;
+  }
+
+  // 3. Formation Fiche Google / GMB
+  if (cleanTarget.includes('google') || cleanTarget.includes('gmb') || cleanTarget === 'formation-fiche-google' || cleanTarget === 'precommande-fiche-google') {
+    return purchases.some(p => {
+      const pId = (p.id || '').toLowerCase();
+      const pSlug = (p.slug || '').toLowerCase();
+      const pTitle = (p.title || '').toLowerCase();
+      return (
+        pId === 'formation-fiche-google' ||
+        pSlug === 'formation-fiche-google' ||
+        pId === 'precommande-fiche-google' ||
+        pSlug === 'precommande-fiche-google' ||
+        pId === '17873181-7987-4000-a000-000000000000' ||
+        pId === '33333333-3333-4333-a333-333333333333' ||
+        pSlug.includes('fiche-google') ||
+        pId.includes('fiche-google') ||
+        pTitle.includes('google')
+      );
+    });
+  }
+
+  // 4. Formation WooCommerce / Boutique
+  if (cleanTarget.includes('woocommerce') || cleanTarget.includes('boutique')) {
+    return purchases.some(p => {
+      const pId = (p.id || '').toLowerCase();
+      const pSlug = (p.slug || '').toLowerCase();
+      const pTitle = (p.title || '').toLowerCase();
+      return (
+        pId === '22222222-2222-4222-a222-222222222222' ||
+        pSlug.includes('woocommerce') ||
+        pId.includes('woocommerce') ||
+        pTitle.includes('woocommerce') ||
+        pSlug.includes('bundle') ||
+        pId.includes('bundle')
+      );
+    });
+  }
+
+  // 5. Formation WordPress / Vitrine
+  if (cleanTarget.includes('wordpress') || cleanTarget.includes('vitrine')) {
+    return purchases.some(p => {
+      const pId = (p.id || '').toLowerCase();
+      const pSlug = (p.slug || '').toLowerCase();
+      const pTitle = (p.title || '').toLowerCase();
+      return (
+        pId === '11111111-1111-4111-a111-111111111111' ||
+        pSlug.includes('wordpress') ||
+        pId.includes('wordpress') ||
+        pSlug.includes('vitrine') ||
+        pTitle.includes('wordpress') ||
+        pSlug.includes('bundle') ||
+        pId.includes('bundle')
+      );
+    });
+  }
+
+  // 6. Bundle Combo
+  if (cleanTarget.includes('bundle') || cleanTarget.includes('combo')) {
+    return purchases.some(p => {
+      const pSlug = (p.slug || '').toLowerCase();
+      const pId = (p.id || '').toLowerCase();
+      return pSlug.includes('bundle') || pId.includes('bundle') || pId === 'bundle-combo-vitrine-boutique';
+    });
+  }
+
+  // 7. Match direct ID ou slug
+  return purchases.some(p => {
+    const pId = (p.id || '').toLowerCase();
+    const pSlug = (p.slug || '').toLowerCase();
+    return pId === cleanTarget || pSlug === cleanTarget;
+  });
+}
+

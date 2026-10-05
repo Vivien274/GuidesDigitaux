@@ -28,7 +28,12 @@ export default function MonComptePage() {
     }
 
     const normalized = email.toLowerCase().trim();
-    if (['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@guides-digitaux.com'].includes(normalized)) {
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const redirectParam = urlParams?.get('redirect');
+
+    if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+      router.push(redirectParam);
+    } else if (['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@guides-digitaux.com'].includes(normalized)) {
       router.push('/dashboard/admin');
     } else {
       router.push('/dashboard/eleve');

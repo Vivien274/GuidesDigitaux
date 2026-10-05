@@ -10,6 +10,7 @@ import VideoPlayer from '@/components/VideoPlayer';
 import { getStoredCourses, Course } from '@/lib/coursesStore';
 import { fetchCoursesFromDb } from '@/lib/supabaseLms';
 import { useAuth } from '@/context/AuthContext';
+import { hasUserCourseAccess } from '@/lib/userPurchasesStore';
 import CertificateModal from '@/components/CertificateModal';
 import { 
   Play, 
@@ -31,7 +32,8 @@ import {
   RotateCcw,
   AlertCircle,
   Video,
-  Users
+  Users,
+  ShoppingBag
 } from 'lucide-react';
 
 const getShuffledOptions = (options: string[], qId: string) => {
@@ -64,6 +66,8 @@ export default function FormationViewerPage() {
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [showCertModal, setShowCertModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const [isVerifyingAccess, setIsVerifyingAccess] = useState<boolean>(true);
 
   // QUIZ STATE
   const [passedQuizzes, setPassedQuizzes] = useState<Record<string, boolean>>({});
@@ -71,6 +75,69 @@ export default function FormationViewerPage() {
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<number>(0);
   const [quizPassed, setQuizPassed] = useState<boolean>(false);
+
+  // Vérification stricte de l'accès payant à la formation
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function verifyAccess() {
+      setIsVerifyingAccess(true);
+
+      let currentEmail = user?.email;
+      let currentRole = user?.role;
+
+      if (!currentEmail && typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('gd_auth_user');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            currentEmail = parsed.email;
+            currentRole = parsed.role;
+          }
+        } catch (e) {}
+      }
+
+      if (!currentEmail) {
+        if (!isCancelled) {
+          setHasAccess(false);
+          setIsVerifyingAccess(false);
+        }
+        return;
+      }
+
+      try {
+        const allowed = await hasUserCourseAccess(currentEmail, slug, currentRole);
+        if (!isCancelled) {
+          setHasAccess(allowed);
+        }
+      } catch (err) {
+        console.error('Error verifying course access:', err);
+        if (!isCancelled) {
+          setHasAccess(false);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsVerifyingAccess(false);
+        }
+      }
+    }
+
+    verifyAccess();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user?.email, user?.role, slug]);
+
+  // Si l'utilisateur n'est pas connecté du tout, redirection vers /mon-compte
+  useEffect(() => {
+    if (!isVerifyingAccess && hasAccess === false) {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('gd_auth_user') : null;
+      if (!user && !stored) {
+        router.replace(`/mon-compte?redirect=${encodeURIComponent(`/formation/${slug}`)}`);
+      }
+    }
+  }, [isVerifyingAccess, hasAccess, user, slug, router]);
 
   useEffect(() => {
     async function syncCourse() {
@@ -235,10 +302,136 @@ export default function FormationViewerPage() {
     }
   };
 
-  if (isLoading || !courseData) {
+  if (isLoading || isVerifyingAccess || !courseData) {
     return (
       <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#18757d] border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // ACCÈS RESTREINT : Si l'utilisateur n'a pas accès à la formation (non payée ou compte non inscrit)
+  if (hasAccess === false) {
+    const isGoogle = slug.includes('google') || slug.includes('gmb');
+    const isWp = slug.includes('wordpress') || slug.includes('vitrine');
+    const checkoutUrl = isGoogle 
+      ? '/tunnel/formation-fiche-google' 
+      : isWp 
+        ? '/tunnel/formation-wordpress' 
+        : '/boutique';
+
+    const courseTitle = courseData?.title || 'Formation Guides Digitaux';
+    const coursePrice = courseData?.price || (isGoogle ? 29 : 199);
+
+    return (
+      <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans flex flex-col justify-between">
+        <div>
+          <Header />
+
+          {/* BREADCRUMB */}
+          <div className="bg-[#f5f1e8] py-3.5 border-b border-[#e8ded0]">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+              <Link href="/dashboard/eleve" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#18757d] hover:underline">
+                <ArrowLeft className="w-4 h-4" />
+                Retour à mon Espace Élève
+              </Link>
+              <Link href="/boutique" className="text-xs font-bold text-[#5e4d46] hover:text-[#18757d]">
+                Boutique des Formations →
+              </Link>
+            </div>
+          </div>
+
+          {/* PAYWALL / LOCKED SCREEN */}
+          <section className="py-12 md:py-20">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="bg-white rounded-3xl p-8 sm:p-12 border border-[#eee7da] shadow-lg text-center space-y-8">
+                
+                {/* Lock Badge Icon */}
+                <div className="w-20 h-20 rounded-3xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto shadow-sm border border-amber-200">
+                  <Lock className="w-10 h-10 text-amber-700" />
+                </div>
+
+                <div className="space-y-3">
+                  <span className="inline-block px-4 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 uppercase tracking-wider">
+                    🔒 Formation Verrouillée – Accès Réservé
+                  </span>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-[#332420] tracking-tight">
+                    Accès Réservé aux Membres Inscrits
+                  </h1>
+                  <p className="text-xs sm:text-sm text-[#5e4d46] max-w-xl mx-auto leading-relaxed">
+                    {user?.email ? (
+                      <>
+                        Vous êtes actuellement connecté avec le compte <strong>{user.email}</strong>, mais cette formation n'a pas encore été acquise ou activée sur ce profil.
+                      </>
+                    ) : (
+                      <>
+                        Cette formation vidéo fait partie du catalogue privé de Guides Digitaux. Vous devez être connecté avec un compte ayant acquis cette formation pour accéder aux cours.
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                {/* Course Card Preview */}
+                <div className="p-6 bg-[#faf8f5] rounded-2xl border border-[#eee7da] text-left flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-extrabold text-[#18757d] uppercase tracking-wider">
+                      Programme du cours
+                    </span>
+                    <h2 className="text-base font-extrabold text-[#332420]">
+                      {courseTitle}
+                    </h2>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Par Stéphanie ROCQ • Accès illimité et garanti à vie
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-2xl font-black text-[#18757d] block">
+                      {coursePrice} €
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Paiement unique</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+                  <Link
+                    href={checkoutUrl}
+                    className="w-full sm:w-auto px-8 py-4 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-md uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <ShoppingBag className="w-4 h-4 text-[#332420]" />
+                    Commander la formation ({coursePrice} €) →
+                  </Link>
+
+                  <Link
+                    href="/dashboard/eleve"
+                    className="w-full sm:w-auto px-7 py-4 text-xs font-extrabold text-[#332420] bg-[#faf8f5] hover:bg-[#e6f4f3] hover:text-[#18757d] rounded-2xl border border-[#eee7da] transition-all uppercase tracking-wider text-center"
+                  >
+                    Mon Espace Élève
+                  </Link>
+                </div>
+
+                {/* Help notice */}
+                <div className="pt-4 border-t border-[#eee7da] text-[11px] text-slate-500 space-y-1.5">
+                  <p>
+                    Vous avez réglé cette formation avec une autre adresse e-mail ?
+                  </p>
+                  <p>
+                    <Link href="/mon-compte?logout=true" className="font-bold text-[#18757d] hover:underline">
+                      Déconnectez-vous
+                    </Link>{' '}
+                    pour vous reconnecter avec l'adresse utilisée lors du paiement, ou écrivez-nous à{' '}
+                    <a href="mailto:contact@guides-digitaux.com" className="font-bold text-[#18757d] hover:underline">
+                      contact@guides-digitaux.com
+                    </a>.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <Footer />
       </div>
     );
   }

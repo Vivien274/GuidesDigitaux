@@ -6,8 +6,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('gd_session')?.value;
 
-  // 1. Protect Student Dashboard
-  if (pathname.startsWith('/dashboard/eleve')) {
+  // 1. Protect Student Dashboard & Formations
+  if (pathname.startsWith('/dashboard/eleve') || pathname.startsWith('/formation/')) {
     const session = await verifySession(token);
     if (!session) {
       const redirectUrl = new URL('/mon-compte', request.url);
@@ -37,6 +37,10 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/mon-compte' && !request.nextUrl.searchParams.get('logout')) {
     const session = await verifySession(token);
     if (session) {
+      const redirect = request.nextUrl.searchParams.get('redirect');
+      if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+        return NextResponse.redirect(new URL(redirect, request.url));
+      }
       if (session.role === 'superadmin' || session.role === 'formateur') {
         return NextResponse.redirect(new URL('/dashboard/admin', request.url));
       } else {
@@ -62,6 +66,7 @@ export const config = {
   matcher: [
     '/dashboard/eleve/:path*',
     '/dashboard/eleve',
+    '/formation/:path*',
     '/dashboard/admin/:path*',
     '/dashboard/admin',
     '/mon-compte',
