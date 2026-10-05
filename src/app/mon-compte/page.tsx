@@ -1,19 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuth, UserRole } from '@/context/AuthContext';
-import { Lock, Mail, User, Key, ArrowRight, ShieldCheck, Download, Sparkles, GraduationCap, Shield } from 'lucide-react';
+import { Lock, Mail, User, Key, ArrowRight, ShieldCheck, Download, Sparkles, GraduationCap, Shield, Eye, EyeOff } from 'lucide-react';
 
 export default function MonComptePage() {
-  const router = useRouter();
   const { login } = useAuth();
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,13 +29,17 @@ export default function MonComptePage() {
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const redirectParam = urlParams?.get('redirect');
 
+    let destination = '/dashboard/eleve';
     if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
-      router.push(redirectParam);
-    } else if (res.role === 'superadmin' || res.role === 'formateur') {
-      router.push('/dashboard/admin');
-    } else {
-      router.push('/dashboard/eleve');
+      destination = redirectParam;
+    } else if (res.role === 'superadmin') {
+      destination = '/dashboard/admin';
+    } else if (res.role === 'formateur') {
+      destination = '/dashboard/formateur';
     }
+
+    // Reload the destination so its access guard reads the newly issued session cookie.
+    window.location.assign(destination);
   };
 
   return (
@@ -118,14 +121,23 @@ export default function MonComptePage() {
                 <div className="relative">
                   <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     minLength={8}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-[#faf8f5] border border-[#eee7da] rounded-xl pl-10 pr-4 py-3 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
+                    className="w-full bg-[#faf8f5] border border-[#eee7da] rounded-xl pl-10 pr-11 py-3 text-xs text-[#332420] focus:outline-none focus:border-[#18757d]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                    aria-pressed={showPassword}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#18757d] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#18757d] rounded-md cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
