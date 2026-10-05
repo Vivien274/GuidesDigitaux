@@ -1,4 +1,28 @@
 const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
+function encodeBase64Url(value: string): string {
+  const bytes = encoder.encode(value);
+  let binary = '';
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function decodeBase64Url(value: string): string {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+
+  return decoder.decode(bytes);
+}
 
 export interface SessionData {
   userId: string;
@@ -37,7 +61,7 @@ export async function signSession(
     exp
   });
 
-  const base64Data = Buffer.from(rawData).toString('base64url');
+  const base64Data = encodeBase64Url(rawData);
   
   const keyBuf = encoder.encode(secret);
   const cryptoKey = await crypto.subtle.importKey(
@@ -83,7 +107,7 @@ export async function verifySession(
       keyBuf,
       { name: 'HMAC', hash: 'SHA-256' },
       false,
-      ['sign']
+      ['verify']
     );
     
     if (!/^[0-9a-f]{64}$/i.test(signature)) {
@@ -102,7 +126,7 @@ export async function verifySession(
 
     if (!isValidSignature) return null;
 
-    const decodedJson = Buffer.from(base64Data, 'base64url').toString('utf-8');
+    const decodedJson = decodeBase64Url(base64Data);
     const data = JSON.parse(decodedJson) as SessionData;
 
     if (

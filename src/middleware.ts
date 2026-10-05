@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
   // 2. Protect Admin Dashboard
   if (pathname.startsWith('/dashboard/admin')) {
     const session = await verifySession(token);
-    if (!session || (session.role !== 'superadmin' && session.role !== 'formateur')) {
+    if (!session || session.role !== 'superadmin') {
       const redirectUrl = new URL('/mon-compte', request.url);
       redirectUrl.searchParams.set('redirect', pathname);
       redirectUrl.searchParams.set('admin', 'true');
@@ -33,7 +33,21 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 3. Redirect already logged-in users away from /mon-compte if they visit it without explicit params
+  // 3. Protect Trainer Dashboard
+  if (pathname.startsWith('/dashboard/formateur')) {
+    const session = await verifySession(token);
+    if (!session || (session.role !== 'superadmin' && session.role !== 'formateur')) {
+      const redirectUrl = new URL('/mon-compte', request.url);
+      redirectUrl.searchParams.set('redirect', pathname);
+      const response = NextResponse.redirect(redirectUrl);
+      if (!session) {
+        response.cookies.delete('gd_session');
+      }
+      return response;
+    }
+  }
+
+  // 4. Redirect already logged-in users away from /mon-compte if they visit it without explicit params
   if (pathname === '/mon-compte' && !request.nextUrl.searchParams.get('logout')) {
     const session = await verifySession(token);
     if (session) {
@@ -41,15 +55,17 @@ export async function middleware(request: NextRequest) {
       if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
         return NextResponse.redirect(new URL(redirect, request.url));
       }
-      if (session.role === 'superadmin' || session.role === 'formateur') {
+      if (session.role === 'superadmin') {
         return NextResponse.redirect(new URL('/dashboard/admin', request.url));
+      } else if (session.role === 'formateur') {
+        return NextResponse.redirect(new URL('/dashboard/formateur', request.url));
       } else {
         return NextResponse.redirect(new URL('/dashboard/eleve', request.url));
       }
     }
   }
 
-  // 4. Route every direct PDF request through the ownership-checked API.
+  // 5. Route every direct PDF request through the ownership-checked API.
   if (pathname.startsWith('/downloads/') && pathname.endsWith('.pdf')) {
     if (!token) {
       const loginUrl = new URL('/mon-compte', request.url);
@@ -72,6 +88,8 @@ export const config = {
     '/formation/:path*',
     '/dashboard/admin/:path*',
     '/dashboard/admin',
+    '/dashboard/formateur/:path*',
+    '/dashboard/formateur',
     '/mon-compte',
     '/downloads/:path*'
   ]
