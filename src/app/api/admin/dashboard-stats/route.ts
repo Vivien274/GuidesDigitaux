@@ -83,7 +83,7 @@ export async function GET() {
 
       if (secretKey) {
         const stripe = new Stripe(secretKey);
-        const stripeSessions = await stripe.checkout.sessions.list({ limit: 40 });
+        const stripeSessions = await stripe.checkout.sessions.list({ limit: 100 });
 
         for (const session of stripeSessions.data) {
           const meta = session.metadata || {};
@@ -107,7 +107,8 @@ export async function GET() {
               const { data: existingOrd } = await supabaseServer
                 .from('orders')
                 .select('id')
-                .eq('stripe_session_id', session.id)
+                .or(`stripe_session_id.eq.${session.id},stripe_session_id.like.${session.id}%`)
+                .limit(1)
                 .maybeSingle();
 
               if (!existingOrd) {
@@ -118,34 +119,92 @@ export async function GET() {
                   } catch (e) {}
                 }
 
+                const hasOrderBump = session.metadata?.hasOrderBump === 'true' || session.metadata?.orderbump === '1';
+                if ((!rawCartItems || rawCartItems.length === 0) && hasOrderBump) {
+                  rawCartItems = [
+                    {
+                      id: 'formation-fiche-google',
+                      title: 'Cap Visibilité Google : Le GPS pour Artisans & Créateurs',
+                      price: 29
+                    },
+                    {
+                      id: 'kit-serenite',
+                      title: 'Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA (Order Bump)',
+                      price: 9,
+                      downloadPdf: '/downloads/kit-serenite-52-posts-google-prompts-ia.pdf'
+                    }
+                  ];
+                }
+
                 if (Array.isArray(rawCartItems) && rawCartItems.length > 0) {
                   for (const cartIt of rawCartItems) {
                     const itemPrice = Number(cartIt.price) || 0;
                     const pId = cartIt.id;
                     const cartSessId = `${session.id}_${pId}`;
                     sessionMetadataMap.set(cartSessId, utmData);
-                    await supabaseServer.from('orders').insert({
+                    const { error: insCartErr } = await supabaseServer.from('orders').insert({
                       customer_email: customerEmail,
                       product_id: pId,
                       stripe_session_id: cartSessId,
-                      stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
                       amount: itemPrice,
                       currency: session.currency || 'eur',
                       status: 'paid'
                     });
+                    if (insCartErr) {
+                      console.error('[Dashboard Stats] Erreur insertion order cart:', insCartErr);
+                    }
                   }
                 } else {
-                  await supabaseServer.from('orders').insert({
+                  const { error: insSingleErr } = await supabaseServer.from('orders').insert({
                     customer_email: customerEmail,
                     product_id: productId,
                     stripe_session_id: session.id,
-                    stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
                     amount: amountEur,
                     currency: session.currency || 'eur',
                     status: 'paid'
                   });
+                  if (insSingleErr) {
+                    console.error('[Dashboard Stats] Erreur insertion order single:', insSingleErr);
+                  }
                 }
                 console.log(`[Dashboard Stats] Synchronisation réussie de la commande Stripe ${session.id} pour ${customerEmail}`);
+              }
+
+              // Update full_name in profile if missing or incomplete
+              const customerName = session.customer_details?.name || null;
+              if (customerName) {
+                await supabaseServer.from('profiles').update({
+                  full_name: customerName
+                }).eq('email', customerEmail);
+              }
+
+              // Ensure course enrollment in LMS
+              const isGoogle = productId.includes('fiche-google') || productId.includes('google');
+              if (isGoogle) {
+                const targetCourseId = '17873181-7987-4000-a000-000000000000';
+                const { data: existingEnr } = await supabaseServer
+                  .from('enrollments')
+                  .select('id')
+                  .eq('user_email', customerEmail)
+                  .eq('course_id', targetCourseId)
+                  .maybeSingle();
+
+                if (!existingEnr) {
+                  const { data: userProf } = await supabaseServer
+                    .from('profiles')
+                    .select('id')
+                    .eq('email', customerEmail)
+                    .maybeSingle();
+
+                  await supabaseServer.from('enrollments').insert({
+                    user_id: userProf?.id || null,
+                    user_email: customerEmail,
+                    course_id: targetCourseId,
+                    item_title: 'Cap Visibilité Google : Le GPS pas-à-pas pour guider vos clients locaux jusqu\'à votre atelier',
+                    item_type: 'formation',
+                    price: 29
+                  });
+                }
               }
             }
           }
