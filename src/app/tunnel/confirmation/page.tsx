@@ -504,7 +504,29 @@ function ConfirmationContent() {
           {/* DIRECT PDF DOWNLOAD BOX FOR EBOOK / CHECKLIST PURCHASES */}
           {isMounted && !isPreorder && (() => {
             const purchases = getUserPurchases(activeEmail);
-            const pdfPurchases = purchases.filter((p: any) => p.type === 'ebook' || p.type === 'checklist' || p.downloadPdf || p.title?.toLowerCase().includes('guide') || p.title?.toLowerCase().includes('checklist'));
+            const pdfPurchases = purchases.filter((p: any) => {
+              const isVideoCourse = 
+                p.type === 'formation' || 
+                p.category === 'formation' ||
+                p.slug?.includes('fiche-google') || 
+                p.id?.includes('fiche-google') || 
+                p.slug?.includes('formation') || 
+                p.id?.includes('formation');
+              if (isVideoCourse) return false;
+
+              const isBonusOrBump =
+                p.id === 'kit-serenite' ||
+                p.id === 'bonus-1' ||
+                p.id === 'bonus-2' ||
+                p.id === 'bonus-3';
+              if (isBonusOrBump) return false;
+
+              const isPdfCategory = p.type === 'ebook' || p.type === 'checklist' || p.category === 'ebook' || p.category === 'checklist';
+              const hasPdfDownload = !!p.downloadPdf;
+              const hasExactGuideWord = /\b(guide|guides|checklist|checklists|ebook|ebooks)\b/i.test(p.title || '');
+
+              return isPdfCategory || hasPdfDownload || hasExactGuideWord;
+            });
             if (pdfPurchases.length === 0) return null;
 
             return (
