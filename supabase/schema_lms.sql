@@ -17,7 +17,7 @@ ALTER TABLE public.profiles ALTER COLUMN id SET DEFAULT gen_random_uuid();
 ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
 CREATE UNIQUE INDEX IF NOT EXISTS profiles_email_key ON public.profiles(email);
 
--- Enable RLS on profiles with permissive policies for reading/writing
+-- Enable RLS on profiles; privileged writes use the server service role.
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public profiles select policy" ON public.profiles;
@@ -28,9 +28,7 @@ DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Instructors and admins can view profiles" ON public.profiles;
 
-CREATE POLICY "Public profiles select policy" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Public profiles insert policy" ON public.profiles FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public profiles update policy" ON public.profiles FOR UPDATE USING (true);
+CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 
 -- Initialiser les comptes superadmin et formateur
 INSERT INTO public.profiles (email, full_name, role)
@@ -80,7 +78,16 @@ CREATE TABLE IF NOT EXISTS public.modules (
 ALTER TABLE public.modules ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Modules viewable by course viewers" 
-  ON public.modules FOR SELECT USING (true);
+  ON public.modules FOR SELECT USING (
+    EXISTS (
+      SELECT 1
+      FROM public.courses course
+      LEFT JOIN public.enrollments enrollment
+        ON enrollment.course_id = course.id AND enrollment.user_id = auth.uid()
+      WHERE course.id = modules.course_id
+        AND (course.instructor_id = auth.uid() OR enrollment.user_id IS NOT NULL)
+    )
+  );
 
 CREATE POLICY "Instructors can manage modules" 
   ON public.modules FOR ALL USING (
@@ -106,7 +113,18 @@ CREATE TABLE IF NOT EXISTS public.lessons (
 ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Lessons viewable by enrolled students or previews" 
-  ON public.lessons FOR SELECT USING (true);
+  ON public.lessons FOR SELECT USING (
+    is_free_preview = true
+    OR EXISTS (
+      SELECT 1
+      FROM public.modules module
+      JOIN public.courses course ON course.id = module.course_id
+      LEFT JOIN public.enrollments enrollment
+        ON enrollment.course_id = course.id AND enrollment.user_id = auth.uid()
+      WHERE module.id = lessons.module_id
+        AND (course.instructor_id = auth.uid() OR enrollment.user_id IS NOT NULL)
+    )
+  );
 
 CREATE POLICY "Instructors can manage lessons" 
   ON public.lessons FOR ALL USING (
@@ -190,9 +208,6 @@ ALTER TABLE public.preorders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Preorders viewable by everyone" 
   ON public.preorders FOR SELECT USING (true);
 
-CREATE POLICY "Preorders manageable by all" 
-  ON public.preorders FOR ALL USING (true);
-
 -- 8. Create PREORDER_BUYERS Table
 CREATE TABLE IF NOT EXISTS public.preorder_buyers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -206,10 +221,8 @@ CREATE TABLE IF NOT EXISTS public.preorder_buyers (
 ALTER TABLE public.preorder_buyers ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Preorder buyers viewable by everyone" 
-  ON public.preorder_buyers FOR SELECT USING (true);
-
-CREATE POLICY "Preorder buyers manageable by everyone" 
-  ON public.preorder_buyers FOR ALL USING (true);
+  ON public.preorder_buyers FOR SELECT
+  USING (customer_email = (auth.jwt() ->> 'email'));
 
 -- 9. Create ORDERS Table
 CREATE TABLE IF NOT EXISTS public.orders (
@@ -226,8 +239,5 @@ CREATE TABLE IF NOT EXISTS public.orders (
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Orders viewable by everyone" 
-  ON public.orders FOR SELECT USING (true);
-
-CREATE POLICY "Orders manageable by everyone" 
-  ON public.orders FOR ALL USING (true);
-
+  ON public.orders FOR SELECT
+  USING (customer_email = (auth.jwt() ->> 'email'));

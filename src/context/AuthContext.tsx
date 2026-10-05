@@ -1,8 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-import { fetchUserProfileFromDb, upsertUserProfileToDb, getKnownRoleForEmail } from '@/lib/supabaseLms';
+import { supabase } from '@/lib/supabase';
 
 export type UserRole = 'superadmin' | 'formateur' | 'eleve';
 
@@ -18,7 +17,7 @@ interface AuthContextType {
   user: UserProfile | null;
   role: UserRole;
   setRole: (role: UserRole) => void;
-  login: (email: string, password?: string, targetRole?: UserRole) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password?: string, checkoutSessionId?: string) => Promise<{ success: boolean; error?: string; role?: UserRole }>;
   logout: () => void;
   isLoggedIn: boolean;
 }
@@ -88,11 +87,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) {
       const updated = { ...user, role: newRole };
       setUser(updated);
-      upsertUserProfileToDb(user.email, newRole, user.fullName);
     }
   };
 
-  const login = async (email: string, password?: string, targetRole: UserRole = 'eleve'): Promise<{ success: boolean; error?: string }> => {
+  const login = async (email: string, password?: string, checkoutSessionId?: string): Promise<{ success: boolean; error?: string; role?: UserRole }> => {
     const normalizedEmail = email.toLowerCase().trim();
     const providedPassword = (password || '').trim();
 
@@ -103,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({
           email: normalizedEmail,
           password: providedPassword,
-          role: targetRole
+          checkoutSessionId
         })
       });
 
@@ -120,6 +118,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: data.user.role
       };
 
+      if (!data.supabaseSession?.access_token || !data.supabaseSession?.refresh_token) {
+        return { success: false, error: 'Session Supabase manquante.' };
+      }
+
+      const { error: sessionError } = await supabase.auth.setSession(data.supabaseSession);
+      if (sessionError) {
+        return { success: false, error: 'Impossible d’activer la session sécurisée.' };
+      }
+
       setUser(loggedUser);
       setRoleState(loggedUser.role);
 
@@ -127,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('gd_auth_user', JSON.stringify(loggedUser));
       }
 
-      return { success: true };
+      return { success: true, role: loggedUser.role };
     } catch (err: any) {
       return { success: false, error: err?.message || 'Erreur réseau lors de la connexion' };
     }
@@ -135,7 +142,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await Promise.all([
+        fetch('/api/auth/logout', { method: 'POST' }),
+        supabase.auth.signOut(),
+      ]);
     } catch (e) {}
 
     setUser(null);

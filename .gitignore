@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 temp-app/
 scratch/
+
+# runtime analytics and customer-specific documents
+/data/analytics_events.json
+/public/invoices/
+/public/facture-*.html

@@ -8,14 +8,22 @@ export interface SessionData {
   exp: number; // Expiration timestamp in ms
 }
 
-const DEFAULT_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'guides-digitaux-secure-session-secret-key-2026!';
+function getSessionSecret(): string {
+  const secret = process.env.SESSION_SECRET || process.env.JWT_SECRET;
+
+  if (!secret || secret.length < 32) {
+    throw new Error('SESSION_SECRET doit contenir au moins 32 caractères.');
+  }
+
+  return secret;
+}
 
 /**
  * Generates an encrypted HMAC-SHA256 session token with a specific expiration time.
  */
 export async function signSession(
-  payload: { userId: string; email: string; role: string; fullName?: string },
-  secret: string = DEFAULT_SECRET,
+  payload: { userId: string; email: string; role: SessionData['role']; fullName?: string },
+  secret: string = getSessionSecret(),
   expiresInDays: number = 30
 ): Promise<string> {
   const timestamp = Date.now();
@@ -58,17 +66,18 @@ export async function signSession(
  */
 export async function verifySession(
   token: string | undefined | null,
-  secret: string = DEFAULT_SECRET
+  secret?: string
 ): Promise<SessionData | null> {
-  if (!token || !secret) return null;
+  if (!token) return null;
   
   try {
+    const resolvedSecret = secret || getSessionSecret();
     const parts = token.split('.');
     if (parts.length !== 2) return null;
     
     const [base64Data, signature] = parts;
     
-    const keyBuf = encoder.encode(secret);
+    const keyBuf = encoder.encode(resolvedSecret);
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
       keyBuf,
@@ -77,22 +86,33 @@ export async function verifySession(
       ['sign']
     );
     
-    const expectedBuf = await crypto.subtle.sign(
-      'HMAC',
-      cryptoKey,
-      encoder.encode(base64Data)
-    );
-    
-    const expectedHex = Array.from(new Uint8Array(expectedBuf))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-      
-    if (signature !== expectedHex) {
+    if (!/^[0-9a-f]{64}$/i.test(signature)) {
       return null;
     }
 
+    const signatureBytes = new Uint8Array(
+      signature.match(/.{2}/g)?.map(byte => Number.parseInt(byte, 16)) ?? []
+    );
+    const isValidSignature = await crypto.subtle.verify(
+      'HMAC',
+      cryptoKey,
+      signatureBytes,
+      encoder.encode(base64Data)
+    );
+
+    if (!isValidSignature) return null;
+
     const decodedJson = Buffer.from(base64Data, 'base64url').toString('utf-8');
     const data = JSON.parse(decodedJson) as SessionData;
+
+    if (
+      !data.userId ||
+      !data.email ||
+      !['superadmin', 'formateur', 'eleve'].includes(data.role) ||
+      !Number.isFinite(data.exp)
+    ) {
+      return null;
+    }
 
     // Check if session has expired
     if (Date.now() > data.exp) {

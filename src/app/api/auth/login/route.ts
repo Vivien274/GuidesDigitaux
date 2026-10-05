@@ -1,120 +1,161 @@
 import { NextResponse } from 'next/server';
-import { signSession } from '@/lib/auth';
+import crypto from 'crypto';
+import type { User } from '@supabase/supabase-js';
+import { signSession, type SessionData } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { stripe } from '@/lib/stripe/client';
 
-const MASTER_ADMIN_PASSWORDS = ['admin123', 'admin', 'GuidesDigitaux2026!'];
+interface ProfileRow {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string | null;
+  auth_user_id?: string | null;
+}
+
+function secretsMatch(provided: string, expected: string): boolean {
+  const providedBuffer = Buffer.from(provided);
+  const expectedBuffer = Buffer.from(expected);
+  return providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer);
+}
+
+async function findAuthUser(email: string): Promise<User | null> {
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (error) throw error;
+  return data.users.find(user => user.email?.toLowerCase().trim() === email) ?? null;
+}
+
+async function ensureAuthUser(email: string, password: string): Promise<User> {
+  const existingUser = await findAuthUser(email);
+  if (existingUser) {
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(existingUser.id, { password });
+    if (error || !data.user) throw error || new Error('Compte Auth introuvable.');
+    return data.user;
+  }
+
+  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (error || !data.user) throw error || new Error('Création du compte Auth impossible.');
+  return data.user;
+}
 
 export async function POST(request: Request) {
   try {
-    const { email, password, role } = await request.json();
-
+    const { email, password, checkoutSessionId } = await request.json();
     if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'Email requis' }, { status: 400 });
+      return NextResponse.json({ error: 'Email requis.' }, { status: 400 });
+    }
+    if (!password || typeof password !== 'string' || password.length < 8) {
+      return NextResponse.json({ error: 'Le mot de passe doit contenir au moins 8 caractères.' }, { status: 400 });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    const { data: rawProfile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+    if (profileError) throw profileError;
 
-    // 1. Fetch profile from Supabase DB to check real assigned role
-    let userId = `user_${Date.now()}`;
-    let fullName = normalizedEmail.split('@')[0].replace('.', ' ');
-    let dbRole: 'superadmin' | 'formateur' | 'eleve' | null = null;
+    const existingProfile = rawProfile as ProfileRow | null;
+    const storedRole = existingProfile?.role;
+    const effectiveRole: SessionData['role'] =
+      storedRole === 'superadmin' || storedRole === 'formateur' ? storedRole : 'eleve';
 
-    try {
-      const { data: existingProfile } = await supabaseAdmin
-        .from('profiles')
-        .select('*')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
+    let authUser: User | null = null;
 
-      if (existingProfile) {
-        userId = existingProfile.id || userId;
-        fullName = existingProfile.full_name || fullName;
-        if (existingProfile.role) {
-          dbRole = existingProfile.role as 'superadmin' | 'formateur' | 'eleve';
-        }
-      }
-    } catch (dbErr) {
-      console.warn('Profile sync notice on login:', dbErr);
-    }
-
-    // Determine target role (prioritize DB role or hardcoded superadmin whitelist)
-    const knownSuperadmins = ['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@guides-digitaux.com', 'stephanie@stratec-digital.com'];
-    let effectiveRole: 'superadmin' | 'formateur' | 'eleve' = 'eleve';
-
-    if (dbRole) {
-      effectiveRole = dbRole;
-    } else if (knownSuperadmins.includes(normalizedEmail) || normalizedEmail.includes('admin') || normalizedEmail.includes('stephanie') || normalizedEmail.includes('guidesdigitaux')) {
-      effectiveRole = 'superadmin';
-    } else if (role === 'superadmin' || role === 'formateur') {
-      effectiveRole = role;
-    }
-
-    // 2. Password verification for Admin
     if (effectiveRole === 'superadmin' || effectiveRole === 'formateur') {
-      if (!password) {
-        return NextResponse.json({ error: 'Un mot de passe est obligatoire pour ce compte.' }, { status: 400 });
+      const adminPassword = process.env.SUPERADMIN_PASSWORD;
+      if (!adminPassword || adminPassword.length < 12 || !secretsMatch(password, adminPassword)) {
+        return NextResponse.json({ error: 'Identifiants incorrects.' }, { status: 401 });
       }
-
-      const isMaster = MASTER_ADMIN_PASSWORDS.includes(password) || password === process.env.SUPERADMIN_PASSWORD;
-      if (!isMaster) {
-        // Look up profile password in DB if available
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('*')
-          .eq('email', normalizedEmail)
-          .maybeSingle();
-
-        if (profile?.password_hash && profile.password_hash !== password) {
-          return NextResponse.json({ error: 'Mot de passe administrateur incorrect.' }, { status: 401 });
-        }
-      }
+      authUser = await ensureAuthUser(normalizedEmail, password);
     }
 
-    // Ensure profile is created or updated in DB
-    try {
-      await supabaseAdmin.from('profiles').upsert({
-        id: userId,
-        email: normalizedEmail,
-        full_name: fullName,
-        role: effectiveRole,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'email' });
-    } catch (upsertErr) {
-      console.warn('Profile upsert notice on login:', upsertErr);
-    }
-
-    // 3. Create cryptographically signed session token
-    const token = await signSession({
-      userId,
+    let { data: authData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
       email: normalizedEmail,
-      role: effectiveRole,
-      fullName
+      password,
     });
 
-    const userObj = {
-      id: userId,
+    if (
+      signInError &&
+      effectiveRole === 'eleve' &&
+      typeof checkoutSessionId === 'string' &&
+      checkoutSessionId.startsWith('cs_')
+    ) {
+      const checkoutSession = await stripe.checkout.sessions.retrieve(checkoutSessionId);
+      const paidEmail = (checkoutSession.customer_details?.email || checkoutSession.customer_email || '')
+        .toLowerCase()
+        .trim();
+
+      if (checkoutSession.payment_status === 'paid' && paidEmail === normalizedEmail) {
+        authUser = await ensureAuthUser(normalizedEmail, password);
+        ({ data: authData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        }));
+      }
+    }
+
+    if (signInError || !authData.user || !authData.session) {
+      return NextResponse.json({ error: 'Identifiants incorrects.' }, { status: 401 });
+    }
+
+    authUser = authUser || authData.user;
+    const fullName = existingProfile?.full_name || normalizedEmail.split('@')[0].replace('.', ' ');
+
+    if (existingProfile) {
+      const { error: linkError } = await supabaseAdmin
+        .from('profiles')
+        .update({ auth_user_id: authUser.id })
+        .eq('id', existingProfile.id);
+      if (linkError) throw linkError;
+    } else {
+      const { error: createProfileError } = await supabaseAdmin.from('profiles').insert({
+        id: authUser.id,
+        auth_user_id: authUser.id,
+        email: normalizedEmail,
+        full_name: fullName,
+        role: 'eleve',
+      });
+      if (createProfileError) throw createProfileError;
+    }
+
+    const token = await signSession({
+      userId: authUser.id,
       email: normalizedEmail,
       role: effectiveRole,
-      fullName
-    };
+      fullName,
+    });
 
     const response = NextResponse.json({
       success: true,
-      user: userObj
+      user: {
+        id: authUser.id,
+        email: normalizedEmail,
+        role: effectiveRole,
+        fullName,
+      },
+      supabaseSession: {
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token,
+      },
     });
 
-    // 4. Set secure HTTP-only cookie
     response.cookies.set('gd_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 30 * 24 * 60 * 60 // 30 days
+      maxAge: 30 * 24 * 60 * 60,
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erreur API login:', error);
-    return NextResponse.json({ error: error?.message || 'Erreur serveur lors de la connexion' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur serveur lors de la connexion.' }, { status: 500 });
   }
 }

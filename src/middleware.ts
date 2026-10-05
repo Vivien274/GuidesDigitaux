@@ -49,14 +49,17 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 4. Protect Direct Downloads from Hotlinking & Theft
+  // 4. Route every direct PDF request through the ownership-checked API.
   if (pathname.startsWith('/downloads/') && pathname.endsWith('.pdf')) {
-    const session = await verifySession(token);
-    if (!session) {
-      const redirectUrl = new URL('/mon-compte', request.url);
-      redirectUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(redirectUrl);
+    if (!token) {
+      const loginUrl = new URL('/mon-compte', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
     }
+
+    const secureDownloadUrl = new URL('/api/download', request.url);
+    secureDownloadUrl.searchParams.set('file', pathname.split('/').pop() || '');
+    return NextResponse.redirect(secureDownloadUrl);
   }
 
   return NextResponse.next();

@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
+import { getAdminSession } from '@/lib/routeAuth';
 
 export async function POST(request: Request) {
+  const adminSession = await getAdminSession();
+  if (!adminSession) {
+    return NextResponse.json({ error: 'Accès administrateur requis.' }, { status: 403 });
+  }
+
   try {
     const { topic, category } = await request.json();
 

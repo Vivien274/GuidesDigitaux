@@ -27,13 +27,12 @@ export default function MonComptePage() {
       return;
     }
 
-    const normalized = email.toLowerCase().trim();
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const redirectParam = urlParams?.get('redirect');
 
     if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
       router.push(redirectParam);
-    } else if (['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@guides-digitaux.com'].includes(normalized)) {
+    } else if (res.role === 'superadmin' || res.role === 'formateur') {
       router.push('/dashboard/admin');
     } else {
       router.push('/dashboard/eleve');
@@ -121,6 +120,7 @@ export default function MonComptePage() {
                   <input
                     type="password"
                     required
+                    minLength={8}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

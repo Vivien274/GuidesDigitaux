@@ -23,11 +23,9 @@ CREATE TABLE IF NOT EXISTS public.products (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Active RLS sur public.products (lecture publique & insertion)
+-- Active RLS sur public.products (lecture publique uniquement)
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public Read Products" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Public Insert Products" ON public.products FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Update Products" ON public.products FOR UPDATE USING (true);
 
 -- 2. Table Profils Utilisateurs (Profiles)
 CREATE TABLE IF NOT EXISTS public.profiles (

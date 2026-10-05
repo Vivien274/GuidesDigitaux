@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { processOrderEmails } from '@/lib/orderEmailService';
 import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
+import { getAdminSession } from '@/lib/routeAuth';
 
 export async function POST(req: Request) {
+  const adminSession = await getAdminSession();
+  if (!adminSession) {
+    return NextResponse.json({ error: 'Accès administrateur requis.' }, { status: 403 });
+  }
+
   try {
     const body = await req.json();
     const { customerEmail, customerName, productId, productTitle, amount, orderId } = body;

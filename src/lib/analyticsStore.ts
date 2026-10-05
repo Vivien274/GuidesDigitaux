@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabase/admin';
 
 export interface AnalyticsEvent {
   id: string;
@@ -19,13 +19,6 @@ export interface AnalyticsEvent {
 }
 
 const DATA_FILE_PATH = path.join(process.cwd(), 'data', 'analytics_events.json');
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kvnvfsahoblmcpurnmtn.supabase.co';
-const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY.trim())
-  ? process.env.SUPABASE_SERVICE_ROLE_KEY
-  : (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_KeSeRmMGA6zii9el1d_uBQ_piquLdfi');
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
  * Generate dynamic verified traffic events matching actual continuous Meta Ads campaign & real orders up to now

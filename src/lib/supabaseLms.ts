@@ -261,60 +261,9 @@ export async function addStudentEnrollment(userId: string, courseId: string) {
   }
 }
 
-export function getKnownRoleForEmail(email: string): 'superadmin' | 'formateur' | 'eleve' {
-  const normalized = (email || '').toLowerCase().trim();
-  if (['vivien274@gmail.com', 'contact@guides-digitaux.com', 'stephanie@stratec-digital.com'].includes(normalized)) {
-    return 'superadmin';
-  }
-  if (['contact@spoolio.fr'].includes(normalized)) {
-    return 'formateur';
-  }
-  return 'eleve';
-}
-
-/**
- * 5. Upsert User Profile to Supabase DB profiles table
- */
-export async function upsertUserProfileToDb(email: string, role?: string, fullName?: string) {
-  if (!email) return;
-  try {
-    const normalizedEmail = email.toLowerCase().trim();
-    const knownRole = getKnownRoleForEmail(normalizedEmail);
-    const effectiveRole = (role && role !== 'eleve') ? role : (knownRole !== 'eleve' ? knownRole : (role || 'eleve'));
-    const name = fullName || normalizedEmail.split('@')[0];
-
-    const { data: existing, error: selectErr } = await supabase
-      .from('profiles')
-      .select('id, role')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
-
-    if (!selectErr && existing) {
-      await supabase.from('profiles').update({
-        full_name: name,
-        role: effectiveRole,
-        updated_at: new Date().toISOString()
-      }).eq('id', existing.id);
-    } else {
-      await supabase.from('profiles').insert({
-        id: toUuid(normalizedEmail),
-        email: normalizedEmail,
-        full_name: name,
-        role: effectiveRole,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-    }
-  } catch (e) {
-    console.warn('Supabase profile upsert error', e);
-  }
-}
-
-
 export async function fetchUserProfileFromDb(email: string) {
   if (!email) return null;
   const normalized = email.toLowerCase().trim();
-  const knownRole = getKnownRoleForEmail(normalized);
 
   try {
     const { data, error } = await supabase
@@ -323,13 +272,7 @@ export async function fetchUserProfileFromDb(email: string) {
       .eq('email', normalized)
       .maybeSingle();
 
-    if (!error && data) {
-      if (data.role === 'eleve' && knownRole !== 'eleve') {
-        data.role = knownRole;
-        supabase.from('profiles').update({ role: knownRole }).eq('email', normalized).then();
-      }
-      return data;
-    }
+    if (!error && data) return data;
   } catch (e) {
     console.warn('Error fetching profile from Supabase', e);
   }
@@ -337,9 +280,8 @@ export async function fetchUserProfileFromDb(email: string) {
   const defaultProfile = {
     email: normalized,
     full_name: normalized.split('@')[0],
-    role: knownRole
+    role: 'eleve'
   };
-  await upsertUserProfileToDb(normalized, knownRole);
   return defaultProfile;
 }
 
@@ -350,8 +292,6 @@ export async function saveUserPurchaseToDb(email: string, item: any) {
   if (!email || !item) return;
   const normalizedEmail = email.toLowerCase().trim();
   try {
-    await upsertUserProfileToDb(normalizedEmail, 'eleve');
-
     const profile = await fetchUserProfileFromDb(normalizedEmail);
     const userId = profile?.id;
 

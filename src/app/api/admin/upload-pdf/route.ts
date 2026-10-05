@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { getAdminSession } from '@/lib/routeAuth';
 
 export async function POST(request: Request) {
+  const adminSession = await getAdminSession();
+  if (!adminSession) {
+    return NextResponse.json({ error: 'Accès administrateur requis.' }, { status: 403 });
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
@@ -11,8 +17,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Aucun fichier fourni' }, { status: 400 });
     }
 
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
+    if (file.type !== 'application/pdf' || !file.name.toLowerCase().endsWith('.pdf')) {
       return NextResponse.json({ error: 'Seuls les fichiers .pdf sont autorisés' }, { status: 400 });
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Le fichier dépasse la limite de 20 Mo.' }, { status: 413 });
     }
 
     const bytes = await file.arrayBuffer();

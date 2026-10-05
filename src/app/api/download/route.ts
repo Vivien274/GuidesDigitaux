@@ -1,166 +1,183 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
-import { verifyDownloadToken } from '@/lib/downloadSecurity';
+import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
+import { stripe } from '@/lib/stripe/client';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { verifySession, type SessionData } from '@/lib/auth';
+import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
 
-export async function GET(request: Request) {
+interface CheckoutCartItem {
+  id?: string;
+}
+
+const BONUS_FILES: Record<string, string> = {
+  'bonus-1': '/downloads/bonus-1-checklist-audit-fiche-google.pdf',
+  'bonus-2': '/downloads/bonus-2-kit-modeles-reponses-avis-google.pdf',
+  'bonus-3': '/downloads/bonus-3-script-whatsapp-demander-avis-5-etoiles.pdf',
+};
+
+const BONUS_PARENT_PRODUCT = 'formation-fiche-google';
+
+function matchesPurchasedProduct(purchasedId: string | null | undefined, requestedId: string): boolean {
+  if (!purchasedId) return false;
+  if (purchasedId === requestedId) return true;
+
+  const purchasedProduct = DEFAULT_PRODUCTS.find(
+    product => product.id === purchasedId || product.slug === purchasedId
+  );
+  return purchasedProduct?.bundleProductIds?.includes(requestedId) ?? false;
+}
+
+function resolveProductId(productId: string | null, filename: string | null): string | null {
+  if (productId) return productId;
+  if (!filename) return null;
+
+  const safeFilename = path.basename(filename);
+  const bonusEntry = Object.entries(BONUS_FILES).find(([, filePath]) => path.basename(filePath) === safeFilename);
+  if (bonusEntry) return bonusEntry[0];
+
+  const product = DEFAULT_PRODUCTS.find(item => item.downloadPdf && path.basename(item.downloadPdf) === safeFilename);
+  return product?.id ?? null;
+}
+
+function resolveFilePath(productId: string): string | null {
+  if (BONUS_FILES[productId]) return BONUS_FILES[productId];
+  const product = DEFAULT_PRODUCTS.find(item => item.id === productId || item.slug === productId);
+  return product?.downloadPdf ?? null;
+}
+
+async function hasDatabaseAccess(session: SessionData, productId: string): Promise<boolean> {
+  if (session.role === 'superadmin' || session.role === 'formateur') return true;
+
+  const entitlementId = BONUS_FILES[productId] ? BONUS_PARENT_PRODUCT : productId;
+  const { data: orders } = await supabaseAdmin
+    .from('orders')
+    .select('product_id, status')
+    .eq('customer_email', session.email);
+
+  const paidOrder = (orders ?? []).some(order => {
+    const paid = ['paid', 'completed'].includes(String(order.status));
+    return paid && matchesPurchasedProduct(order.product_id, entitlementId);
+  });
+  if (paidOrder) return true;
+
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(session.userId)) {
+    return false;
+  }
+
+  const { data: enrollments } = await supabaseAdmin
+    .from('enrollments')
+    .select('product_id, course_id')
+    .eq('user_id', session.userId);
+
+  return (enrollments ?? []).some(enrollment =>
+    matchesPurchasedProduct(enrollment.product_id, entitlementId) ||
+    matchesPurchasedProduct(enrollment.course_id, entitlementId)
+  );
+}
+
+async function hasCheckoutAccess(checkoutSessionId: string, productId: string): Promise<boolean> {
+  if (!checkoutSessionId.startsWith('cs_')) return false;
+
+  const checkoutSession = await stripe.checkout.sessions.retrieve(checkoutSessionId);
+  if (checkoutSession.payment_status !== 'paid') return false;
+
+  const entitlementId = BONUS_FILES[productId] ? BONUS_PARENT_PRODUCT : productId;
+  const purchasedIds = new Set<string>();
+  const primaryId = checkoutSession.metadata?.productId || checkoutSession.metadata?.courseId;
+  if (primaryId) purchasedIds.add(primaryId);
+
+  if (checkoutSession.metadata?.cartItemsJson) {
+    try {
+      const cartItems = JSON.parse(checkoutSession.metadata.cartItemsJson) as CheckoutCartItem[];
+      cartItems.forEach(item => {
+        if (item.id) purchasedIds.add(item.id);
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  return [...purchasedIds].some(purchasedId => matchesPurchasedProduct(purchasedId, entitlementId));
+}
+
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const token = searchParams.get('token');
-    const productId = searchParams.get('productId');
-
-    let targetFilePath: string | null = null;
-    let customFilename: string = 'guide-digital.pdf';
-
-    // 1. Check encrypted token authentication
-    if (token) {
-      const payload = verifyDownloadToken(token);
-      if (!payload) {
-        return new NextResponse('Lien de téléchargement non valide ou expiré.', { 
-          status: 403,
-          headers: { 'X-Robots-Tag': 'noindex, nofollow' }
-        });
-      }
-      targetFilePath = payload.filePath;
-      if (payload.productId) {
-        customFilename = `${payload.productId}.pdf`;
-      }
+    const productId = resolveProductId(
+      request.nextUrl.searchParams.get('productId'),
+      request.nextUrl.searchParams.get('file')
+    );
+    if (!productId) {
+      return NextResponse.json({ error: 'Produit introuvable.' }, { status: 404 });
     }
 
-    // 2. Check authenticated user session + Supabase user_access if no token or product-based
-    if (!targetFilePath && productId) {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+    const token = request.cookies.get('gd_session')?.value;
+    const session = token ? await verifySession(token) : null;
+    const checkoutSessionId = request.nextUrl.searchParams.get('session_id');
 
-      const isSuperAdmin = user?.email?.toLowerCase().trim() === 'contact@guides-digitaux.com' || user?.email?.includes('admin');
+    const authorized = session
+      ? await hasDatabaseAccess(session, productId)
+      : checkoutSessionId
+        ? await hasCheckoutAccess(checkoutSessionId, productId)
+        : false;
 
-      if (!user && !isSuperAdmin) {
-        return NextResponse.json({ error: 'Connexion requise pour télécharger ce fichier' }, { status: 401 });
-      }
-
-      if (isSuperAdmin) {
-        // Superadmin bypass: resolve file directly from DEFAULT_PRODUCTS
-        const { DEFAULT_PRODUCTS } = await import('@/data/defaultProducts');
-        const prod = DEFAULT_PRODUCTS.find(p => p.id === productId || p.slug === productId);
-        if (prod?.downloadPdf) {
-          targetFilePath = prod.downloadPdf;
-          customFilename = `${prod.slug || prod.id}.pdf`;
-        }
-      } else {
-        const { data: access, error: accessError } = await supabase
-          .from('user_access')
-          .select('id, available_from, products(storage_file_path, title)')
-          .eq('user_id', user!.id)
-          .eq('product_id', productId)
-          .single();
-
-        if (accessError || !access) {
-          return NextResponse.json({ error: 'Vous ne possédez pas ce produit' }, { status: 403 });
-        }
-
-        if (access.available_from && new Date(access.available_from) > new Date()) {
-          const releaseDate = new Date(access.available_from).toLocaleDateString('fr-FR');
-          return NextResponse.json(
-            { error: `Produit en précommande. Disponible à partir du ${releaseDate}` },
-            { status: 403 }
-          );
-        }
-
-        const dbPath = (access.products as any)?.storage_file_path;
-        if (dbPath) {
-          targetFilePath = dbPath;
-        }
-        if ((access.products as any)?.title) {
-          customFilename = `${(access.products as any).title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`;
-        }
-      }
+    if (!authorized) {
+      return NextResponse.json({ error: 'Vous ne possédez pas ce produit.' }, { status: session ? 403 : 401 });
     }
 
+    const targetFilePath = resolveFilePath(productId);
     if (!targetFilePath) {
-      return new NextResponse('Lien ou produit manquant', { status: 400 });
+      return NextResponse.json({ error: 'Fichier produit introuvable.' }, { status: 404 });
     }
 
-    // 3. Resolve target file & stream response securely
+    if (/^https?:\/\//i.test(targetFilePath)) {
+      const targetUrl = new URL(targetFilePath);
+      const supabaseHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
+        ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+        : null;
+      const allowedHosts = new Set([
+        supabaseHostname,
+        'drive.google.com',
+        'docs.google.com',
+        'commondatastorage.googleapis.com',
+      ].filter((host): host is string => Boolean(host)));
 
-    // Handle Supabase Storage path
-    if (targetFilePath.startsWith('http://') || targetFilePath.startsWith('https://')) {
-      const externalRes = await fetch(targetFilePath);
-      if (!externalRes.ok) {
-        return new NextResponse('Fichier introuvable', { status: 404 });
+      if (targetUrl.protocol !== 'https:' || !allowedHosts.has(targetUrl.hostname)) {
+        return NextResponse.json({ error: 'Hôte de téléchargement non autorisé.' }, { status: 403 });
       }
-      const buffer = await externalRes.arrayBuffer();
-      const fileNameFromUrl = path.basename(new URL(targetFilePath).pathname) || customFilename;
 
-      return new NextResponse(buffer, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${encodeURIComponent(fileNameFromUrl)}"`,
-          'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
-          'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
+      const externalResponse = await fetch(targetUrl, { redirect: 'error' });
+      if (!externalResponse.ok) {
+        return NextResponse.json({ error: 'Fichier introuvable.' }, { status: 404 });
+      }
+
+      return new NextResponse(await externalResponse.arrayBuffer(), {
+        headers: downloadHeaders(path.basename(targetUrl.pathname) || `${productId}.pdf`),
       });
     }
 
-    // Handle local file in public directory (e.g. /downloads/xxx.pdf)
-    let cleanRelativePath = targetFilePath.startsWith('/') ? targetFilePath : `/${targetFilePath}`;
-    let localFilePath = path.join(process.cwd(), 'public', cleanRelativePath);
-
-    if (!fs.existsSync(localFilePath)) {
-      // Smart fuzzy matching in public/downloads
-      const downloadsDir = path.join(process.cwd(), 'public', 'downloads');
-      if (fs.existsSync(downloadsDir)) {
-        const files = fs.readdirSync(downloadsDir);
-        const searchBase = path.basename(cleanRelativePath, '.pdf').toLowerCase().replace(/[^a-z0-9]/g, '');
-        
-        const matchedFile = files.find(f => {
-          const cleanF = f.toLowerCase().replace(/[^a-z0-9]/g, '');
-          return cleanF.includes(searchBase) || (searchBase.length > 5 && cleanF.replace(/^[0-9]+/, '').includes(searchBase));
-        });
-
-        if (matchedFile) {
-          localFilePath = path.join(downloadsDir, matchedFile);
-        }
-      }
+    const downloadsDirectory = path.resolve(process.cwd(), 'public', 'downloads');
+    const localFilePath = path.resolve(process.cwd(), 'public', targetFilePath.replace(/^\/+/, ''));
+    if (!localFilePath.startsWith(`${downloadsDirectory}${path.sep}`) || !fs.existsSync(localFilePath)) {
+      return NextResponse.json({ error: 'Fichier introuvable.' }, { status: 404 });
     }
 
-    if (!fs.existsSync(localFilePath)) {
-      // Fallback: try default fallback PDF if file path doesn't exist on disk
-      const fallbackPath = path.join(process.cwd(), 'public', 'downloads', 'mini-guide-ecrire-web-artisan.pdf');
-      if (fs.existsSync(fallbackPath)) {
-        const fileBuffer = fs.readFileSync(fallbackPath);
-        const fileName = path.basename(cleanRelativePath) || customFilename;
-        return new NextResponse(fileBuffer, {
-          headers: {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
-            'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
-            'Cache-Control': 'private, no-cache, no-store, must-revalidate'
-          }
-        });
-      }
-      return new NextResponse('Fichier PDF introuvable', { status: 404 });
-    }
-
-    const fileBuffer = fs.readFileSync(localFilePath);
-    const fileName = path.basename(localFilePath) || customFilename;
-
-    return new NextResponse(fileBuffer, {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
-        'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
-        'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
+    return new NextResponse(fs.readFileSync(localFilePath), {
+      headers: downloadHeaders(path.basename(localFilePath)),
     });
-
-  } catch (err: any) {
-    console.error('Erreur de téléchargement sécurisé:', err);
-    return new NextResponse('Erreur serveur lors du téléchargement', { status: 500 });
+  } catch (error: unknown) {
+    console.error('Erreur de téléchargement sécurisé:', error);
+    return NextResponse.json({ error: 'Erreur serveur lors du téléchargement.' }, { status: 500 });
   }
+}
+
+function downloadHeaders(filename: string): HeadersInit {
+  return {
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
+    'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
+    'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0',
+  };
 }

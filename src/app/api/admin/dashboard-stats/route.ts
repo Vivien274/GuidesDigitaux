@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kvnvfsahoblmcpurnmtn.supabase.co';
-const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY.trim()) 
-  ? process.env.SUPABASE_SERVICE_ROLE_KEY 
-  : (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_KeSeRmMGA6zii9el1d_uBQ_piquLdfi');
-
-const supabaseServer = createClient(supabaseUrl, supabaseKey);
+import { getAdminSession } from '@/lib/routeAuth';
+import { supabaseAdmin as supabaseServer } from '@/lib/supabase/admin';
 
 export async function GET() {
+  const adminSession = await getAdminSession();
+  if (!adminSession) {
+    return NextResponse.json({ error: 'Accès administrateur requis.' }, { status: 403 });
+  }
+
   try {
     const accountsMap = new Map<string, {
       id: string;
@@ -22,26 +21,6 @@ export async function GET() {
       purchasesDetails: any[];
       utm?: any;
     }>();
-
-    // Default known profiles fallback
-    const defaultKnownEmails = [
-      { email: 'vivien274@gmail.com', name: 'Vivien', role: 'superadmin' as const },
-      { email: 'contact@guides-digitaux.com', name: 'Guides Digitaux Contact', role: 'superadmin' as const },
-      { email: 'stephanie@guides-digitaux.com', name: 'Stéphanie ROCQ', role: 'superadmin' as const },
-      { email: 'contact@spoolio.fr', name: 'Formateur Spoolio', role: 'formateur' as const }
-    ];
-
-    defaultKnownEmails.forEach(k => {
-      accountsMap.set(k.email, {
-        id: `known_${k.email}`,
-        name: k.name,
-        email: k.email,
-        role: k.role,
-        purchasesCount: 0,
-        totalSpent: 0,
-        purchasesDetails: []
-      });
-    });
 
     // 1. Fetch profiles safely (non-blocking if RLS recursion occurs)
     try {
@@ -182,28 +161,6 @@ export async function GET() {
       const sessionUtm = sessionMetadataMap.get(stripeSessionId || '') || sessionMetadataMap.get(baseSessionId);
       if (sessionUtm && (sessionUtm.utm_source || sessionUtm.fbclid || sessionUtm.gclid)) {
         return sessionUtm;
-      }
-
-      // Attribution des acheteurs des campagnes Meta Ads
-      const metaAdsBuyers = [
-        'atelierreflexetsens@outlook.fr',
-        'egire.eclosion@gmail.com',
-        'lorafleury@gmail.com',
-        'asminou@msn.com',
-        'sanjullian.jessica@hotmail.fr'
-      ];
-
-      if (metaAdsBuyers.includes(em)) {
-        return {
-          utm_source: 'facebook',
-          utm_medium: 'cpc',
-          utm_campaign: 'lancementgmb-sept26',
-          utm_content: 'lancementgmb-photo-sept26-audiencegd'
-        };
-      }
-
-      if (em === 'tessbeautylab@gmail.com') {
-        return { utm_source: 'direct', utm_campaign: 'organique' };
       }
 
       return undefined;

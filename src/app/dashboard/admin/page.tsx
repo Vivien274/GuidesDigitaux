@@ -171,7 +171,7 @@ export default function SuperadminDashboardPage() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailStatusMsg, setEmailStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [resendStatusPerUser, setResendStatusPerUser] = useState<Record<string, string>>({});
-  const [lastAttemptedEmail, setLastAttemptedEmail] = useState('sanjullian.jessica@hotmail.fr');
+  const [lastAttemptedEmail, setLastAttemptedEmail] = useState('');
 
   const handleSendManualEmail = async (overrideEmail?: string, overrideProductId?: string, overrideAmount?: number) => {
     const targetEmail = (overrideEmail || manualEmailTarget).trim();
@@ -1014,7 +1014,7 @@ export default function SuperadminDashboardPage() {
                 <div className="flex items-center gap-2 shrink-0">
                   {emailStatusMsg.type === 'error' && (
                     <a
-                      href={`mailto:${encodeURIComponent(lastAttemptedEmail || 'sanjullian.jessica@hotmail.fr')}?subject=${encodeURIComponent('🎉 Confirmation de ta commande Guides Digitaux — Cap Visibilité Google')}&body=${encodeURIComponent("Bonjour Jessica,\n\nC'est Stéphanie de Guides Digitaux ! Ta commande pour la formation « Cap Visibilité Google » est bien confirmée (29,00 € réglés sur Stripe).\n\n🎥 ACCÉDER À TES COURS VIDÉO :\nTu peux accéder immédiatement à l'ensemble de tes 7 modules vidéo et prompts IA dans ton espace élève :\n👉 https://www.guides-digitaux.com/dashboard/eleve\n\n🔑 COMMENT TE CONNECTER :\n1. Rends-toi sur : https://www.guides-digitaux.com/mon-compte\n2. Connecte-toi simplement avec ton adresse e-mail : " + (lastAttemptedEmail || 'sanjullian.jessica@hotmail.fr') + "\n3. Tes accès sont activés à vie.\n\n📥 TES RESSOURCES & CHECKLISTS BONUS :\n- Checklist d'audit Fiche Google (25 points) : https://www.guides-digitaux.com/downloads/bonus-1-checklist-audit-fiche-google.pdf\n- Scripts WhatsApp, SMS & Email \"Avis 5 Étoiles\" : https://www.guides-digitaux.com/downloads/bonus-2-scripts-recolte-avis-clients.pdf\n- 10 Modèles de Réponses aux Avis Clients : https://www.guides-digitaux.com/downloads/bonus-3-modeles-reponses-avis.pdf\n\nSi tu as la moindre question lors de ton apprentissage, réponds directement à cet e-mail.\n\nÀ très vite,\nStéphanie ROCQ — Guides Digitaux\ncontact@guides-digitaux.com")}`}
+                      href={`mailto:${encodeURIComponent(lastAttemptedEmail)}?subject=${encodeURIComponent('🎉 Confirmation de ta commande Guides Digitaux — Cap Visibilité Google')}&body=${encodeURIComponent("Bonjour,\n\nC'est Stéphanie de Guides Digitaux ! Ta commande pour la formation « Cap Visibilité Google » est bien confirmée.\n\n🎥 ACCÉDER À TES COURS VIDÉO :\nTu peux accéder immédiatement à l'ensemble de tes modules vidéo et prompts IA dans ton espace élève :\n👉 https://www.guides-digitaux.com/dashboard/eleve\n\n🔑 COMMENT TE CONNECTER :\n1. Rends-toi sur : https://www.guides-digitaux.com/mon-compte\n2. Connecte-toi avec l'adresse e-mail utilisée lors de ta commande.\n3. Tes accès sont activés à vie.\n\nSi tu as la moindre question lors de ton apprentissage, réponds directement à cet e-mail.\n\nÀ très vite,\nStéphanie ROCQ — Guides Digitaux\ncontact@guides-digitaux.com")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3 py-1.5 bg-[#18757d] hover:bg-[#12595f] text-white rounded-lg text-[11px] font-bold inline-flex items-center gap-1 shadow-xs cursor-pointer"

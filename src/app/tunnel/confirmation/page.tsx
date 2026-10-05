@@ -308,13 +308,13 @@ function ConfirmationContent() {
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password || password.length < 3) {
-      alert('Veuillez entrer votre mot de passe.');
+    if (!password || password.length < 8) {
+      alert('Le mot de passe doit contenir au moins 8 caractères.');
       return;
     }
 
     // Authenticate account with chosen password
-    const res = await login(activeEmail, password, 'eleve');
+    const res = await login(activeEmail, password, sessionId);
     if (!res.success) {
       alert(res.error || 'Mot de passe incorrect pour ce compte.');
       return;
