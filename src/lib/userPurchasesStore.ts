@@ -90,6 +90,25 @@ export async function getUserPurchasesAsync(email?: string | null): Promise<Enro
   if (!email) return [];
   const normalized = email.toLowerCase().trim();
 
+  // 1. Try secure authenticated server API first (bypasses browser RLS)
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/user/purchases', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.purchases) && data.purchases.length > 0) {
+          try {
+            localStorage.setItem(getUserPurchasesKey(normalized), JSON.stringify(data.purchases));
+          } catch (e) {}
+          return data.purchases;
+        }
+      }
+    } catch (apiErr) {
+      console.warn('[Purchases Store] Notice fetching /api/user/purchases:', apiErr);
+    }
+  }
+
+  // 2. Fallback to direct DB query
   let dbList: EnrolledCourseItem[] = [];
   try {
     dbList = await fetchUserPurchasesFromDb(normalized);

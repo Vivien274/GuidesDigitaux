@@ -374,10 +374,13 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
           </div>
 
           <!-- NOTICE CRÉATION COMPTE / CONNEXION -->
-          <div style="background-color: #faf8f5; border: 1px solid #eee7da; border-radius: 14px; padding: 16px 20px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #5e4d46;">
-            <strong style="color: #332420; font-size: 14px;">🔑 Comment te connecter ou créer ton compte ?</strong><br/>
-            Rends-toi sur ton espace membre : <a href="${accountUrl}" style="color: #18757d; font-weight: bold;">${accountUrl}</a>.<br/>
-            Connecte-toi simplement avec l'adresse e-mail utilisée lors de ton achat : <strong>${customerEmail}</strong>.<br/>
+          <div style="background-color: #faf8f5; border: 1px solid #eee7da; border-radius: 14px; padding: 18px 20px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #5e4d46;">
+            <strong style="color: #332420; font-size: 14px;">🔑 Comment activer ton compte et te connecter ?</strong><br/>
+            ${orderId && orderId.startsWith('cs_') ? `
+              Si tu n'as pas encore défini ton mot de passe personnel, tu peux l'activer directement en 1 clic :<br/>
+              👉 <a href="https://www.guides-digitaux.com/tunnel/confirmation?session_id=${encodeURIComponent(orderId)}&email=${encodeURIComponent(customerEmail)}" style="color: #18757d; font-weight: bold; text-decoration: underline;">Activer mon compte et choisir mon mot de passe →</a><br/><br/>
+            ` : ''}
+            Tu peux également te connecter à tout moment sur ton espace membre : <a href="${accountUrl}" style="color: #18757d; font-weight: bold;">${accountUrl}</a> avec ton adresse e-mail : <strong>${customerEmail}</strong>.<br/>
             Ton accès à l'ensemble des modules vidéo est activé automatiquement à vie.
           </div>
 

@@ -139,17 +139,23 @@ async function hasDatabaseAccess(session: SessionData, productId: string): Promi
 
   const hasValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(session.userId);
 
-  const [{ data: enrollmentsByUser }, { data: enrollmentsByEmail }] = await Promise.all([
+  const [{ data: enrollmentsByUser }, { data: enrollmentsByEmail }, { data: preorders }] = await Promise.all([
     hasValidUuid
       ? supabaseAdmin.from('enrollments').select('course_id, product_id').eq('user_id', session.userId)
       : Promise.resolve({ data: [] }),
     supabaseAdmin.from('enrollments').select('course_id, product_id').eq('user_email', session.email),
+    supabaseAdmin.from('preorder_buyers').select('campaign_id').eq('customer_email', session.email),
   ]);
   const enrollments = [...(enrollmentsByUser ?? []), ...(enrollmentsByEmail ?? [])];
 
-  return (enrollments ?? []).some(enrollment =>
+  const hasEnrollmentAccess = (enrollments ?? []).some(enrollment =>
     matchesPurchasedProduct(enrollment.course_id, entitlementId) ||
     matchesPurchasedProduct((enrollment as any).product_id, entitlementId)
+  );
+  if (hasEnrollmentAccess) return true;
+
+  return (preorders ?? []).some(po =>
+    matchesPurchasedProduct(po.campaign_id || 'precommande-fiche-google', entitlementId)
   );
 }
 

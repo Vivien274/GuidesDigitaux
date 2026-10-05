@@ -186,7 +186,7 @@ function EleveDashboardContent() {
               )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#332420]">
-              Bonjour, <span className="text-[#18757d]">{user?.fullName || (user?.email?.includes('contact') ? 'Stéphanie (Super-Admin)' : 'Stéphanie')}</span> 👋
+              Bonjour, <span className="text-[#18757d]">{user?.fullName || (user?.email?.includes('contact') ? 'Stéphanie (Super-Admin)' : (user?.email ? user.email.split('@')[0] : 'Apprenant'))}</span> 👋
             </h1>
             <p className="text-xs text-[#5e4d46] font-medium">
               {user?.role === 'superadmin'

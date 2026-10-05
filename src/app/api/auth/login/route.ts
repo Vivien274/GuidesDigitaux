@@ -101,6 +101,19 @@ export async function POST(request: Request) {
     }
 
     if (signInError || !authData.user || !authData.session) {
+      // Check if customer exists in orders, enrollments or preorders to provide helpful first-login guidance
+      const [{ data: order }, { data: enrollment }, { data: preorder }] = await Promise.all([
+        supabaseAdmin.from('orders').select('id').eq('customer_email', normalizedEmail).limit(1).maybeSingle(),
+        supabaseAdmin.from('enrollments').select('id').eq('user_email', normalizedEmail).limit(1).maybeSingle(),
+        supabaseAdmin.from('preorder_buyers').select('id').eq('customer_email', normalizedEmail).limit(1).maybeSingle(),
+      ]);
+
+      if (order || enrollment || preorder) {
+        return NextResponse.json({
+          error: 'Identifiants incorrects. Si vous n\'avez pas encore défini votre mot de passe après commande, cliquez sur « Mot de passe oublié ? » ci-dessous pour l\'activer.'
+        }, { status: 401 });
+      }
+
       return NextResponse.json({ error: 'Identifiants incorrects.' }, { status: 401 });
     }
 
