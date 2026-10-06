@@ -158,11 +158,11 @@ function EleveDashboardContent() {
             </div>
             {heroBannerItem && (
               <Link
-                href={heroBannerItem.isPreorder ? '/precommande' : `#produits-section`}
+                href="#produits-section"
                 className="underline hover:text-amber-200 whitespace-nowrap"
               >
                 {heroBannerItem.isPreorder
-                  ? 'Voir le statut de la précommande →'
+                  ? 'Voir mes produits →'
                   : 'Accéder aux contenus →'}
               </Link>
             )}
@@ -267,11 +267,11 @@ function EleveDashboardContent() {
 
               {heroBannerItem.isPreorder ? (
                 <Link
-                  href="/precommande"
+                  href="/boutique"
                   className="w-full lg:w-auto px-8 py-4 text-xs font-extrabold text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shrink-0"
                 >
                   <Clock className="w-5 h-5 text-[#332420]" />
-                  Voir les projets en précommande →
+                  Découvrir toutes les formations →
                 </Link>
               ) : heroBannerItem.progress >= 100 ? (
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0">

@@ -75,7 +75,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        return { success: false, error: 'Erreur de communication avec le serveur (réponse invalide).' };
+      }
 
       if (!res.ok || !data.success) {
         return { success: false, error: data.error || 'Erreur lors de la connexion' };

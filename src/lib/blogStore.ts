@@ -9,7 +9,24 @@ export function getStoredBlogArticles(): BlogArticle[] {
     if (data) {
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        // Find any default articles in code not yet in localStorage
+        const storedIds = new Set(parsed.map((a: BlogArticle) => a.id));
+        const storedSlugs = new Set(parsed.map((a: BlogArticle) => a.slug));
+        const missingFromCode = BLOG_ARTICLES.filter(
+          (codeArt) => !storedIds.has(codeArt.id) && !storedSlugs.has(codeArt.slug)
+        );
+
+        // Ensure default articles from code are kept in sync
+        const updatedParsed = parsed.map((item: BlogArticle) => {
+          const match = BLOG_ARTICLES.find((b) => b.id === item.id);
+          return match ? { ...item, ...match } : item;
+        });
+
+        const merged = [...missingFromCode, ...updatedParsed];
+        try {
+          localStorage.setItem('gd_custom_blog_articles', JSON.stringify(merged));
+        } catch (_) {}
+        return merged;
       }
     }
   } catch (e) {

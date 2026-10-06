@@ -66,6 +66,25 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/precommande',
+        destination: '/tunnel/formation-fiche-google',
+        permanent: true,
+      },
+      {
+        source: '/precommande/:path*',
+        destination: '/tunnel/formation-fiche-google',
+        permanent: true,
+      },
+      {
+        source: '/tunnel/precommande-fiche-google',
+        destination: '/tunnel/formation-fiche-google',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

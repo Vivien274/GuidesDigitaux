@@ -56,8 +56,8 @@ const PROFILE_DATA: Record<'A' | 'B' | 'C', ProfileContent> = {
     description: 'Tu as besoin d’y aller un petit pas après l’autre pour poser les bases sereinement. Pas de panique : pour commencer à être trouvée sur Internet dès cette semaine sans investir des milliers d’euros, la Fiche Google est ton meilleur allié.',
     advice: 'Optimise ta Fiche Google Business Profile pour apparaître immédiatement sur Google Maps devant les clients qui recherchent tes services près de chez toi.',
     cta1: {
-      title: '📍 Guide Fiche Google (Précommande 29 €) →',
-      url: 'https://www.guides-digitaux.com/tunnel/precommande-fiche-google',
+      title: '📍 Formation Fiche Google (Accès Immédiat) →',
+      url: 'https://www.guides-digitaux.com/tunnel/formation-fiche-google',
       color: '#F2542D'
     },
     cta2: {
