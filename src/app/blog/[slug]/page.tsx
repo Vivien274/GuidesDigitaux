@@ -33,10 +33,7 @@ export default function BlogArticleDetailPage() {
     );
   }
 
-  const pourAllerIdx = article.contentHtml.indexOf('Pour aller plus loin');
-  const rawHtml = pourAllerIdx !== -1
-    ? article.contentHtml.slice(0, article.contentHtml.lastIndexOf('<div', pourAllerIdx))
-    : article.contentHtml;
+  const rawHtml = article.contentHtml;
 
   const hasQuizAnchor = rawHtml.includes('<div id="digitalisation-quiz-anchor"></div>');
 
