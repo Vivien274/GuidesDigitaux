@@ -24,21 +24,23 @@ export function getStoredProducts(): Product[] {
       const stored = storedMap.get(def.id) || storedMap.get(def.slug) || list.find(item => item.title?.toLowerCase().trim() === def.title?.toLowerCase().trim());
       if (!stored) return def;
 
-      // Stored user edits (image, gallery, longDescription, etc.) ALWAYS take priority over defaults
+      const isCoaching = def.id === 'coaching-site' || def.category === 'coaching' || def.slug === 'coaching-site';
+
+      // Stored user edits take priority, except for curated default coaching product
       return {
         ...def,
         ...stored,
-        title: stored.title || def.title,
+        title: isCoaching ? def.title : (stored.title || def.title),
         slug: stored.slug || def.slug,
         image: stored.image || def.image,
         imageAlt: stored.imageAlt || def.imageAlt,
         gallery: (stored.gallery && stored.gallery.length > 0) ? stored.gallery : (def.gallery || [stored.image || def.image]),
-        description: stored.description || def.description,
-        longDescription: stored.longDescription || def.longDescription || stored.description || '',
+        description: isCoaching ? def.description : (stored.description || def.description),
+        longDescription: isCoaching ? def.longDescription : (stored.longDescription || def.longDescription || stored.description || ''),
         price: stored.price ?? def.price,
         originalPrice: stored.originalPrice ?? def.originalPrice,
-        badge: stored.badge || def.badge,
-        features: (stored.features && stored.features.length > 0) ? stored.features : def.features,
+        badge: isCoaching ? def.badge : (stored.badge || def.badge),
+        features: isCoaching ? def.features : ((stored.features && stored.features.length > 0) ? stored.features : def.features),
         downloadPdf: stored.downloadPdf || def.downloadPdf,
         productType: stored.productType || def.productType,
         bundleProductIds: stored.bundleProductIds || def.bundleProductIds,

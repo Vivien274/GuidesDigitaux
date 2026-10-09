@@ -758,16 +758,20 @@ export async function fetchProductsFromDb(): Promise<any[]> {
           p.title?.toLowerCase().trim() === (row.title || '').toLowerCase().trim()
         );
 
-        const isBrokenWpUrl = (url?: string) => !url || url.includes('wp-content') || url.includes('GD-LogoFondTransparent');
-        const resolvedImage = localMatch?.image || (!isBrokenWpUrl(row.image) ? row.image : (!isBrokenWpUrl(row.image_url) ? row.image_url : '/images/products/coaching-site.webp'));
-        
-        const effectiveLongDescription = row.long_description || localMatch?.longDescription || row.description || '';
-        const effectiveDescription = row.description || localMatch?.description || '';
-
         const isCoaching = row.id === 'coaching-site' || 
                            row.slug === 'coaching-site' || 
                            (row.title || '').toLowerCase().includes('coaching') || 
                            localMatch?.category === 'coaching';
+
+        const effectiveLongDescription = (isCoaching || !row.long_description) 
+          ? (localMatch?.longDescription || row.long_description || row.description || '')
+          : (row.long_description || localMatch?.longDescription || row.description || '');
+
+        const effectiveDescription = (isCoaching || !row.description)
+          ? (localMatch?.description || row.description || '')
+          : (row.description || localMatch?.description || '');
+
+        const resolvedImage = row.image || row.image_url || row.imageUrl || localMatch?.image || '/images/products/coaching-site.webp';
 
         return {
           id: row.id,
@@ -779,7 +783,7 @@ export async function fetchProductsFromDb(): Promise<any[]> {
           originalPrice: isBundle ? 298 : (row.original_price ? Number(row.original_price) : localMatch?.originalPrice),
           rating: Number(row.rating) || localMatch?.rating || 5,
           reviewsCount: Number(row.reviews_count) || localMatch?.reviewsCount || 0,
-          badge: isCoaching ? 'ACCOMPAGNEMENT 1-SUR-1' : (isBundle ? 'ÉCONOMISE 48€' : (row.badge || localMatch?.badge)),
+          badge: isCoaching ? (localMatch?.badge || '2 SESSIONS VISIO (2 x 45 MIN)') : (isBundle ? 'ÉCONOMISE 48€' : (row.badge || localMatch?.badge)),
           image: resolvedImage,
           imageAlt: row.image_alt || row.imageAlt || localMatch?.imageAlt || `${row.title} - Guides digitaux - Métropole lilloise`,
           description: effectiveDescription,
@@ -787,7 +791,7 @@ export async function fetchProductsFromDb(): Promise<any[]> {
           htmlContent: row.html_content,
           downloadPdf: row.download_pdf || row.pdf_file_url || localMatch?.downloadPdf,
           bookingUrl: isCoaching ? (row.booking_url || localMatch?.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18') : undefined,
-          features: (Array.isArray(row.features) && row.features.length > 0) ? row.features : (localMatch?.features || []),
+          features: (isCoaching || !Array.isArray(row.features) || row.features.length === 0) ? (localMatch?.features || []) : row.features,
           gallery: (Array.isArray(row.gallery) && row.gallery.length > 0) ? row.gallery : (localMatch?.gallery || [resolvedImage])
         };
       });

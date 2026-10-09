@@ -87,24 +87,50 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const rawParamId = params?.id as string;
   const productId = rawParamId ? decodeURIComponent(rawParamId).trim() : '';
+  const normalizedTarget = normalizeStr(productId);
+  const aliasedCanonicalId = ALIAS_MAP[productId] || ALIAS_MAP[normalizedTarget];
+
+  const getInitialProduct = (): Product | null => {
+    if (!productId) return null;
+    if (aliasedCanonicalId) {
+      const canonicalMatch = DEFAULT_PRODUCTS.find(p => p.id === aliasedCanonicalId || p.slug === aliasedCanonicalId);
+      if (canonicalMatch) return { ...canonicalMatch };
+    }
+    const defMatch = DEFAULT_PRODUCTS.find(p => 
+      p.id === productId || 
+      p.slug === productId || 
+      normalizeStr(p.id) === normalizedTarget || 
+      normalizeStr(p.slug || '') === normalizedTarget ||
+      normalizeStr(p.title) === normalizedTarget
+    );
+    if (defMatch) return { ...defMatch };
+    if (normalizedTarget.includes('coaching')) {
+      return DEFAULT_PRODUCTS.find(p => p.id === 'coaching-site') || null;
+    }
+    return null;
+  };
+
+  const initialProd = getInitialProduct();
 
   const [isBuying, setIsBuying] = useState(false);
   const { addToCart } = useCart();
   const { user } = useAuth();
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [product, setProduct] = useState<Product | null>(initialProd);
+  const [allProducts, setAllProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
+  const [isLoading, setIsLoading] = useState(initialProd ? false : true);
   const [notFoundState, setNotFoundState] = useState(false);
 
-  const [activeImage, setActiveImage] = useState<string>('');
+  const [activeImage, setActiveImage] = useState<string>(initialProd?.image || '');
   const [hasPurchased, setHasPurchased] = useState(false);
   const [coachingStatus, setCoachingStatus] = useState<any>(null);
   const [selectedPaymentOption, setSelectedPaymentOption] = useState<'1x' | '3x'>('1x');
 
   useEffect(() => {
     async function syncProductFromDb() {
-      setIsLoading(true);
+      if (!product) {
+        setIsLoading(true);
+      }
       setNotFoundState(false);
 
       const [dbProducts, dbCourses] = await Promise.all([
@@ -218,13 +244,14 @@ export default function ProductDetailPage() {
         );
 
         if (defaultFallback) {
-          match.longDescription = match.longDescription && match.longDescription.length > 200 ? match.longDescription : defaultFallback.longDescription;
-          match.description = match.description || defaultFallback.description;
-          match.image = match.image || defaultFallback.image;
-          match.imageAlt = match.imageAlt || defaultFallback.imageAlt;
-          match.gallery = match.gallery && match.gallery.length > 0 ? match.gallery : defaultFallback.gallery;
-          match.features = match.features && match.features.length > 0 ? match.features : defaultFallback.features;
-          match.categoryLabel = match.categoryLabel || defaultFallback.categoryLabel;
+          match.longDescription = defaultFallback.longDescription || match.longDescription;
+          match.description = defaultFallback.description || match.description;
+          match.badge = defaultFallback.badge || match.badge;
+          match.features = defaultFallback.features || match.features;
+          match.image = defaultFallback.image || match.image;
+          match.imageAlt = defaultFallback.imageAlt || match.imageAlt;
+          match.gallery = defaultFallback.gallery && defaultFallback.gallery.length > 0 ? defaultFallback.gallery : match.gallery;
+          match.categoryLabel = defaultFallback.categoryLabel || match.categoryLabel;
         }
 
         setProduct(match);
@@ -705,7 +732,11 @@ export default function ProductDetailPage() {
           <div className="bg-white rounded-3xl p-8 sm:p-12 border border-[#e8ded0] shadow-sm space-y-6">
             <div className="border-b border-[#eee7da] pb-4">
               <h2 className="text-xl sm:text-2xl font-extrabold text-[#332420]">
-                Description complète du guide
+                {product.category === 'coaching' 
+                  ? 'Comment fonctionnent tes 2 sessions de coaching ?' 
+                  : (product.category === 'formation' 
+                    ? 'Programme détaillé de la formation' 
+                    : 'Description complète du guide')}
               </h2>
             </div>
 
