@@ -32,10 +32,13 @@ export const PRODUCT_MAILCHIMP_TAGS: Record<string, string[]> = {
   // Formation Vitrine WordPress
   'formation-wordpress': ['formation-wordpress', 'client'],
   'creer-sa-vitrine-wordpress': ['formation-wordpress', 'client'],
+  'wordpress': ['formation-wordpress', 'client'],
 
   // Formation Boutique WooCommerce
   'formation-ajouter-une-boutique-en-ligne-avec-woocommerce': ['formation-woocommerce', 'client'],
   'formation-woocommerce': ['formation-woocommerce', 'client'],
+  'woocommerce': ['formation-woocommerce', 'client'],
+  'upsell-woocommerce': ['formation-woocommerce', 'client'],
 
   // Formation & Précommande Google Business Profile
   'formation-fiche-google': ['formation-gmb', 'client'],
@@ -53,17 +56,54 @@ export const PRODUCT_MAILCHIMP_TAGS: Record<string, string[]> = {
 
   // Pack Guides & Combo
   'pack-guides': ['pack-guides', 'client'],
+  'pack-7-guides': ['pack-guides', 'client'],
+  'downsell-pack': ['pack-guides', 'client'],
+  'downsell-guide': ['pack-guides', 'client'],
   'bundle-vitrine-boutique-wordpress-le-combo-pour-vendre-en-ligne': ['formation-wordpress', 'formation-woocommerce', 'client'],
 
   // Coaching & Accompagnement
   'coaching-site': ['coaching', 'client'],
 
   // Upsells et Downsells
-  'upsell-woocommerce': ['formation-woocommerce', 'client'],
   'upsell-coaching': ['coaching', 'client'],
-  'downsell-audit': ['client'],
-  'downsell-guide': ['client']
+  'downsell-audit': ['client']
 };
+
+/**
+ * Résout les tags Mailchimp pour un ID ou slug de produit donné.
+ */
+export function getMailchimpTagsForProduct(productIdOrSlug: string): string[] {
+  if (!productIdOrSlug) return ['client'];
+  const normalized = productIdOrSlug.toLowerCase().trim();
+
+  // 1. Direct match
+  if (PRODUCT_MAILCHIMP_TAGS[normalized]) {
+    return PRODUCT_MAILCHIMP_TAGS[normalized];
+  }
+
+  const tags: string[] = ['client'];
+
+  if (normalized.includes('wordpress')) {
+    tags.push('formation-wordpress');
+  }
+  if (normalized.includes('woocommerce')) {
+    tags.push('formation-woocommerce');
+  }
+  if (normalized.includes('pack') || normalized.includes('guide')) {
+    tags.push('pack-guides');
+  }
+  if (normalized.includes('serenite')) {
+    tags.push('kit-serenite');
+  }
+  if (normalized.includes('calculateur')) {
+    tags.push('calculateur-gmb');
+  }
+  if (normalized.includes('fiche-google') || normalized.includes('gmb')) {
+    tags.push('formation-gmb');
+  }
+
+  return Array.from(new Set(tags));
+}
 
 /**
  * Hash MD5 de l'adresse email (requis par l'API v3 de Mailchimp)

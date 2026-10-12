@@ -329,9 +329,9 @@ export async function POST(request: Request) {
         console.error('[Stripe Webhook] Erreur envoi email non-bloquante:', emailErr);
       }
 
-      // 9. Synchronisation Mailchimp avec la liste des 13 Tags exacts existants
+      // 9. Synchronisation Mailchimp avec tags stricts
       try {
-        const { PRODUCT_MAILCHIMP_TAGS, subscribeOrUpdateMailchimpMember } = await import('@/lib/mailchimp');
+        const { getMailchimpTagsForProduct, subscribeOrUpdateMailchimpMember } = await import('@/lib/mailchimp');
         const collectedTags = new Set<string>();
 
         // Tag client exact existant dans Mailchimp
@@ -340,16 +340,14 @@ export async function POST(request: Request) {
         if (Array.isArray(rawCartItems) && rawCartItems.length > 0) {
           rawCartItems.forEach((it: any) => {
             const pId = it.id || it.productId || it.slug;
-            const mapped = pId ? PRODUCT_MAILCHIMP_TAGS[pId] : null;
-            if (mapped) {
+            if (pId) {
+              const mapped = getMailchimpTagsForProduct(pId);
               mapped.forEach(t => collectedTags.add(t));
             }
           });
         } else if (productId) {
-          const mapped = PRODUCT_MAILCHIMP_TAGS[productId];
-          if (mapped) {
-            mapped.forEach(t => collectedTags.add(t));
-          }
+          const mapped = getMailchimpTagsForProduct(productId);
+          mapped.forEach(t => collectedTags.add(t));
         }
 
         // Tag newsletter exact existant dans Mailchimp
@@ -357,10 +355,10 @@ export async function POST(request: Request) {
           collectedTags.add('newsletter');
         }
 
-        // Tag kit-serenite si order bump ou produit kit-serenite acheté
+        // Tag kit-serenite si order bump ou produit kit-serenite acheté STRICTEMENT pour Cap Visibilité Google
+        const isGoogleSession = productId === 'formation-fiche-google' || productId?.includes('fiche-google') || session.metadata?.isPreorder === 'true';
         const hasKitSerenite = 
-          session.metadata?.hasOrderBump === 'true' || 
-          session.metadata?.orderbump === '1' || 
+          (isGoogleSession && (session.metadata?.hasOrderBump === 'true' || session.metadata?.orderbump === '1')) || 
           session.metadata?.orderBumpType === 'kit-serenite' ||
           productId === 'kit-serenite' ||
           productId?.includes('serenite') ||

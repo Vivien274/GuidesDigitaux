@@ -29,6 +29,31 @@ export async function POST(request: Request) {
       cartItems
     });
 
+    // Synchronisation Mailchimp avec tags stricts
+    try {
+      const { getMailchimpTagsForProduct, subscribeOrUpdateMailchimpMember } = await import('@/lib/mailchimp');
+      const collectedTags = new Set<string>(['client']);
+
+      if (Array.isArray(cartItems) && cartItems.length > 0) {
+        cartItems.forEach((it: any) => {
+          const pId = it.id || it.productId || it.slug;
+          if (pId) {
+            getMailchimpTagsForProduct(pId).forEach(t => collectedTags.add(t));
+          }
+        });
+      } else if (productId) {
+        getMailchimpTagsForProduct(productId).forEach(t => collectedTags.add(t));
+      }
+
+      await subscribeOrUpdateMailchimpMember({
+        email: customerEmail.toLowerCase().trim(),
+        fullName: customerName || undefined,
+        tags: Array.from(collectedTags)
+      });
+    } catch (mcErr) {
+      console.warn('[send-email API] Notice Mailchimp sync:', mcErr);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Erreur API send-order-email:', error);
