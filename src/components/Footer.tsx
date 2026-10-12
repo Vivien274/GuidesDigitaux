@@ -169,6 +169,12 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm font-medium">
               <li>
+                <Link href="/ressources-gratuites" className="text-emerald-300 hover:text-white transition-colors flex items-center gap-1.5 group font-bold">
+                  <ArrowRight className="w-3.5 h-3.5 text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span>🎁 Ressources Gratuites & Tutos</span>
+                </Link>
+              </li>
+              <li>
                 <Link href="/blog" className="text-teal-100 hover:text-white transition-colors flex items-center gap-1.5 group">
                   <ArrowRight className="w-3.5 h-3.5 text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <span>Le Blog Guides Digitaux</span>

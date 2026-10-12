@@ -19,7 +19,8 @@ import {
   Mail, 
   PhoneCall, 
   ChevronRight, 
-  Sparkles 
+  Sparkles,
+  Gift
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -148,6 +149,17 @@ export default function Header() {
               }`}
             >
               Boutique
+            </Link>
+
+            <Link 
+              href="/ressources-gratuites" 
+              className={`transition-colors pb-1 ${
+                isActive('/ressources-gratuites') 
+                  ? 'text-[#18757d] font-bold border-b-2 border-[#18757d]' 
+                  : 'hover:text-[#18757d]'
+              }`}
+            >
+              Ressources Gratuites
             </Link>
 
             <Link 
@@ -379,6 +391,24 @@ export default function Header() {
                     </div>
                     <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-[#fff1ee] text-[#c43c1d] border border-[#fdd8d2]">
                       2 min
+                    </span>
+                  </Link>
+
+                  <Link
+                    href="/ressources-gratuites"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-bold transition-all ${
+                      isActive('/ressources-gratuites')
+                        ? 'bg-[#18757d] text-white shadow-xs'
+                        : 'text-[#332420] hover:bg-[#f4ede0]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Gift className="w-4 h-4 opacity-80 text-[#f2542d]" />
+                      <span>Ressources Gratuites</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      Offert
                     </span>
                   </Link>
 

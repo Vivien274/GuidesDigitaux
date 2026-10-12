@@ -104,14 +104,6 @@ export default function TunnelFormationFicheGooglePage() {
   const [expressProvider, setExpressProvider] = useState<'apple_pay' | 'google_pay' | null>(null);
   const totalAmount = hasOrderBump ? 38 : 29;
 
-  // Compte à rebours dynamique jusqu'au 15 octobre 2026 à 23:59:59
-  const [timeLeft, setTimeLeft] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0
-  });
-
   useEffect(() => {
     // Tracking Meta Pixel ViewContent
     event('ViewContent', {
@@ -121,28 +113,6 @@ export default function TunnelFormationFicheGooglePage() {
       value: 29,
       currency: 'EUR',
     });
-
-    const targetDate = new Date('2026-10-15T23:59:59').getTime();
-
-    const updateTimer = () => {
-      const now = new Date().getTime();
-      const difference = targetDate - now;
-
-      if (difference > 0) {
-        setTimeLeft({
-          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
-          seconds: Math.floor((difference % (1000 * 60)) / 1000)
-        });
-      } else {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
   }, []);
 
   // Capture et synchronisation de l'email et du panier en temps réel (Récupération des paniers abandonnés)
@@ -569,17 +539,14 @@ export default function TunnelFormationFicheGooglePage() {
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
       
-      {/* 1. BANDEAU D'URGENCE & PROMO (PDF ÉTAPE 1) */}
-      <div className="bg-[#18757d] text-white py-3 px-4 text-center text-xs sm:text-sm font-bold flex flex-wrap items-center justify-center gap-2 sm:gap-3 sticky top-0 z-50 shadow-md">
+      {/* 1. BANDEAU D'URGENCE & PROMO */}
+      <div className="bg-[#18757d] text-white py-2.5 px-4 text-center text-xs sm:text-sm font-bold flex flex-wrap items-center justify-center gap-2 sm:gap-3 sticky top-0 z-50 shadow-md">
         <span className="inline-flex items-center gap-1.5 bg-amber-400 text-[#332420] px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider">
           <Sparkles className="w-3.5 h-3.5" />
-          Lancement Officiel
+          Offre limitée
         </span>
         <span className="text-white">
-          Tarif privilégié <strong>29 € au lieu de 69 €</strong> jusqu'au <strong>15 octobre 2026</strong> :
-        </span>
-        <span className="font-mono bg-black/30 border border-white/20 px-2.5 py-0.5 rounded-lg text-amber-300 font-extrabold tracking-wider">
-          {timeLeft.days}j {String(timeLeft.hours).padStart(2, '0')}h {String(timeLeft.minutes).padStart(2, '0')}m {String(timeLeft.seconds).padStart(2, '0')}s
+          Tarif privilégié <strong>29 € au lieu de 69 €</strong> • Accès immédiat &amp; à vie
         </span>
       </div>
 
@@ -872,7 +839,7 @@ export default function TunnelFormationFicheGooglePage() {
                 <div className="space-y-1">
                   <div className="text-4xl font-black text-[#332420]">29 €</div>
                   <p className="text-xs text-emerald-800 font-black">Économie immédiate de 40 € (-58%)</p>
-                  <p className="text-[11px] text-slate-600 font-medium">Valable jusqu'au 15 octobre 2026 à 23h59</p>
+                  <p className="text-[11px] text-amber-800 font-bold uppercase tracking-wider">Offre limitée</p>
                 </div>
 
                 <button
@@ -1442,7 +1409,7 @@ export default function TunnelFormationFicheGooglePage() {
               Prends une longueur d'avance dans ta ville
             </h2>
             <p className="text-xs sm:text-sm text-[#5e4d46] max-w-lg mx-auto">
-              Rappelle-toi : le tarif de lancement à <strong>29 € au lieu de 69 €</strong> prend fin le <strong>15 octobre 2026 à 23h59</strong>.
+              Rappelle-toi : le tarif privilégié à <strong>29 € au lieu de 69 €</strong> est une <strong>offre limitée</strong>.
             </p>
           </div>
 
