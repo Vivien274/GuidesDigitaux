@@ -32,34 +32,187 @@ import {
   HelpCircle as QuizIcon,
   CreditCard,
   CalendarCheck,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
+
+function ApplePayLogo({ className = "h-[26px] w-auto" }: { className?: string }) {
+  return (
+    <img
+      src="/images/apple-pay.svg"
+      alt="Apple Pay"
+      className={`${className} object-contain pointer-events-none select-none`}
+      style={{ height: '26px', width: 'auto', maxHeight: '26px' }}
+    />
+  );
+}
+
+function GooglePayLogo({ className = "h-[26px] w-auto" }: { className?: string }) {
+  return (
+    <img
+      src="/images/google-pay.svg"
+      alt="Google Pay"
+      className={`${className} object-contain pointer-events-none select-none`}
+      style={{ height: '26px', width: 'auto', maxHeight: '26px' }}
+    />
+  );
+}
 
 export default function TunnelFormationWordpressPage() {
   const router = useRouter();
   const [openModule, setOpenModule] = useState<number | null>(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHighlighted, setIsHighlighted] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [paymentOption, setPaymentOption] = useState<'1x' | '3x'>('1x');
   const [newsletterOptIn, setNewsletterOptIn] = useState(true);
+  
+  // Coordonnées de paiement direct
+  const [emailInput, setEmailInput] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvc, setCardCvc] = useState('');
+  const [expressProvider, setExpressProvider] = useState<'apple_pay' | 'google_pay' | null>(null);
 
-  const handleCheckout = async (forcedOption?: '1x' | '3x') => {
-    const opt = forcedOption || paymentOption;
+  const scrollToCommande = (forcedOption?: '1x' | '3x') => {
+    if (forcedOption) {
+      setPaymentOption(forcedOption);
+    } else {
+      setPaymentOption('1x');
+    }
+    const el = document.getElementById('commande');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+      setIsHighlighted(true);
+      setTimeout(() => setIsHighlighted(false), 2500);
+    }
+  };
+
+  const handleDirectPayment = async () => {
+    if (!emailInput.trim() || !emailInput.includes('@')) {
+      alert('Renseigne une adresse e-mail valide pour recevoir tes accès à la formation.');
+      document.getElementById('checkout-email')?.focus();
+      return;
+    }
+
     setIsLoading(true);
+    const effectivePrice = paymentOption === '3x' ? 75 : 199;
+
+    try {
+      // Inscription Mailchimp si renseigné
+      try {
+        const directTags = ['formation-wordpress', 'client'];
+        if (newsletterOptIn) directTags.push('newsletter');
+        if (paymentOption === '3x') directTags.push('paiement-3x');
+        fetch('/api/mailchimp/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailInput.trim(),
+            tag: 'formation-wordpress',
+            tags: directTags
+          })
+        }).catch(err => console.warn('Notice Mailchimp:', err));
+      } catch (e) {}
+
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId: 'formation-wordpress',
+          productId: 'formation-wordpress',
+          courseTitle: paymentOption === '3x'
+            ? 'Formation Vidéo : Vitrine WordPress (Option 3x sans frais)'
+            : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
+          title: paymentOption === '3x'
+            ? 'Formation Vidéo : Vitrine WordPress (Option 3x sans frais)'
+            : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
+          price: effectivePrice,
+          paymentOption,
+          newsletterOptIn,
+          customerEmail: emailInput.trim(),
+          cancelUrl: '/tunnel/formation-wordpress',
+          successUrl: `/tunnel/upsell?session_id={CHECKOUT_SESSION_ID}&productId=formation-wordpress&email=${encodeURIComponent(emailInput.trim())}&price=${effectivePrice}&option=${paymentOption}`
+        })
+      });
+
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Une erreur est survenue lors de l\'initialisation du paiement Stripe.');
+        setIsLoading(false);
+      }
+    } catch (e) {
+      console.error('Direct checkout error', e);
+      alert('Une erreur est survenue lors de la validation du paiement.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleExpressPayment = async (provider: 'apple_pay' | 'google_pay') => {
+    setExpressProvider(provider);
+    setIsLoading(true);
+    const effectivePrice = paymentOption === '3x' ? 75 : 199;
     try {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           courseId: 'formation-wordpress',
-          courseTitle: opt === '3x' ? 'Formation Vidéo : Vitrine WordPress (Paiement 3x Klarna)' : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
           productId: 'formation-wordpress',
-          title: opt === '3x' ? 'Formation Vidéo : Vitrine WordPress (Paiement 3x Klarna)' : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
-          price: opt === '3x' ? 225 : 199,
+          courseTitle: paymentOption === '3x'
+            ? 'Formation Vidéo : Vitrine WordPress (Option 3x sans frais)'
+            : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
+          title: paymentOption === '3x'
+            ? 'Formation Vidéo : Vitrine WordPress (Option 3x sans frais)'
+            : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
+          price: effectivePrice,
+          paymentOption,
+          newsletterOptIn,
+          customerEmail: emailInput.trim() || undefined,
+          cancelUrl: '/tunnel/formation-wordpress',
+          successUrl: `/tunnel/upsell?session_id={CHECKOUT_SESSION_ID}&productId=formation-wordpress&price=${effectivePrice}&option=${paymentOption}${emailInput.trim() ? `&email=${encodeURIComponent(emailInput.trim())}` : ''}`
+        })
+      });
+
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Une erreur est survenue lors de l\'initialisation du paiement express.');
+        setIsLoading(false);
+        setExpressProvider(null);
+      }
+    } catch (e) {
+      console.error('Erreur Stripe express checkout:', e);
+      alert('Impossible de contacter le serveur de paiement sécurisé.');
+      setIsLoading(false);
+      setExpressProvider(null);
+    }
+  };
+
+  const handleCheckout = async (forcedOption?: '1x' | '3x', actionId: string = 'order') => {
+    const opt = forcedOption || paymentOption;
+    setIsLoading(true);
+    setLoadingAction(actionId);
+    const effectivePrice = opt === '3x' ? 75 : 199;
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId: 'formation-wordpress',
+          courseTitle: opt === '3x' ? 'Formation Vidéo : Vitrine WordPress (Option 3x sans frais)' : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
+          productId: 'formation-wordpress',
+          title: opt === '3x' ? 'Formation Vidéo : Vitrine WordPress (Option 3x sans frais)' : 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress',
+          price: effectivePrice,
           paymentOption: opt,
           newsletterOptIn,
-          cancelUrl: 'https://www.guides-digitaux.com/tunnel/formation-wordpress',
-          successUrl: 'https://www.guides-digitaux.com/tunnel/upsell?session_id={CHECKOUT_SESSION_ID}&productId=formation-wordpress'
+          customerEmail: emailInput.trim() || undefined,
+          cancelUrl: '/tunnel/formation-wordpress',
+          successUrl: `/tunnel/upsell?session_id={CHECKOUT_SESSION_ID}&productId=formation-wordpress&price=${effectivePrice}&option=${opt}${emailInput.trim() ? `&email=${encodeURIComponent(emailInput.trim())}` : ''}`
         })
       });
 
@@ -69,11 +222,13 @@ export default function TunnelFormationWordpressPage() {
       } else {
         alert('Une erreur est survenue lors de l\'initialisation de la commande.');
         setIsLoading(false);
+        setLoadingAction(null);
       }
     } catch (e) {
       console.error('Checkout error', e);
       alert('Impossible de contacter le serveur de paiement.');
       setIsLoading(false);
+      setLoadingAction(null);
     }
   };
 
@@ -124,7 +279,7 @@ export default function TunnelFormationWordpressPage() {
       lessons: [
         "Tester son site avant le grand lancement (Mobile, tablette, formulaires)",
         "Se faire remarquer par Google (Google Search Console, Analytics, bases du SEO)",
-        "Félicitations : votre site est en ligne ! 🎉 (Checklist finale + bonnes pratiques pour la suite)"
+        "Félicitations : ton site est en ligne ! 🎉 (Checklist finale + bonnes pratiques pour la suite)"
       ]
     }
   ];
@@ -133,12 +288,12 @@ export default function TunnelFormationWordpressPage() {
     {
       title: "Vidéo Bonus 1 : Créer son adresse e-mail pro gratuite",
       value: "Offert",
-      desc: "Le tutoriel pas-à-pas pour configurer votre adresse professionnelle (ex: contact@votreentreprise.fr) sans abonnement mensuel."
+      desc: "Le tutoriel pas-à-pas pour configurer ton adresse professionnelle (ex: contact@tonatelier.fr) sans abonnement mensuel."
     },
     {
       title: "Vidéo Bonus 2 : Optimiser ses photos & vidéos pour son site",
       value: "Offert",
-      desc: "La méthode concrète pour diviser le poids de vos visuels par 10 sans aucune perte de qualité et accélérer votre site sur mobile."
+      desc: "La méthode concrète pour diviser le poids de tes visuels par 10 sans aucune perte de qualité et accélérer ton site sur mobile."
     }
   ];
 
@@ -166,38 +321,38 @@ export default function TunnelFormationWordpressPage() {
   const engagements = [
     {
       title: "Pédagogie 100% Concrète & Pas-à-Pas",
-      desc: "Chaque étape est filmée directement sur écran. Pas de théorie abstraite : vous regardez la vidéo et vous reproduisez exactement la même action sur votre site."
+      desc: "Chaque étape est filmée directement sur écran. Pas de théorie abstraite : tu regardes la vidéo et tu reproduis exactement la même action sur ton site."
     },
     {
       title: "Accès Illimité à Vie & Évolutif",
-      desc: "Votre accès reste valable sans limite de temps. Vous pouvez revenir visionner n'importe quel cours quand vous en avez besoin et profiter de toutes les futures mises à jour."
+      desc: "Ton accès reste valable sans limite de temps. Tu peux revenir visionner n'importe quel cours quand tu en as besoin et profiter de toutes les futures mises à jour."
     },
     {
       title: "Accompagnement Adapté aux Artisans",
-      desc: "Un langage clair, sans blabla ni jargon technique complexe, conçu pour préserver votre temps et garantir votre autonomie absolue."
+      desc: "Un langage clair, sans blabla ni jargon technique complexe, conçu pour préserver ton temps et garantir ton autonomie absolue."
     }
   ];
 
   const faqs = [
     {
       q: "Est-ce que je dois savoir coder ou m'y connaître en informatique ?",
-      a: "Absolument pas ! Cette formation est 100% conçue pour les débutants complets. Tout se fait en glisser-déposer sur votre écran avec Elementor et WordPress, sans toucher à la moindre ligne de code."
+      a: "Absolument pas ! Cette formation est 100% conçue pour les débutants complets. Tout se fait en glisser-déposer sur ton écran avec Elementor et WordPress, sans toucher à la moindre ligne de code."
     },
     {
       q: "Comment fonctionne le paiement en 3x sans frais Klarna ?",
-      a: "En choisissant le paiement 3x Klarna (3x 75 € = 225 € au total), vous réglez 75 € aujourd'hui via Stripe/Klarna, puis les 2 mensualités suivantes de 75 € sont prélevées automatiquement à 30 et 60 jours sans aucun frais caché."
+      a: "En choisissant le paiement 3x Klarna (3x 75 € = 225 € au total), tu règles 75 € aujourd'hui via Stripe/Klarna, puis les 2 mensualités suivantes de 75 € sont prélevées automatiquement à 30 et 60 jours sans aucun frais caché."
     },
     {
       q: "Est-ce que les vidéos doivent être suivies dans l'ordre ?",
-      a: "Toutes les vidéos ont été spécialement conçues pour pouvoir être visionnées de manière 100% indépendante les unes des autres, selon vos besoins du moment, tout en suivant une trame pédagogique logique et fluide."
+      a: "Toutes les vidéos ont été spécialement conçues pour pouvoir être visionnées de manière 100% indépendante les unes des autres, selon tes besoins du moment, tout en suivant une trame pédagogique logique et fluide."
     },
     {
       q: "Combien de temps ai-je accès à la formation ?",
-      a: "Votre accès est illimité 24h/24 et 7j/7 à vie ! Vous pouvez suivre les modules à votre propre rythme, y revenir dès que vous souhaitez faire une mise à jour et profiter gratuitement des futurs contenus."
+      a: "Ton accès est illimité 24h/24 et 7j/7 à vie ! Tu peux suivre les modules à ton propre rythme, y revenir dès que tu souhaites faire une mise à jour et profiter gratuitement des futurs contenus."
     },
     {
       q: "Quel est le budget à prévoir à côté de la formation ?",
-      a: "Uniquement votre nom de domaine et votre hébergement web (environ 5 € à 7 € par mois chez un hébergeur comme O2Switch ou OVH). Tout le reste (WordPress, Elementor) est gratuit !"
+      a: "Uniquement ton nom de domaine et ton hébergement web (environ 5 € à 7 € par mois chez un hébergeur comme O2Switch ou OVH). Tout le reste (WordPress, Elementor) est gratuit !"
     }
   ];
 
@@ -234,13 +389,13 @@ export default function TunnelFormationWordpressPage() {
               </h1>
 
               <p className="text-base sm:text-lg text-[#5e4d46] font-medium leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                La méthode pas-à-pas enregistrée en vidéo HD pour construire votre propre site internet sur-mesure, attirer des clients dans votre région et devenir 100% autonome.
+                La méthode pas-à-pas enregistrée en vidéo HD pour construire ton propre site internet sur-mesure, attirer des clients dans ta région et devenir 100% autonome.
               </p>
 
               {/* Highlight Note */}
               <div className="p-3.5 bg-[#e6f4f3]/70 rounded-2xl border border-[#18757d]/20 text-xs text-[#18757d] font-bold flex items-center gap-2.5">
                 <Zap className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>Format modulable (6 Modules) : visionnez chaque vidéo indépendamment selon vos besoins, avec checklists, workbooks & quizz inclus.</span>
+                <span>Format modulable (6 Modules) : visionne chaque vidéo indépendamment selon tes besoins, avec checklists, workbooks & quizz inclus.</span>
               </div>
 
               {/* Bullet Highlights */}
@@ -267,8 +422,7 @@ export default function TunnelFormationWordpressPage() {
               <div className="pt-4 space-y-3">
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                   <button
-                    onClick={() => handleCheckout('1x')}
-                    disabled={isLoading}
+                    onClick={() => scrollToCommande('1x')}
                     className="w-full sm:w-auto px-7 py-4 text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-xl hover:shadow-2xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>REJOINDRE EN 1X (199 €)</span>
@@ -276,11 +430,10 @@ export default function TunnelFormationWordpressPage() {
                   </button>
 
                   <button
-                    onClick={() => handleCheckout('3x')}
-                    disabled={isLoading}
+                    onClick={() => scrollToCommande('3x')}
                     className="w-full sm:w-auto px-7 py-4 text-sm font-black text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-xl hover:shadow-2xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>PAYER EN 3X KLARNA (3X 75 €)</span>
+                    <span>PAYER EN 3X (3X 75 €)</span>
                     <ArrowRight className="w-4 h-4 text-[#332420]" />
                   </button>
                 </div>
@@ -347,7 +500,7 @@ export default function TunnelFormationWordpressPage() {
         <div className="max-w-4xl mx-auto px-4 text-center space-y-10">
           <div className="space-y-3">
             <span className="text-xs font-black text-[#e05a47] uppercase tracking-wider bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
-              Est-ce que vous vous reconnaissez dans cette situation ?
+              Est-ce que tu te reconnais dans cette situation ?
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-[#332420]">
               Créer un site internet ne devrait pas être un parcours du combattant.
@@ -371,7 +524,7 @@ export default function TunnelFormationWordpressPage() {
               </div>
               <h3 className="text-base font-extrabold text-[#332420]">La peur de la technique & des bugs</h3>
               <p className="text-xs text-[#5e4d46] leading-relaxed">
-                Vous avez peur de faire une mauvaise manipulation, de tout casser ou de vous perdre dans des tutoriels incomplets et compliqués.
+                Tu as peur de faire une mauvaise manipulation, de tout casser ou de te perdre dans des tutoriels incomplets et compliqués.
               </p>
             </div>
 
@@ -381,7 +534,7 @@ export default function TunnelFormationWordpressPage() {
               </div>
               <h3 className="text-base font-extrabold text-[#332420]">La dépendance envers un tiers</h3>
               <p className="text-xs text-[#5e4d46] leading-relaxed">
-                Devoir payer à chaque fois que vous souhaitez ajouter une réalisation ou modifier un texte vous empêche de garder la main sur votre image.
+                Devoir payer à chaque fois que tu souhaites ajouter une réalisation ou modifier un texte t'empêche de garder la main sur ton image.
               </p>
             </div>
           </div>
@@ -389,8 +542,7 @@ export default function TunnelFormationWordpressPage() {
           {/* CTA BUTTON 2 */}
           <div className="pt-4">
             <button
-              onClick={() => handleCheckout()}
-              disabled={isLoading}
+              onClick={() => scrollToCommande()}
               className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
               <span>JE VEUX CRÉER MON SITE SANS STRESS ({ctaPriceLabel})</span>
@@ -410,10 +562,10 @@ export default function TunnelFormationWordpressPage() {
               Programme Pédagogique Officiel (6 Modules)
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-[#332420]">
-              Le cursus complet pour bâtir votre site vitrine
+              Le cursus complet pour bâtir ton site vitrine
             </h2>
             <p className="text-sm text-[#5e4d46] max-w-2xl mx-auto leading-relaxed">
-              Toutes les vidéos ont été conçues pour que vous puissiez les visionner de manière <strong>100% indépendante</strong> les unes des autres, avec des <strong>checklists, workbooks pratiques et quizz</strong> à chaque étape.
+              Toutes les vidéos ont été conçues pour que tu puisses les visionner de manière <strong>100% indépendante</strong> les unes des autres, avec des <strong>checklists, workbooks pratiques et quizz</strong> à chaque étape.
             </p>
           </div>
 
@@ -456,8 +608,7 @@ export default function TunnelFormationWordpressPage() {
           {/* CTA BUTTON 3 */}
           <div className="text-center pt-4">
             <button
-              onClick={() => handleCheckout()}
-              disabled={isLoading}
+              onClick={() => scrollToCommande()}
               className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
               <span>ACCÉDER AUX 6 MODULES VIDÉO ({ctaPriceLabel})</span>
@@ -477,7 +628,7 @@ export default function TunnelFormationWordpressPage() {
               <Award className="w-4 h-4" /> Les 3 Engagements Qualité Guides Digitaux
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-[#332420]">
-              Une méthode éprouvée pour la réussite de votre projet
+              Une méthode éprouvée pour la réussite de ton projet
             </h2>
           </div>
 
@@ -496,8 +647,7 @@ export default function TunnelFormationWordpressPage() {
           {/* CTA BUTTON 4 */}
           <div className="pt-4">
             <button
-              onClick={() => handleCheckout()}
-              disabled={isLoading}
+              onClick={() => scrollToCommande()}
               className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
               <span>REJOINDRE LA FORMATION ÉVOLUTIVE ({ctaPriceLabel})</span>
@@ -516,7 +666,7 @@ export default function TunnelFormationWordpressPage() {
               <Gift className="w-4 h-4" /> 2 Vidéos Bonus Incluses Gratuitement Aujourd'hui
             </span>
             <h2 className="text-2xl sm:text-4xl font-black">
-              Tout ce dont vous avez besoin pour un lancement parfait
+              Tout ce dont tu as besoin pour un lancement parfait
             </h2>
           </div>
 
@@ -535,8 +685,7 @@ export default function TunnelFormationWordpressPage() {
           {/* CTA BUTTON 5 */}
           <div className="pt-4">
             <button
-              onClick={() => handleCheckout()}
-              disabled={isLoading}
+              onClick={() => scrollToCommande()}
               className="px-9 py-5 text-sm sm:text-base font-black text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
               <span>OBTENIR LA FORMATION + LES 2 VIDÉOS BONUS ({ctaPriceLabel})</span>
@@ -552,7 +701,7 @@ export default function TunnelFormationWordpressPage() {
           
           <div className="space-y-3">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 uppercase tracking-wider">
-              <Star className="w-4 h-4 text-amber-500 fill-amber-500" /> Vos Avis Clients Vérifiés
+              <Star className="w-4 h-4 text-amber-500 fill-amber-500" /> Les Avis Clients Vérifiés
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-[#332420]">
               Ce que disent les artisans et créateurs qui nous font confiance
@@ -591,8 +740,7 @@ export default function TunnelFormationWordpressPage() {
           {/* REVIEWS CTA BUTTON */}
           <div className="pt-2">
             <button
-              onClick={() => handleCheckout()}
-              disabled={isLoading}
+              onClick={() => scrollToCommande()}
               className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
               <span>REJOINDRE LES ARTISANS ACCOMPAGNÉS ({ctaPriceLabel})</span>
@@ -641,7 +789,7 @@ export default function TunnelFormationWordpressPage() {
                 « À travers <strong>Guides Digitaux</strong>, j’accompagne les artisans, créateurs et indépendants qui veulent créer leur propre site web et comprendre enfin le digital pour en tirer un vrai bénéfice — sans passer par des prestataires hors de prix.
               </p>
               <p>
-                Mon approche est simple : <strong>aucun jargon technique incompréhensible, un ton bienveillant, très concret et un brin décalé 😊</strong>. Chaque vidéo a été tournée pour vous transmettre l'autonomie totale sur votre site, sans vous prendre la tête ! »
+                Mon approche est simple : <strong>aucun jargon technique incompréhensible, un ton bienveillant, très concret et un brin décalé 😊</strong>. Chaque vidéo a été tournée pour te transmettre l'autonomie totale sur ton site, sans te prendre la tête ! »
               </p>
             </div>
           </div>
@@ -650,8 +798,7 @@ export default function TunnelFormationWordpressPage() {
           <div className="text-center space-y-3">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
-                onClick={() => handleCheckout('1x')}
-                disabled={isLoading}
+                onClick={() => scrollToCommande('1x')}
                 className="w-full sm:w-auto px-7 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>REJOINDRE EN 1X (199 €)</span>
@@ -659,11 +806,10 @@ export default function TunnelFormationWordpressPage() {
               </button>
 
               <button
-                onClick={() => handleCheckout('3x')}
-                disabled={isLoading}
+                onClick={() => scrollToCommande('3x')}
                 className="w-full sm:w-auto px-7 py-4 text-xs sm:text-sm font-black text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>PAYER EN 3X KLARNA (3X 75 €)</span>
+                <span>PAYER EN 3X (3X 75 €)</span>
                 <ArrowRight className="w-4 h-4 text-[#332420]" />
               </button>
             </div>
@@ -672,153 +818,317 @@ export default function TunnelFormationWordpressPage() {
         </div>
       </section>
 
-      {/* PRICING & OFFER BOX WITH 2 CLEAR PAYMENT OPTIONS (1X vs 3X KLARNA) */}
-      <section className="py-16 lg:py-24 bg-[#faf8f5]" id="commande">
-        <div className="max-w-3xl mx-auto px-4">
-          <div className="bg-white rounded-3xl p-8 sm:p-12 border-2 border-[#18757d] shadow-2xl space-y-8 text-center relative overflow-hidden">
+      {/* 12. APPEL À L'ACTION ET MODULE DE PAIEMENT STRIPE INTÉGRÉ AU TUNNEL */}
+      <section id="commande" className="py-16 md:py-24 bg-gradient-to-b from-[#faf8f5] via-[#eef7f6] to-[#e6f4f3] scroll-mt-12">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 space-y-8 text-center">
+          
+          <div className="space-y-3">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-400 text-[#332420] uppercase tracking-wider">
+              <Zap className="w-3.5 h-3.5 fill-current" />
+              Offre d'Accès Immédiat • Paiement Sécurisé
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-[#332420] tracking-tight">
+              Passe à l'action et crée ton site WordPress
+            </h2>
+            <p className="text-xs sm:text-sm text-[#5e4d46] max-w-lg mx-auto">
+              Choisis ta formule de règlement ci-dessous pour accéder instantanément aux 6 modules vidéo et bonus à vie.
+            </p>
+          </div>
+
+          {/* MODULE DE PAIEMENT STRIPE INTÉGRÉ AU TUNNEL */}
+          <div className={`bg-white rounded-3xl border-2 ${isHighlighted ? 'border-[#18757d] ring-4 ring-[#18757d]/30 scale-101 shadow-2xl' : 'border-[#18757d] shadow-xl'} p-6 sm:p-10 space-y-6 text-left transition-all duration-500`}>
             
-            <div className="absolute top-0 right-0 bg-amber-400 text-[#332420] text-xs font-black px-6 py-2 rounded-bl-2xl uppercase tracking-wider">
-              Offre d'Accès Immédiat
+            {/* EN-TÊTE RÉCAPITULATIF */}
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#eee7da] pb-5">
+              <div>
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider bg-[#e6f4f3] text-[#18757d] px-2.5 py-0.5 rounded-md">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#18757d]" />
+                  Paiement 100% Sécurisé Stripe
+                </span>
+                <h3 className="text-xl font-black text-[#332420] mt-1">Formation Vidéo : Créer sa vitrine en ligne avec WordPress</h3>
+                <p className="text-xs text-slate-500 font-semibold">
+                  6 Modules Vidéo • Checklists, Workbooks & Quizz • 2 Vidéos Bonus Offertes • Accès à vie
+                </p>
+              </div>
+              <div className="text-right">
+                {paymentOption === '1x' ? (
+                  <>
+                    <span className="text-xs text-slate-600 line-through block font-bold">298,00 €</span>
+                    <span className="text-3xl font-black text-[#18757d]">199,00 €</span>
+                    <span className="text-[10px] font-bold text-emerald-700 block mt-0.5">Paiement unique</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs text-slate-500 font-bold block">Paiement 3x sans frais</span>
+                    <span className="text-3xl font-black text-[#18757d]">3 x 75,00 €</span>
+                    <span className="text-[10px] font-bold text-[#18757d] block mt-0.5">75,00 € aujourd'hui (Total : 225 €)</span>
+                  </>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-3 pt-2">
-              <span className="text-xs font-extrabold text-[#18757d] uppercase tracking-wider">
-                Formation Vidéo : Créer sa vitrine en ligne avec WordPress
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-black text-[#332420]">
-                Choisissez Votre Mode De Règlement
-              </h2>
-              <p className="text-xs text-[#5e4d46]">
-                Formez-vous à votre rythme avec les 6 modules vidéo officiels, les 2 vidéos bonus et vos supports pratiques.
+            {/* SÉLECTEUR 2 OPTIONS (1X vs 3X SANS FRAIS) */}
+            <div>
+              <label className="block text-xs font-black text-[#332420] uppercase tracking-wider mb-2">
+                Choisis ta modalité de règlement :
+              </label>
+              <div className="p-1.5 bg-[#faf8f5] rounded-2xl border border-[#eee7da] grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentOption('1x')}
+                  className={`py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    paymentOption === '1x'
+                      ? 'bg-[#18757d] text-white shadow-md'
+                      : 'text-[#5e4d46] hover:text-[#332420] hover:bg-white/60'
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>Paiement 1x (199 €)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentOption('3x')}
+                  className={`py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    paymentOption === '3x'
+                      ? 'bg-[#18757d] text-white shadow-md'
+                      : 'text-[#5e4d46] hover:text-[#332420] hover:bg-white/60'
+                  }`}
+                >
+                  <CalendarCheck className="w-4 h-4" />
+                  <span>Facilité 3x (3x 75 €)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* ÉTAPE 1 : ADRESSE EMAIL */}
+            <div>
+              <label htmlFor="checkout-email" className="block text-xs font-black text-[#332420] uppercase tracking-wider mb-1.5">
+                Adresse e-mail (pour la réception instantanée des accès) :
+              </label>
+              <input
+                id="checkout-email"
+                name="email"
+                autoComplete="email"
+                aria-label="Adresse e-mail pour la réception des accès"
+                type="email"
+                placeholder="ex: contact@mon-atelier.fr ou marie.artisan@gmail.com"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-[#eee7da] bg-[#faf8f5] text-sm text-[#332420] font-medium focus:ring-2 focus:ring-[#18757d] focus:bg-white focus:outline-hidden transition-all"
+              />
+            </div>
+
+            {/* ÉTAPE 2 : PAIEMENT EXPRESS EN 1 CLIC (APPLE PAY & GOOGLE PAY) */}
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-[#332420] uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                  Paiement Express en 1 clic
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-[#18757d] bg-[#e6f4f3] px-2.5 py-0.5 rounded-full border border-[#18757d]/20">
+                    {paymentOption === '3x' ? '75,00 € aujourd’hui' : '199,00 €'}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    Sécurisé SSL
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* BOUTON APPLE PAY */}
+                <button
+                  type="button"
+                  onClick={() => handleExpressPayment('apple_pay')}
+                  disabled={isLoading}
+                  aria-label="Payer en 1 clic avec Apple Pay"
+                  title="Payer en 1 clic avec Apple Pay"
+                  className="w-full h-12 bg-black hover:bg-neutral-900 text-white rounded-xl transition-all shadow-sm hover:shadow-md hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 flex items-center justify-center cursor-pointer border border-neutral-800 px-4 overflow-hidden"
+                >
+                  {isLoading && expressProvider === 'apple_pay' ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span className="text-xs font-medium">Connexion Apple Pay...</span>
+                    </span>
+                  ) : (
+                    <ApplePayLogo className="h-[26px] w-auto" />
+                  )}
+                </button>
+
+                {/* BOUTON GOOGLE PAY */}
+                <button
+                  type="button"
+                  onClick={() => handleExpressPayment('google_pay')}
+                  disabled={isLoading}
+                  aria-label="Payer en 1 clic avec Google Pay"
+                  title="Payer en 1 clic avec Google Pay"
+                  className="w-full h-12 bg-black hover:bg-neutral-900 text-white rounded-xl transition-all shadow-sm hover:shadow-md hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 flex items-center justify-center cursor-pointer border border-neutral-800 px-4 overflow-hidden"
+                >
+                  {isLoading && expressProvider === 'google_pay' ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span className="text-xs font-medium">Connexion Google Pay...</span>
+                    </span>
+                  ) : (
+                    <GooglePayLogo className="h-[26px] w-auto" />
+                  )}
+                </button>
+              </div>
+
+              <p className="text-center text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1.5 pt-0.5">
+                <Lock className="w-3 h-3 text-emerald-600" />
+                Paiement express biométrique sécurisé (Face ID / Touch ID)
               </p>
+
+              {/* SÉPARATEUR */}
+              <div className="relative flex items-center justify-center pt-2 pb-1">
+                <div className="grow border-t border-[#eee7da]"></div>
+                <span className="shrink mx-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  ou par carte bancaire
+                </span>
+                <div className="grow border-t border-[#eee7da]"></div>
+              </div>
             </div>
 
-            {/* 2-TAB PAYMENT TOGGLE (1X vs 3X KLARNA) */}
-            <div className="max-w-md mx-auto p-1.5 bg-[#faf8f5] rounded-2xl border border-[#eee7da] grid grid-cols-2 gap-2">
+            {/* ÉTAPE 3 : FORMULAIRE DE PAIEMENT PAR CARTE DIRECT */}
+            <div className="space-y-4">
+              <div className="p-4 bg-[#faf8f5] rounded-2xl border border-[#eee7da] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-[#332420] uppercase tracking-wider flex items-center gap-1.5">
+                    <CreditCard className="w-4 h-4 text-[#18757d]" />
+                    Coordonnées Bancaires
+                  </span>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">CB</span>
+                    <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-blue-700">VISA</span>
+                    <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-red-600">MC</span>
+                    <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-800">Apple Pay</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div>
+                    <label htmlFor="checkout-card-number" className="sr-only">Numéro de carte bancaire</label>
+                    <input
+                      id="checkout-card-number"
+                      name="cardNumber"
+                      autoComplete="cc-number"
+                      aria-label="Numéro de carte bancaire (16 chiffres)"
+                      type="text"
+                      placeholder="Numéro de carte bancaire (16 chiffres)"
+                      maxLength={19}
+                      value={cardNumber}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                        setCardNumber(val);
+                      }}
+                      className="w-full px-4 py-2.5 rounded-xl border border-[#eee7da] bg-white text-sm text-[#332420] font-mono tracking-wider focus:ring-2 focus:ring-[#18757d] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label htmlFor="checkout-card-expiry" className="sr-only">Date d'expiration</label>
+                      <input
+                        id="checkout-card-expiry"
+                        name="cardExpiry"
+                        autoComplete="cc-exp"
+                        aria-label="Date d'expiration (MM / AA)"
+                        type="text"
+                        placeholder="MM / AA"
+                        maxLength={5}
+                        value={cardExpiry}
+                        onChange={(e) => {
+                          let val = e.target.value.replace(/\D/g, '');
+                          if (val.length >= 2) val = `${val.slice(0, 2)}/${val.slice(2, 4)}`;
+                          setCardExpiry(val);
+                        }}
+                        className="w-full px-4 py-2.5 rounded-xl border border-[#eee7da] bg-white text-sm text-[#332420] font-mono text-center focus:ring-2 focus:ring-[#18757d] focus:outline-hidden"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="checkout-card-cvc" className="sr-only">Code CVC</label>
+                      <input
+                        id="checkout-card-cvc"
+                        name="cardCvc"
+                        autoComplete="cc-csc"
+                        aria-label="Code de sécurité CVC ou CVV (3 ou 4 chiffres)"
+                        type="password"
+                        placeholder="CVC / CVV"
+                        maxLength={4}
+                        value={cardCvc}
+                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ''))}
+                        className="w-full px-4 py-2.5 rounded-xl border border-[#eee7da] bg-white text-sm text-[#332420] font-mono text-center focus:ring-2 focus:ring-[#18757d] focus:outline-hidden"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CASE À COCHER OPTIONNELLE NEWSLETTER */}
+              <div className="p-4 rounded-2xl border bg-[#faf8f5] border-[#eee7da] transition-all">
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    id="checkout-newsletter-optin"
+                    name="newsletterOptIn"
+                    aria-label="J'accepte de recevoir les e-mails pédagogiques et la newsletter de Guides Digitaux"
+                    type="checkbox"
+                    checked={newsletterOptIn}
+                    onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                    className="w-4 h-4 rounded text-[#18757d] focus:ring-[#18757d] mt-0.5 shrink-0 cursor-pointer"
+                  />
+                  <span className="text-xs text-[#5e4d46] leading-relaxed">
+                    <strong className="text-[#332420]">J'accepte</strong> de recevoir les e-mails pédagogiques, les conseils d'optimisation et la newsletter de Guides Digitaux. <span className="text-slate-600 font-medium text-[11px]">(Optionnel)</span>
+                  </span>
+                </label>
+              </div>
+
+              {/* BOUTON DE VALIDATION DIRECTE */}
               <button
-                type="button"
-                onClick={() => setPaymentOption('1x')}
-                className={`py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  paymentOption === '1x'
-                    ? 'bg-[#18757d] text-white shadow-md'
-                    : 'text-[#5e4d46] hover:text-[#332420]'
-                }`}
+                onClick={handleDirectPayment}
+                disabled={isLoading}
+                aria-label={paymentOption === '3x' ? 'Régler la 1ʳᵉ mensualité de 75 € et accéder à la formation' : 'Payer 199 € et accéder à la formation'}
+                className="w-full bg-[#18757d] hover:bg-[#12595f] text-white py-4 px-6 rounded-2xl font-black text-base sm:text-lg uppercase tracking-wider transition-all shadow-xl hover:scale-101 active:scale-99 disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer min-h-[52px]"
               >
-                <CreditCard className="w-4 h-4" />
-                <span>Paiement 1x (199 €)</span>
+                {isLoading && !expressProvider ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-white" />
+                    <span>Traitement sécurisé Stripe...</span>
+                  </span>
+                ) : (
+                  <>
+                    <span>
+                      {paymentOption === '3x'
+                        ? 'Régler la 1ʳᵉ Mensualité de 75,00 € (3x sans frais)'
+                        : 'Payer 199,00 € et Accéder à la Formation'}
+                    </span>
+                    <ArrowRight className="w-5 h-5 text-amber-300" />
+                  </>
+                )}
               </button>
 
-              <button
-                type="button"
-                onClick={() => setPaymentOption('3x')}
-                className={`py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  paymentOption === '3x'
-                    ? 'bg-[#18757d] text-white shadow-md'
-                    : 'text-[#5e4d46] hover:text-[#332420]'
-                }`}
-              >
-                <CalendarCheck className="w-4 h-4" />
-                <span>Facilité 3x (3x 75 €)</span>
-              </button>
-            </div>
-
-            {/* PRICE DISPLAY */}
-            <div className="py-4 bg-[#faf8f5] rounded-2xl border border-[#eee7da] inline-block px-8 mx-auto w-full max-w-md">
-              {paymentOption === '1x' ? (
-                <div>
-                  <div className="flex items-baseline justify-center gap-3">
-                    <span className="text-4xl sm:text-5xl font-black text-[#18757d]">199 €</span>
-                    <span className="text-sm text-slate-400 font-semibold line-through">298 €</span>
-                  </div>
-                  <span className="text-[11px] font-extrabold text-emerald-700 block mt-1">
-                    Paiement unique — Économisez 26 € immédiatement
-                  </span>
-                </div>
-              ) : (
-                <div>
-                  <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-3xl sm:text-4xl font-black text-[#18757d]">3 x 75 €</span>
-                    <span className="text-xs text-slate-500 font-bold">/ mois</span>
-                  </div>
-                  <span className="text-[11px] font-extrabold text-[#18757d] block mt-1">
-                    Total : 225 € réglés en 3 mensualités sans frais via Klarna (75 € aujourd'hui)
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* What's included checklist */}
-            <div className="text-left space-y-3 max-w-md mx-auto pt-2">
-              <div className="flex items-center gap-2.5 text-xs font-bold text-[#332420]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Accès immédiat aux 6 modules vidéo officiels</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-xs font-bold text-[#332420]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Checklists pratiques, Workbooks & Quizz interactifs inclus</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-xs font-bold text-[#332420]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Les 2 vidéos bonus offertes (Email pro & Optimisation médias)</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-xs font-bold text-[#332420]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Format visionnage 100% indépendant selon vos besoins</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-xs font-bold text-[#332420]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Accès illimité 24h/24 et 7j/7 à vie avec mises à jour offertes</span>
-              </div>
-            </div>
-
-            {/* NEUROMARKETING NEWSLETTER OPT-IN */}
-            <NewsletterOptIn
-              checked={newsletterOptIn}
-              onChange={setNewsletterOptIn}
-              className="my-4"
-            />
-
-            {/* DUAL DIRECT ACTION BUTTONS FOR PRICING BOX */}
-            <div className="space-y-3 pt-2">
-              {paymentOption === '1x' ? (
+              <div className="text-center">
                 <button
-                  onClick={() => handleCheckout('1x')}
-                  disabled={isLoading}
-                  className="w-full py-5 text-base font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-3 cursor-pointer"
+                  onClick={() => handleCheckout()}
+                  type="button"
+                  aria-label="Ouvrir le paiement hébergé Stripe Checkout classique"
+                  className="text-xs text-slate-500 hover:text-[#18757d] underline transition-colors cursor-pointer min-h-[32px] py-1"
                 >
-                  {isLoading ? (
-                    <span>Redirection sécurisée...</span>
-                  ) : (
-                    <>
-                      <span>VALIDER MA COMMANDE (199 € EN 1X)</span>
-                      <ArrowRight className="w-5 h-5 text-amber-300" />
-                    </>
-                  )}
+                  Ou ouvrir sur la page de paiement hébergée Stripe
                 </button>
-              ) : (
-                <button
-                  onClick={() => handleCheckout('3x')}
-                  disabled={isLoading}
-                  className="w-full py-5 text-base font-black text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-xl uppercase tracking-wider transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-3 cursor-pointer"
-                >
-                  {isLoading ? (
-                    <span>Redirection sécurisée...</span>
-                  ) : (
-                    <>
-                      <span>VALIDER MON PAIEMENT 3X KLARNA (3X 75 € = 225 €)</span>
-                      <ArrowRight className="w-5 h-5 text-[#332420]" />
-                    </>
-                  )}
-                </button>
-              )}
+              </div>
             </div>
 
-            <div className="flex items-center justify-center gap-6 text-xs text-slate-500 font-semibold pt-2">
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Paiement 100% Sécurisé
+            <div className="pt-3 border-t border-[#eee7da] flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-500">
+              <span className="flex items-center gap-1 text-emerald-700">
+                <Lock className="w-3.5 h-3.5 text-emerald-600" />
+                Cryptage SSL 256 bits
               </span>
               <span className="flex items-center gap-1">
-                <Award className="w-3.5 h-3.5 text-amber-500" /> Certificat Inclus
+                <CreditCard className="w-3.5 h-3.5 text-[#18757d]" />
+                Cartes CB, Visa, Mastercard, Apple Pay, Google Pay, Klarna
               </span>
             </div>
 
@@ -831,7 +1141,7 @@ export default function TunnelFormationWordpressPage() {
         <div className="max-w-3xl mx-auto px-4 space-y-8">
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-black text-[#332420]">Foire Aux Questions (FAQ)</h2>
-            <p className="text-xs text-slate-500">Toutes les réponses à vos questions avant de rejoindre la formation.</p>
+            <p className="text-xs text-slate-500">Toutes les réponses à tes questions avant de rejoindre la formation.</p>
           </div>
 
           <div className="space-y-3">
@@ -859,8 +1169,7 @@ export default function TunnelFormationWordpressPage() {
           {/* FAQ CTA BUTTON */}
           <div className="text-center pt-6">
             <button
-              onClick={() => handleCheckout()}
-              disabled={isLoading}
+              onClick={() => scrollToCommande()}
               className="px-8 py-4 text-xs sm:text-sm font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-2xl shadow-lg uppercase tracking-wider transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-3 cursor-pointer"
             >
               <span>REJOINDRE LA FORMATION VITRINE ({ctaPriceLabel})</span>
@@ -874,8 +1183,7 @@ export default function TunnelFormationWordpressPage() {
       {/* STICKY MOBILE CTA 9 */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#eee7da] p-3 shadow-2xl z-50">
         <button
-          onClick={() => handleCheckout()}
-          disabled={isLoading}
+          onClick={() => scrollToCommande()}
           className="w-full py-3.5 px-4 text-xs font-black text-white bg-[#18757d] hover:bg-[#12595f] rounded-xl shadow-md uppercase tracking-wider flex items-center justify-between cursor-pointer"
         >
           <span>ACCÉDER À LA FORMATION ({ctaPriceLabel})</span>

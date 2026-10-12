@@ -12,11 +12,19 @@ export async function POST(request: Request) {
     const is3x = paymentOption === '3x' || Number(body.price) === 87 || Number(body.price) === 75 || Number(body.price) === 225;
     const rawPrice = body.price ? Number(body.price) : (is3x ? 75 : (matchedProduct?.price || 199));
     const finalPrice = (body.discountedPrice && Number(body.discountedPrice) > 0) ? Number(body.discountedPrice) : Number(rawPrice);
-    const price = finalPrice;
     
+    // For 3x option, ensure the amount charged immediately is the 1st installment (e.g. 75 € instead of total 225 €)
+    const effectivePrice = is3x
+      ? (finalPrice === 225 || finalPrice === 75 ? 75 : (finalPrice === 261 || finalPrice === 87 ? 87 : (finalPrice > 100 ? Math.round(finalPrice / 3) : finalPrice)))
+      : finalPrice;
+    const price = effectivePrice;
+    
+    let baseTitle = body.courseTitle || body.title || matchedProduct?.title || 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress';
+    baseTitle = baseTitle.replace(/\s*\(Option 3x[^)]*\)/gi, '').replace(/\s*\(Paiement 3x[^)]*\)/gi, '').trim();
+
     const courseTitle = is3x 
-      ? (body.courseTitle || body.title ? `${body.courseTitle || body.title} (Option 3x : 3 x ${price} €)` : `Formation Vidéo (Option 3x : 3 x ${price} €)`)
-      : (body.courseTitle || body.title || matchedProduct?.title || 'Formation Vidéo : Créer sa vitrine en ligne avec WordPress');
+      ? `${baseTitle} (Option 3x : 1ʳᵉ mensualité de ${price} €)`
+      : baseTitle;
     const isPreorder = body.isPreorder || false;
     const releaseDate = body.releaseDate || '15 septembre 2026';
     const customerEmail = body.customerEmail;
@@ -82,7 +90,7 @@ export async function POST(request: Request) {
             currency: 'eur',
             product_data: {
               name: courseTitle,
-              description: is3x ? `Paiement en 3 fois (1/3 de ${price} € aujourd’hui + 2x ${price} € mensuels)` : (isPreorder ? `🚀 Précommande exclusive - Sortie le ${releaseDate}` : 'Formation Vidéo Guides Digitaux'),
+              description: is3x ? `1ʳᵉ mensualité de ${price} € réglée aujourd'hui (Paiement en 3 fois sans frais : 3 × ${price} € = ${price * 3} €)` : (isPreorder ? `🚀 Précommande exclusive - Sortie le ${releaseDate}` : 'Formation Vidéo Guides Digitaux'),
             },
             unit_amount: priceCents,
           },

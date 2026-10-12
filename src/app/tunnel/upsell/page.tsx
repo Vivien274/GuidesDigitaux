@@ -20,11 +20,13 @@ function UpsellContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id') || '';
+  const email = searchParams.get('email') || '';
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAcceptUpsell = async () => {
     setIsLoading(true);
     try {
+      const emailParam = email ? `&email=${encodeURIComponent(email)}` : '';
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,8 +36,9 @@ function UpsellContent() {
           productId: 'formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
           title: 'Upgrade Combo E-Commerce : Formation WooCommerce',
           price: 51,
-          cancelUrl: 'https://www.guides-digitaux.com/tunnel/downsell',
-          successUrl: 'https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&upsell=true'
+          customerEmail: email || undefined,
+          cancelUrl: `/tunnel/downsell?session_id=${sessionId}${emailParam}`,
+          successUrl: `/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=formation-ajouter-une-boutique-en-ligne-avec-woocommerce&price=51&upsell=true${emailParam}`
         })
       });
 
@@ -53,7 +56,8 @@ function UpsellContent() {
   };
 
   const handleDeclineUpsell = () => {
-    router.push(`/tunnel/downsell?session_id=${sessionId}`);
+    const emailParam = email ? `&email=${encodeURIComponent(email)}` : '';
+    router.push(`/tunnel/downsell?session_id=${sessionId}${emailParam}`);
   };
 
   return (
@@ -80,10 +84,10 @@ function UpsellContent() {
               <CheckCircle2 className="w-4 h-4" /> Commande Confirmée !
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-emerald-950">
-              Votre inscription à la Formation Vitrine WordPress est enregistrée avec succès.
+              Ton inscription à la Formation Vitrine WordPress est enregistrée avec succès !
             </h1>
             <p className="text-xs text-emerald-800 font-semibold">
-              Attendez un instant ! Avant d'accéder à votre espace élève, voici une opportunité d'upgrade unique.
+              Attends un instant ! Avant d'accéder à ton espace élève, voici une opportunité d'upgrade unique.
             </p>
           </div>
 
@@ -95,10 +99,10 @@ function UpsellContent() {
                 <Sparkles className="w-4 h-4 text-amber-500" /> Upgrade Privilège Réservé Nouveaux Élèves
               </span>
               <h2 className="text-2xl sm:text-4xl font-black text-[#332420]">
-                Ajoutez la Brique E-Commerce WooCommerce pour Vendre vos Créations 24h/24 !
+                Ajoute la Brique E-Commerce WooCommerce pour Vendre tes Créations 24h/24 !
               </h2>
               <p className="text-xs sm:text-sm text-[#5e4d46] font-medium leading-relaxed max-w-xl mx-auto">
-                Transformez votre site vitrine en véritable boutique en ligne. Profitez de l'offre Combo à seulement **+51 €** (au lieu de 99 € prix public).
+                Transforme ton site vitrine en véritable boutique en ligne. Profite de cette offre spéciale à seulement **+51 €** (au lieu de 99 € prix public).
               </p>
             </div>
 
@@ -125,7 +129,7 @@ function UpsellContent() {
                   </div>
                   <div className="flex items-center gap-2 font-semibold">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Configurer les livraisons (Click & Collect, Colissimo, Mondial Relay)</span>
+                    <span>Configurer tes livraisons (Click & Collect, Colissimo, Mondial Relay)</span>
                   </div>
                 </div>
               </div>
@@ -139,7 +143,7 @@ function UpsellContent() {
                 <span className="text-sm text-slate-400 font-semibold line-through">99 €</span>
               </div>
               <span className="text-[11px] font-extrabold text-emerald-700 block">
-                Passez au Combo Vitrine + Boutique à 250 € au lieu de 298 € !
+                Passe au Combo Vitrine + Boutique à 250 € au lieu de 298 € !
               </span>
             </div>
 
@@ -154,7 +158,7 @@ function UpsellContent() {
                   <span>Ajout en cours...</span>
                 ) : (
                   <>
-                    <span>OUI ! AJOUTER LA FORMATION E-COMMERCE (+51 €)</span>
+                    <span>OUI ! J'AJOUTE LA FORMATION E-COMMERCE (+51 €)</span>
                     <ArrowRight className="w-5 h-5 text-amber-300" />
                   </>
                 )}

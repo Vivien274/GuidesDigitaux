@@ -64,11 +64,16 @@ export async function POST(request: Request) {
       ? refererHeader
       : `${siteUrl}/produit/${targetProduct.slug}?canceled=true`;
     const paymentOption = body.paymentOption || '1x';
-    const is3x = paymentOption === '3x' || Number(body.price) === 87 || Number(body.price) === 75;
-    const priceAmount = body.price ? Number(body.price) : (is3x ? 75 : Math.round(targetProduct.price_cents / 100));
+    const is3x = paymentOption === '3x' || Number(body.price) === 87 || Number(body.price) === 75 || Number(body.price) === 225;
+    let priceAmount = body.price ? Number(body.price) : (is3x ? 75 : Math.round(targetProduct.price_cents / 100));
+    if (is3x) {
+      if (priceAmount === 225 || priceAmount === 75) priceAmount = 75;
+      else if (priceAmount === 261 || priceAmount === 87) priceAmount = 87;
+      else if (priceAmount > 100) priceAmount = Math.round(priceAmount / 3);
+    }
     const unitAmountCents = is3x ? Math.round(priceAmount * 100) : targetProduct.price_cents;
-    const checkoutTitle = is3x ? `${targetProduct.title} (Option 3x : 3 x ${priceAmount} €)` : targetProduct.title;
-    const checkoutDescription = is3x ? `Paiement en 3 fois (1/3 de ${priceAmount} € aujourd’hui + 2x ${priceAmount} € mensuels)` : targetProduct.description;
+    const checkoutTitle = is3x ? `${targetProduct.title} (Option 3x : 1ʳᵉ mensualité de ${priceAmount} €)` : targetProduct.title;
+    const checkoutDescription = is3x ? `1ʳᵉ mensualité de ${priceAmount} € réglée aujourd'hui (Paiement en 3 fois sans frais : 3 × ${priceAmount} €)` : targetProduct.description;
 
     // 2. Création de la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({

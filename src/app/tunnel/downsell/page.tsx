@@ -17,11 +17,13 @@ function DownsellContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id') || '';
+  const email = searchParams.get('email') || '';
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAcceptDownsell = async () => {
     setIsLoading(true);
     try {
+      const emailParam = email ? `&email=${encodeURIComponent(email)}` : '';
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -31,8 +33,9 @@ function DownsellContent() {
           productId: 'pack-guides',
           title: 'Offre Spéciale : Pack Guides Utiles (7 Fichiers PDF)',
           price: 17,
-          cancelUrl: 'https://www.guides-digitaux.com/tunnel/confirmation',
-          successUrl: 'https://www.guides-digitaux.com/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&downsell=true'
+          customerEmail: email || undefined,
+          cancelUrl: `/tunnel/confirmation?session_id=${sessionId}&productId=formation-wordpress${emailParam}`,
+          successUrl: `/tunnel/confirmation?session_id={CHECKOUT_SESSION_ID}&productId=pack-guides&price=17&downsell=true${emailParam}`
         })
       });
 
@@ -50,7 +53,8 @@ function DownsellContent() {
   };
 
   const handleDeclineDownsell = () => {
-    router.push(`/tunnel/confirmation?session_id=${sessionId}`);
+    const emailParam = email ? `&email=${encodeURIComponent(email)}` : '';
+    router.push(`/tunnel/confirmation?session_id=${sessionId}&productId=formation-wordpress${emailParam}`);
   };
 
   return (
@@ -79,16 +83,16 @@ function DownsellContent() {
                 <Gift className="w-4 h-4 text-amber-600" /> Offre de Secours Ultime (Seulement 17 €)
               </span>
               <h1 className="text-2xl sm:text-4xl font-black text-[#332420]">
-                Emportez le Coffret Intégral des 7 Guides & Checklists PDF
+                Emporte le Coffret Intégral des 7 Guides & Checklists PDF
               </h1>
               <p className="text-xs sm:text-sm text-[#5e4d46] font-medium leading-relaxed max-w-xl mx-auto">
-                Obtenez les fiches récapitulatives imprimables de toute la méthodologie pour vous accompagner à côté de vos vidéos.
+                Obtiens les fiches récapitulatives imprimables de toute la méthodologie pour t'accompagner à côté de tes vidéos.
               </p>
             </div>
 
             {/* Media & Details Box */}
             <div className="bg-[#faf8f5] p-6 rounded-2xl border border-[#eee7da] grid grid-cols-1 sm:grid-cols-12 gap-6 items-center text-left">
-              <div className="sm:col-span-4 relative h-36 rounded-xl overflow-hidden shadow-md">
+              <div className="sm:col-span-4 relative h-48 rounded-xl overflow-hidden shadow-md">
                 <Image
                   src="/images/products/pack-guides-mockup-2.webp"
                   alt="Pack Guides Utiles 7 PDF"
@@ -97,13 +101,15 @@ function DownsellContent() {
                 />
               </div>
               <div className="sm:col-span-8 space-y-2 text-xs text-[#5e4d46]">
-                <h3 className="text-base font-extrabold text-[#332420]">Le Pack Intégral 7 PDF (Valeur : 41 €)</h3>
-                <div className="space-y-1 font-semibold">
-                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Mini-Guide Rédaction Web Artisan</div>
-                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Mini-Guide SEO Local & Google Maps</div>
-                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Mini-Guide Optimisation Photos Vitesse</div>
-                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Mini-Guide Comprendre ses Stats</div>
-                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Les 3 Checklists de Contrôle (Sécurité, UX, Lancement)</div>
+                <h3 className="text-base font-extrabold text-[#332420]">Le Coffret Intégral 7 Guides & Checklists (Valeur : 41 €)</h3>
+                <div className="space-y-1.5 font-semibold text-[11px] sm:text-xs">
+                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> <span><strong>Mini-Guide :</strong> Optimiser ses photos sans perdre en qualité</span></div>
+                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> <span><strong>Mini-Guide :</strong> SEO Local — Être trouvé par les clients près de chez toi</span></div>
+                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> <span><strong>Mini-Guide :</strong> Écrire pour le web quand on est artisan</span></div>
+                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> <span><strong>Mini-Guide :</strong> Comprendre ses stats sans être data scientist</span></div>
+                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> <span><strong>Checklist :</strong> Sécurité & Anti-Spam WordPress</span></div>
+                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> <span><strong>Checklist :</strong> À vérifier avant le lancement officiel du site</span></div>
+                  <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> <span><strong>Checklist :</strong> Les principes clés de l'UX (obligatoire pour ton site)</span></div>
                 </div>
               </div>
             </div>
@@ -128,7 +134,7 @@ function DownsellContent() {
                   <span>Ajout en cours...</span>
                 ) : (
                   <>
-                    <span>OUI ! AJOUTER LE PACK 7 GUIDES À MA COMMANDE (17 €)</span>
+                    <span>OUI ! J'AJOUTE LE PACK 7 GUIDES À MA COMMANDE (17 €)</span>
                     <ArrowRight className="w-5 h-5 text-amber-300" />
                   </>
                 )}
@@ -138,7 +144,7 @@ function DownsellContent() {
                 onClick={handleDeclineDownsell}
                 className="w-full py-3 text-xs font-bold text-slate-500 hover:text-[#332420] underline transition-colors cursor-pointer"
               >
-                Non merci, accéder directement à mes contenus vidéo →
+                Non merci, j'accède directement à mes contenus vidéo →
               </button>
             </div>
 

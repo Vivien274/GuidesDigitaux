@@ -41,7 +41,10 @@ function ConfirmationContent() {
     setIsMounted(true);
   }, []);
 
-  const courseId = searchParams.get('productId') || searchParams.get('id') || 'formation-fiche-google';
+  const paramProductId = searchParams.get('productId') || searchParams.get('id') || '';
+  const [activeCourseId, setActiveCourseId] = useState<string>(paramProductId);
+  const courseId = activeCourseId || paramProductId || 'formation-wordpress';
+
   const sessionId = searchParams.get('session_id') || searchParams.get('sessionId') || '';
   const isCartCheckout = searchParams.get('cart_checkout') === 'true' || searchParams.get('cart') === 'true' || courseId === 'cart_items';
 
@@ -64,6 +67,12 @@ function ConfirmationContent() {
     searchParams.get('email') || ''
   );
 
+  // Le Kit Sérénité est STRICTEMENT réservé à la formation Cap Visibilité Google ET si l'order bump a été acheté
+  const [isOrderBumpUnlocked, setIsOrderBumpUnlocked] = useState<boolean>(() => {
+    const isGoogle = courseId === 'formation-fiche-google' || courseId.includes('fiche-google');
+    return isGoogle && searchParams.get('orderbump') === '1';
+  });
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -72,7 +81,7 @@ function ConfirmationContent() {
   const activeEmail = customerEmail || searchParams.get('email') || (isMounted ? user?.email : '') || '';
 
   // Helper to process single or multi-item cart purchases
-  const processPurchasesForEmail = (emailToUse: string, stripeAmount?: number, customerName?: string, stripeCartItems?: any[]) => {
+  const processPurchasesForEmail = (emailToUse: string, stripeAmount?: number, customerName?: string, stripeCartItems?: any[], isBumpPurchasedParam?: boolean) => {
     if (!emailToUse) return;
 
     if (isCartCheckout) {
@@ -125,10 +134,11 @@ function ConfirmationContent() {
       }
     } else {
       const amountToSave = stripeAmount !== undefined ? stripeAmount : resolvedPrice;
+      const effectiveCourseId = courseId || targetProduct?.id || 'formation-wordpress';
       addPurchaseToUser(emailToUse, {
-        id: courseId,
+        id: effectiveCourseId,
         title: resolvedTitle,
-        slug: targetProduct?.slug || courseId,
+        slug: targetProduct?.slug || effectiveCourseId,
         type: resolvedType,
         typeLabel: resolvedTypeLabel,
         downloadPdf: targetProduct?.downloadPdf,
@@ -142,13 +152,17 @@ function ConfirmationContent() {
         price: amountToSave,
         purchaseDate: new Date().toLocaleDateString('fr-FR')
       });
-      saveOrderToDb(emailToUse, courseId, 'paid', amountToSave, sessionId);
-      saveUserPurchaseToDb(emailToUse, targetProduct || { id: courseId, title: resolvedTitle, price: amountToSave });
+      saveOrderToDb(emailToUse, effectiveCourseId, 'paid', amountToSave, sessionId);
+      saveUserPurchaseToDb(emailToUse, targetProduct || { id: effectiveCourseId, title: resolvedTitle, price: amountToSave });
       if (isPreorder) {
-        recordPreorderPurchaseInDb(courseId, emailToUse, customerName || emailToUse.split('@')[0], amountToSave);
+        recordPreorderPurchaseInDb(effectiveCourseId, emailToUse, customerName || emailToUse.split('@')[0], amountToSave);
       }
 
-      if (searchParams.get('orderbump') === '1' || resolvedPrice >= 38) {
+      // Le Kit Sérénité est STRICTEMENT réservé à Cap Visibilité Google ET si l'order bump a été acheté
+      const isGoogleCourse = effectiveCourseId === 'formation-fiche-google' || effectiveCourseId.includes('fiche-google') || isPreorder;
+      const shouldUnlockKit = isGoogleCourse && (isBumpPurchasedParam ?? isOrderBumpUnlocked);
+
+      if (shouldUnlockKit) {
         const kitObj = {
           id: 'kit-serenite',
           title: 'Le Kit Sérénité : 52 Idées de Posts Google & Prompts IA',
@@ -182,6 +196,18 @@ function ConfirmationContent() {
             ? Number(data.amountTotal) 
             : resolvedPrice;
 
+          const sessionCourse = data?.productId || data?.courseId;
+          if (sessionCourse && sessionCourse !== courseId) {
+            setActiveCourseId(sessionCourse);
+          }
+          const currentCourse = sessionCourse || courseId;
+          const isGoogleCourse = currentCourse === 'formation-fiche-google' || currentCourse.includes('fiche-google') || currentCourse.includes('precommande');
+          const bumpPurchased = isGoogleCourse && (
+            data?.hasOrderBump === true ||
+            (Array.isArray(data?.cartItems) && data.cartItems.some((it: any) => it.id === 'kit-serenite' || it.id === 'bump-kit-serenite-52-posts'))
+          );
+          setIsOrderBumpUnlocked(bumpPurchased);
+
           if (data?.customerEmail) {
             const stripeEmail = data.customerEmail.toLowerCase().trim();
             setCustomerEmail(stripeEmail);
@@ -190,7 +216,7 @@ function ConfirmationContent() {
               const processedKey = `gd_purchases_processed_${sessionId || stripeEmail}`;
               if (!sessionStorage.getItem(processedKey)) {
                 sessionStorage.setItem(processedKey, 'true');
-                processPurchasesForEmail(stripeEmail, stripeAmount, data.customerName, data.cartItems);
+                processPurchasesForEmail(stripeEmail, stripeAmount, data.customerName, data.cartItems, bumpPurchased);
               }
             }
 
@@ -371,11 +397,11 @@ function ConfirmationContent() {
 
           <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl text-xs text-emerald-950 flex items-center justify-center gap-2 max-w-lg mx-auto">
             <Mail className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Un e-mail contenant votre reçu, vos accès et vos liens de téléchargement PDF a été envoyé à <strong>{activeEmail}</strong></span>
+            <span>Un e-mail contenant ton reçu, tes accès et tes liens de téléchargement PDF a été envoyé à <strong>{activeEmail}</strong></span>
           </div>
 
           {/* ORDER BUMP UNLOCKED KIT SÉRÉNITÉ BOX */}
-          {isMounted && (searchParams.get('orderbump') === '1' || resolvedPrice >= 38) && (
+          {isMounted && isOrderBumpUnlocked && (
             <div className="p-6 bg-gradient-to-r from-amber-50 to-amber-100/70 rounded-3xl border-2 border-amber-300 text-left space-y-4 shadow-md">
               <div className="flex items-center justify-between gap-2 border-b border-amber-200 pb-3">
                 <div className="flex items-center gap-2 text-amber-950 font-extrabold text-sm">
@@ -398,7 +424,7 @@ function ConfirmationContent() {
                       Le Kit Sérénité : 52 Idées de Posts Google &amp; Prompts IA
                     </h4>
                     <p className="text-[11px] text-[#5e4d46]">
-                      Votre calendrier annuel clé-en-main au format 1 500 caractères et 5 Super-Prompts IA.
+                      Ton calendrier annuel clé-en-main au format 1 500 caractères et 5 Super-Prompts IA.
                     </p>
                     <span className="text-[10px] text-amber-700 font-bold block">
                       Format PDF HD • 21 pages prêtes à l'emploi
@@ -419,12 +445,12 @@ function ConfirmationContent() {
           )}
 
           {/* PREORDER 3 BONUS DOWNLOAD BOX */}
-          {isMounted && (isPreorder || courseId.includes('formation-fiche-google')) && (
+          {isMounted && (isPreorder || courseId === 'formation-fiche-google' || courseId.includes('fiche-google')) && (
             <div className="p-6 bg-[#e6f4f3] rounded-3xl border-2 border-[#18757d]/40 text-left space-y-4 shadow-md">
               <div className="flex items-center justify-between gap-2 border-b border-[#bce3e0] pb-3">
                 <div className="flex items-center gap-2 text-[#18757d] font-extrabold text-sm">
                   <Gift className="w-5 h-5 text-[#F2542D] shrink-0" />
-                  <h3>Vos 3 Bonus Inclus (Téléchargement Immédiat) :</h3>
+                  <h3>Tes 3 Bonus Inclus (Téléchargement Immédiat) :</h3>
                 </div>
                 <span className="px-3 py-1 bg-[#F2542D] text-white text-[10px] font-extrabold uppercase rounded-full tracking-wider">
                   Accès Direct PDF HD
@@ -533,7 +559,7 @@ function ConfirmationContent() {
               <div className="p-6 bg-emerald-50/90 rounded-2xl border-2 border-emerald-300 text-left space-y-4 shadow-sm">
                 <div className="flex items-center gap-2 text-emerald-950 font-extrabold text-sm">
                   <Download className="w-5 h-5 text-emerald-700 shrink-0" />
-                  <h3>Vos Fichiers PDF réservés (Téléchargement direct) :</h3>
+                  <h3>Tes Fichiers PDF réservés (Téléchargement direct) :</h3>
                 </div>
                 <div className="space-y-3">
                   {pdfPurchases.map((pdfItem: any) => (
@@ -570,9 +596,9 @@ function ConfirmationContent() {
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-sm font-extrabold text-[#332420]">Produit ajouté à votre compte !</h3>
+                <h3 className="text-sm font-extrabold text-[#332420]">Produit ajouté à ton compte !</h3>
                 <p className="text-xs text-slate-600">
-                  Bonjour <strong className="text-[#18757d]">{user?.fullName || activeEmail}</strong>, vos accès sont débloqués et enregistrés dans votre espace.
+                  Bonjour <strong className="text-[#18757d]">{user?.fullName || activeEmail}</strong>, tes accès sont débloqués et enregistrés dans ton espace.
                 </p>
               </div>
               <Link
@@ -600,7 +626,7 @@ function ConfirmationContent() {
                   Créer mon mot de passe pour accéder à mes cours
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Définissez votre mot de passe pour vous connecter à votre Espace Élève (compte <strong className="text-[#332420]">{activeEmail}</strong>) :
+                  Définis ton mot de passe pour te connecter à ton Espace Élève (compte <strong className="text-[#332420]">{activeEmail}</strong>) :
                 </p>
               </div>
 
@@ -616,7 +642,7 @@ function ConfirmationContent() {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-[#332420] block mb-1">Votre mot de passe :</label>
+                  <label className="text-[11px] font-bold text-[#332420] block mb-1">Ton mot de passe :</label>
                   <input
                     type="password"
                     required
@@ -650,7 +676,7 @@ function ConfirmationContent() {
           ) : (
             <div className="p-4 bg-emerald-100 text-emerald-900 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 max-w-md mx-auto">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Authentification réussie ! Vos identifiants sont actifs. Redirection...</span>
+              <span>Authentification réussie ! Tes identifiants sont actifs. Redirection...</span>
             </div>
           )}
 
