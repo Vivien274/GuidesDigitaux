@@ -83,6 +83,21 @@ const nextConfig: NextConfig = {
         destination: '/tunnel/formation-fiche-google',
         permanent: true,
       },
+      {
+        source: '/links',
+        destination: '/liens',
+        permanent: false,
+      },
+      {
+        source: '/linktree',
+        destination: '/liens',
+        permanent: false,
+      },
+      {
+        source: '/liens-utiles',
+        destination: '/liens',
+        permanent: false,
+      },
     ];
   },
 };
