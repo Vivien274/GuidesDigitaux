@@ -71,7 +71,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 2. Fiches Produits & Guides PDF
   const productPages: MetadataRoute.Sitemap = DEFAULT_PRODUCTS
-    .filter((prod) => prod.id !== 'orderbump-calculateur-score')
     .map((prod) => ({
       url: `${baseUrl}/produit/${prod.slug || prod.id}`,
       lastModified: new Date(),

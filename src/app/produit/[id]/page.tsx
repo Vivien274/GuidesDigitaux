@@ -655,11 +655,30 @@ export default function ProductDetailPage() {
                         : 'Acheter Maintenant')}
                   </button>
                 </div>
+
+                {/* Bandeau Essai Gratuit Calculateur */}
+                {(product.id.includes('calculateur') || (product.slug && product.slug.includes('calculateur'))) && (
+                  <div className="pt-3 border-t border-[#eee7da]">
+                    <Link
+                      href="/outils/calculateur-fiche-google"
+                      className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl text-xs font-black text-[#18757d] bg-[#f4ede0] hover:bg-[#ebdcc8] transition-colors border border-[#18757d]/20 text-center"
+                    >
+                      <Sparkles className="w-4 h-4 text-[#F2542D]" />
+                      <span>Tester d'abord avec l'Essai Gratuit en direct →</span>
+                    </Link>
+                  </div>
+                )}
               </div>
 
               {/* Résumé Produit (Description courte) */}
               <div className="bg-white p-6 rounded-2xl border border-[#eee7da] space-y-2">
-                <h3 className="text-xs font-extrabold text-[#18757d] uppercase tracking-wider">Résumé du guide</h3>
+                <h3 className="text-xs font-extrabold text-[#18757d] uppercase tracking-wider">
+                  {(product.id.includes('calculateur') || (product.slug && product.slug.includes('calculateur')))
+                    ? "Résumé de l'outil"
+                    : product.category === 'formation'
+                      ? 'Résumé de la formation'
+                      : 'Résumé du guide'}
+                </h3>
                 <p className="text-sm text-[#332420] font-medium leading-relaxed">
                   {product.description}
                 </p>
@@ -732,11 +751,13 @@ export default function ProductDetailPage() {
           <div className="bg-white rounded-3xl p-8 sm:p-12 border border-[#e8ded0] shadow-sm space-y-6">
             <div className="border-b border-[#eee7da] pb-4">
               <h2 className="text-xl sm:text-2xl font-extrabold text-[#332420]">
-                {product.category === 'coaching' 
-                  ? 'Comment fonctionnent tes 2 sessions de coaching ?' 
-                  : (product.category === 'formation' 
-                    ? 'Programme détaillé de la formation' 
-                    : 'Description complète du guide')}
+                {(product.id.includes('calculateur') || (product.slug && product.slug.includes('calculateur')))
+                  ? "Présentation & Fonctionnement de l'Outil d'Audit"
+                  : product.category === 'coaching' 
+                    ? 'Comment fonctionnent tes 2 sessions de coaching ?' 
+                    : (product.category === 'formation' 
+                      ? 'Programme détaillé de la formation' 
+                      : 'Description complète du guide')}
               </h2>
             </div>
 
