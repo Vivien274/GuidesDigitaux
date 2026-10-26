@@ -330,7 +330,7 @@ export default function BoutiquePage() {
                   {/* Image */}
                   <div className="relative h-60 w-full overflow-hidden bg-amber-50">
                     <Image
-                      src={po.image || "https://www.guides-digitaux.com/wp-content/uploads/2026/02/un-artisan-createur-devant-son-PC-en-train-dajouter-ses-produits-dnas-saboutique-en-ligne.-accoude-a-son-etabli-dans-son-atelier.-lumiere-naturelle.webp"}
+                      src={po.image || "/images/products/formation-wordpress.webp"}
                       alt=""
                       aria-hidden="true"
                       fill

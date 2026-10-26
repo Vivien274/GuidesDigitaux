@@ -26,15 +26,22 @@ export function getStoredProducts(): Product[] {
 
       const isCoaching = def.id === 'coaching-site' || def.category === 'coaching' || def.slug === 'coaching-site';
 
+      const isValidStoredImg = stored.image && typeof stored.image === 'string' && !stored.image.includes('wp-content') && !stored.image.includes('stratec-digital');
+      const cleanImage = isValidStoredImg ? stored.image : def.image;
+
+      const rawStoredGallery = Array.isArray(stored.gallery) ? stored.gallery : [];
+      const cleanStoredGallery = rawStoredGallery.filter((g: any) => typeof g === 'string' && !g.includes('wp-content') && !g.includes('stratec-digital'));
+      const cleanGallery = cleanStoredGallery.length > 0 ? cleanStoredGallery : (def.gallery || [cleanImage]);
+
       // Stored user edits take priority, except for curated default coaching product
       return {
         ...def,
         ...stored,
         title: isCoaching ? def.title : (stored.title || def.title),
         slug: stored.slug || def.slug,
-        image: stored.image || def.image,
+        image: cleanImage,
         imageAlt: stored.imageAlt || def.imageAlt,
-        gallery: (stored.gallery && stored.gallery.length > 0) ? stored.gallery : (def.gallery || [stored.image || def.image]),
+        gallery: cleanGallery,
         description: isCoaching ? def.description : (stored.description || def.description),
         longDescription: isCoaching ? def.longDescription : (stored.longDescription || def.longDescription || stored.description || ''),
         price: stored.price ?? def.price,

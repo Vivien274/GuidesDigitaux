@@ -90,7 +90,7 @@ const DEFAULT_COURSES: Course[] = [
     "prerequisites": "Avoir un site WordPress déjà créé ou en cours de création.",
     "price": 99,
     "originalPrice": 249,
-    "image": "/images/products/formation-woocommerce.webp",
+    "image": "/images/products/formation-woocommerce.jpg",
     "status": "Publié",
     "category": "formation",
     "congratulationsMsg": "Félicitations ! Ta boutique WooCommerce est configurée et prête à enregistrer tes premières ventes !",

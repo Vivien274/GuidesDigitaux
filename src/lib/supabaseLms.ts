@@ -96,7 +96,11 @@ export async function fetchCoursesFromDb(): Promise<Course[]> {
         level: c.level || localMatch?.level || 'Tous niveaux',
         prerequisites: c.prerequisites || localMatch?.prerequisites || '',
         price: c.price || localMatch?.price || (isGoogle ? 29 : 199),
-        image: c.image || c.image_url || localMatch?.image || (isGoogle ? '/images/products/formation-fiche-google-mockup.png' : '/images/products/coaching-site.webp'),
+        image: ((c.image && !c.image.includes('wp-content') && !c.image.includes('stratec-digital')) 
+          ? c.image 
+          : ((c.image_url && !c.image_url.includes('wp-content') && !c.image_url.includes('stratec-digital')) 
+            ? c.image_url 
+            : null)) || localMatch?.image || (isGoogle ? '/images/products/formation-fiche-google-mockup.webp' : '/images/products/coaching-site.webp'),
         category: 'Formation Vidéo',
         status: c.status || 'Publié',
         scheduledPublishDate: c.scheduled_publish_date || localMatch?.scheduledPublishDate,
@@ -771,7 +775,21 @@ export async function fetchProductsFromDb(): Promise<any[]> {
           ? (localMatch?.description || row.description || '')
           : (row.description || localMatch?.description || '');
 
-        const resolvedImage = row.image || row.image_url || row.imageUrl || localMatch?.image || '/images/products/coaching-site.webp';
+        const isLegacyOrInvalidProductImg = (img?: string | null) => {
+          if (!img || typeof img !== 'string') return true;
+          const trimmed = img.trim();
+          return !trimmed || trimmed.includes('wp-content') || trimmed.includes('stratec-digital');
+        };
+
+        const dbRawImage = row.image || row.image_url || row.imageUrl;
+        const validDbImage = !isLegacyOrInvalidProductImg(dbRawImage) ? dbRawImage : null;
+        const resolvedImage = validDbImage || localMatch?.image || '/images/products/coaching-site.webp';
+
+        const rawGallery: string[] = Array.isArray(row.gallery) ? row.gallery : [];
+        const cleanDbGallery = rawGallery.filter((g: any) => !isLegacyOrInvalidProductImg(g));
+        const resolvedGallery = cleanDbGallery.length > 0 
+          ? cleanDbGallery 
+          : (localMatch?.gallery && localMatch.gallery.length > 0 ? localMatch.gallery : [resolvedImage]);
 
         return {
           id: row.id,
@@ -792,7 +810,7 @@ export async function fetchProductsFromDb(): Promise<any[]> {
           downloadPdf: row.download_pdf || row.pdf_file_url || localMatch?.downloadPdf,
           bookingUrl: isCoaching ? (row.booking_url || localMatch?.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18') : undefined,
           features: (isCoaching || !Array.isArray(row.features) || row.features.length === 0) ? (localMatch?.features || []) : row.features,
-          gallery: (Array.isArray(row.gallery) && row.gallery.length > 0) ? row.gallery : (localMatch?.gallery || [resolvedImage])
+          gallery: resolvedGallery
         };
       });
 
