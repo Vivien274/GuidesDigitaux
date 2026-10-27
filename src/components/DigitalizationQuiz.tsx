@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { event } from '@/lib/metaPixel';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -92,12 +93,21 @@ const isValidEmail = (emailStr: string): boolean => {
 };
 
 export default function DigitalizationQuiz() {
+  const quizContainerRef = useRef<HTMLDivElement>(null);
   const [currentStep, setCurrentStep] = useState<number>(0); // 0: intro, 1-6: Q1-Q6, 7: email, 8: result
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profileResult, setProfileResult] = useState<'A' | 'B' | 'C' | null>(null);
+
+  const handleStartQuiz = () => {
+    event('QuizStart', { content_name: 'Diagnostic Digital' });
+    setCurrentStep(1);
+    if (quizContainerRef.current) {
+      quizContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const handleSelectOption = (questionId: number, optionKey: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: optionKey }));
@@ -107,7 +117,10 @@ export default function DigitalizationQuiz() {
       } else {
         setCurrentStep(7); // Go to email capture step
       }
-    }, 300);
+      if (quizContainerRef.current) {
+        quizContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 250);
   };
 
   const computeProfile = (): 'A' | 'B' | 'C' => {
@@ -120,7 +133,7 @@ export default function DigitalizationQuiz() {
 
   const handleSubmitEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanEmail = email.trim();
+    const cleanEmail = email.trim().toLowerCase();
 
     if (!cleanEmail) {
       setEmailError('Veuillez renseigner votre adresse e-mail.');
@@ -136,6 +149,14 @@ export default function DigitalizationQuiz() {
     setIsSubmitting(true);
     const computed = computeProfile();
     setProfileResult(computed);
+
+    // Meta Pixel tracking: Lead
+    event('Lead', {
+      content_name: 'Diagnostic Digital Quiz',
+      content_category: 'Profil ' + computed,
+      value: 0,
+      currency: 'EUR'
+    });
 
     // Save in localStorage
     if (typeof window !== 'undefined') {
@@ -166,6 +187,9 @@ export default function DigitalizationQuiz() {
     } finally {
       setIsSubmitting(false);
       setCurrentStep(8); // Go to result screen
+      if (quizContainerRef.current) {
+        quizContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
 
@@ -175,12 +199,15 @@ export default function DigitalizationQuiz() {
     setEmail('');
     setEmailError(null);
     setProfileResult(null);
+    if (quizContainerRef.current) {
+      quizContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const progressPercent = currentStep === 0 ? 0 : Math.min(100, Math.round((currentStep / 7) * 100));
 
   return (
-    <div className="w-full bg-[#FAF8F5] text-[#332420] rounded-3xl border-2 border-[#eee7da] shadow-xl overflow-hidden my-6">
+    <div ref={quizContainerRef} className="w-full bg-[#FAF8F5] text-[#332420] rounded-3xl border-2 border-[#eee7da] shadow-xl overflow-hidden my-4 sm:my-6 scroll-mt-20">
       
       {/* TOP PROGRESS BAR */}
       <div className="w-full h-2 bg-[#eee7da]">
@@ -200,7 +227,12 @@ export default function DigitalizationQuiz() {
             </span>
             {currentStep > 1 && (
               <button 
-                onClick={() => setCurrentStep(prev => prev - 1)}
+                onClick={() => {
+                  setCurrentStep(prev => prev - 1);
+                  if (quizContainerRef.current) {
+                    quizContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
                 className="text-[#5e4d46] hover:text-[#18757d] flex items-center gap-1 transition-colors cursor-pointer font-bold"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -228,7 +260,7 @@ export default function DigitalizationQuiz() {
 
             <div className="pt-4">
               <button
-                onClick={() => setCurrentStep(1)}
+                onClick={handleStartQuiz}
                 className="px-8 py-5 text-sm sm:text-base font-extrabold text-white bg-[#c43c1d] hover:bg-[#a82e14] rounded-full shadow-xl uppercase tracking-wider transition-all transform hover:scale-105 inline-flex items-center gap-2 cursor-pointer"
               >
                 <span>COMMENCER LE QUIZ GRATUIT</span>
@@ -303,8 +335,11 @@ export default function DigitalizationQuiz() {
                   <Mail className={`w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${emailError ? 'text-rose-500' : 'text-slate-400'}`} />
                   <input
                     type="email"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     required
-                    pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
                     value={email}
                     onChange={e => {
                       setEmail(e.target.value);

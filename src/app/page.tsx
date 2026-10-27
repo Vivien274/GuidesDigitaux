@@ -282,17 +282,36 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      const targetId = window.location.hash.replace('#', '');
+    if (typeof window === 'undefined') return;
+
+    const handleHash = (behavior: ScrollBehavior = 'auto') => {
+      if (!window.location.hash) return;
+      // Strip leading hash and any attached query parameters (e.g. #quiz?fbclid=... or #quiz&...)
+      const rawHash = window.location.hash.slice(1);
+      const cleanTarget = rawHash.split('?')[0].split('&')[0].trim().toLowerCase();
+      const targetId = (cleanTarget === 'quiz' || cleanTarget === 'quizz') ? 'quiz-site' : cleanTarget;
+
       if (targetId) {
-        setTimeout(() => {
-          const element = document.getElementById(targetId);
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 300);
+        const element = document.getElementById(targetId) || document.getElementById(cleanTarget);
+        if (element) {
+          element.scrollIntoView({ behavior, block: 'start' });
+        }
       }
-    }
+    };
+
+    // Immediate placement to prevent landing users on the hero before scrolling
+    handleHash('auto');
+    const t1 = setTimeout(() => handleHash('auto'), 100);
+    const t2 = setTimeout(() => handleHash('auto'), 400);
+
+    const onHashChange = () => handleHash('smooth');
+    window.addEventListener('hashchange', onHashChange);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener('hashchange', onHashChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -666,6 +685,7 @@ export default function HomePage() {
       {/* 2.5. STRATEGIC NEUROMARKETING QUIZ SECTION */}
       <section id="quiz-site" className="py-14 md:py-20 bg-gradient-to-b from-[#faf8f5] via-[#f7f3eb] to-[#faf8f5] border-y border-[#eee7da] scroll-mt-24">
         <div id="quiz" className="scroll-mt-24" />
+        <div id="quizz" className="scroll-mt-24" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center space-y-3 mb-6">
             <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-extrabold bg-[#e6f4f3] text-[#18757d] uppercase tracking-wider border border-[#18757d]/20 shadow-2xs">
