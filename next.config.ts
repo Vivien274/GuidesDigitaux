@@ -98,6 +98,11 @@ const nextConfig: NextConfig = {
         destination: '/liens',
         permanent: false,
       },
+      {
+        source: '/wp-content/:path*',
+        destination: '/blog',
+        permanent: true,
+      },
     ];
   },
 };

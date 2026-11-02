@@ -124,10 +124,10 @@ export default function ThirdPartyScripts({
       }
     };
 
-    // If visitor comes directly from an ad (fbclid, UTM parameters) or is on a tunnel / checkout / confirmation page, load immediately to ensure 100% ad attribution & purchase tracking
+    // If visitor comes directly from an ad (fbclid, UTM parameters) or is on a quiz / tunnel / checkout / confirmation page, load immediately to ensure 100% ad attribution & purchase tracking
     const isAdOrFunnel =
       /[?&](fbclid|utm_source|utm_medium|utm_campaign|gclid)/i.test(window.location.search) ||
-      /tunnel|confirmation|checkout|panier/i.test(window.location.pathname);
+      /(?:quiz|tunnel|confirmation|checkout|panier)/i.test(window.location.pathname);
 
     if (isAdOrFunnel) {
       loadHeavyScripts();

@@ -39,6 +39,42 @@ export async function POST(request: Request) {
 
     if (result.success) {
       console.log(`[VIP Subscribe] Client ${email} inscrit avec succès à la liste VIP (Tags: ${tags.join(', ')})`);
+
+      // Envoi de l'évènement Lead à Meta CAPI (serveur)
+      try {
+        const { sendServerLeadEvent } = await import('@/lib/metaCapi');
+        const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || undefined;
+        const userAgent = request.headers.get('user-agent') || undefined;
+        const cookieHeader = request.headers.get('cookie') || '';
+        const getCookie = (name: string): string | undefined => {
+          const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+          return match ? decodeURIComponent(match[1]) : undefined;
+        };
+
+        const fbp = body.fbp || getCookie('_fbp');
+        let fbc = body.fbc || getCookie('_fbc');
+        const fbclid = body.fbclid || (body.utm && body.utm.fbclid);
+        if (!fbc && fbclid) {
+          fbc = `fb.1.${Date.now()}.${fbclid}`;
+        }
+
+        const eventId = body.eventId || `vip_lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+        await sendServerLeadEvent({
+          email,
+          eventId,
+          leadType: 'Liste VIP Prévente',
+          category: tag,
+          clientIp,
+          userAgent,
+          fbp,
+          fbc,
+          eventSourceUrl: body.sourceUrl || 'https://www.guides-digitaux.com'
+        });
+      } catch (capiErr) {
+        console.warn('[VIP Lead CAPI Warning]', capiErr);
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Félicitations ! Tu es désormais inscrite sur la liste VIP Prévente GMB.'

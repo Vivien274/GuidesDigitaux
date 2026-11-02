@@ -166,6 +166,7 @@ export async function POST(request: Request) {
     const rawProfile = (body.profile || 'B').toUpperCase();
     const profile: 'A' | 'B' | 'C' = (rawProfile === 'A' || rawProfile === 'B' || rawProfile === 'C') ? rawProfile : 'B';
     const honeypot = body.honeypot || body.website;
+    const eventId = body.eventId || `quiz_lead_${Date.now()}`;
 
     // Anti-Bot Honeypot trap
     if (honeypot && honeypot.trim() !== '') {
@@ -255,6 +256,42 @@ export async function POST(request: Request) {
         console.warn('[Quiz Mailchimp Error]', mcErr);
       }
     }
+
+    // 3. ENVOI ÉVÈNEMENT 'Lead' SERVEUR VIA META CAPI (AVEC EVENT_ID POUR DÉDUPLICATION)
+    try {
+      const { sendServerLeadEvent } = await import('@/lib/metaCapi');
+      const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || undefined;
+      const userAgent = request.headers.get('user-agent') || undefined;
+
+      // Extraction des cookies _fbp et _fbc pour maximiser l'Event Match Quality (EMQ)
+      const cookieHeader = request.headers.get('cookie') || '';
+      const getCookie = (name: string): string | undefined => {
+        const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+        return match ? decodeURIComponent(match[1]) : undefined;
+      };
+
+      const fbp = body.fbp || getCookie('_fbp');
+      let fbc = body.fbc || getCookie('_fbc');
+      const fbclid = body.fbclid || (body.utm && body.utm.fbclid);
+      if (!fbc && fbclid) {
+        fbc = `fb.1.${Date.now()}.${fbclid}`;
+      }
+
+      await sendServerLeadEvent({
+        email,
+        eventId,
+        leadType: 'Diagnostic Digital Quiz',
+        category: `Profil ${profile}`,
+        clientIp,
+        userAgent,
+        fbp,
+        fbc,
+        eventSourceUrl: body.sourceUrl || 'https://www.guides-digitaux.com/quiz'
+      });
+    } catch (capiErr) {
+      console.warn('[Quiz Lead CAPI Warning]', capiErr);
+    }
+
 
     return NextResponse.json({
       success: true,

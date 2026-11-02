@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { event } from '@/lib/metaPixel';
+import { getStoredUtm } from '@/lib/utm';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -150,13 +151,17 @@ export default function DigitalizationQuiz() {
     const computed = computeProfile();
     setProfileResult(computed);
 
-    // Meta Pixel tracking: Lead
+    // Identifiant unique partagé entre le Pixel client et Meta CAPI serveur pour la déduplication
+    const leadEventId = `quiz_lead_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+    // Meta Pixel tracking: Lead avec paramètre eventID pour déduplication CAPI
     event('Lead', {
       content_name: 'Diagnostic Digital Quiz',
       content_category: 'Profil ' + computed,
       value: 0,
-      currency: 'EUR'
-    });
+      currency: 'EUR',
+      event_id: leadEventId
+    }, { eventID: leadEventId });
 
     // Save in localStorage
     if (typeof window !== 'undefined') {
@@ -175,12 +180,32 @@ export default function DigitalizationQuiz() {
       }
     }
 
+    // Extraire les cookies _fbp, _fbc et les UTMs pour Meta Conversions API (CAPI)
+    const getBrowserCookie = (name: string): string | undefined => {
+      if (typeof document === 'undefined') return undefined;
+      const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+      return match ? decodeURIComponent(match[1]) : undefined;
+    };
+    const storedUtm = getStoredUtm();
+    const fbp = getBrowserCookie('_fbp');
+    const fbc = getBrowserCookie('_fbc');
+    const fbclid = storedUtm?.fbclid;
+
     // Call API route
     try {
       await fetch('/api/quiz/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, profile: computed })
+        body: JSON.stringify({
+          email: cleanEmail,
+          profile: computed,
+          eventId: leadEventId,
+          answers,
+          fbp,
+          fbc,
+          fbclid,
+          sourceUrl: typeof window !== 'undefined' ? window.location.href : undefined
+        })
       });
     } catch (err) {
       console.error('Quiz subscribe error', err);

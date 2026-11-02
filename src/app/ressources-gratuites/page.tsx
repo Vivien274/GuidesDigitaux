@@ -47,6 +47,14 @@ export default function RessourcesGratuitesPage() {
     downloadUrl: '/freebies/plan-action-rentree.pdf'
   });
 
+  // State for Resource 3: Guide Prompt Fiches Produits Noël
+  const [noelPromptState, setNoelPromptState] = useState<FreebieState>({
+    email: '',
+    agreed: false,
+    status: 'idle',
+    downloadUrl: '/freebies/guide-prompt-fiches-produits-noel.pdf'
+  });
+
   const handleSubscribe = async (
     e: React.FormEvent,
     tag: string,
@@ -112,41 +120,6 @@ export default function RessourcesGratuitesPage() {
     }
   };
 
-  const otherFreeResources = [
-    {
-      id: 'checklist-gmb',
-      title: 'Checklist Fiche Google My Business & Maps',
-      category: 'Checklist SEO Local',
-      description: '25 points de contrôle stratégiques pour hisser ton atelier ou ton commerce en tête des recherches locales.',
-      downloadUrl: '/freebies/checklist-fiche-google.pdf',
-      badge: 'Audit Express'
-    },
-    {
-      id: 'checklist-site',
-      title: 'Checklist de Lancement de Site Internet',
-      category: 'Checklist Web',
-      description: 'Tout ce qu’il faut vérifier avant la mise en ligne : mentions légales, conformité mobile et formulaires de contact.',
-      downloadUrl: '/freebies/checklist-site-web.pdf',
-      badge: 'Contrôle Qualité'
-    },
-    {
-      id: 'guide-redaction',
-      title: 'Mini-Guide : Écrire pour le Web sans jargon',
-      category: 'Guide Pratique',
-      description: 'Trouver les mots justes pour valoriser son savoir-faire d’artisan et captiver l’attention de ses clients locaux.',
-      downloadUrl: '/freebies/mini-guide-ecrire-web-artisan.pdf',
-      badge: 'Rédaction'
-    },
-    {
-      id: 'guide-photos',
-      title: 'Mini-Guide : Optimiser ses Photos sans perdre en qualité',
-      category: 'Guide Technique',
-      description: 'La méthode pour diviser le poids de tes photos par 10 et accélérer ton site sans rogner sur les détails.',
-      downloadUrl: '/freebies/mini-guide-optimiser-photos.pdf',
-      badge: 'Performance'
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white flex flex-col justify-between">
       <div>
@@ -176,6 +149,140 @@ export default function RessourcesGratuitesPage() {
         {/* MAIN FEATURED FREEBIES */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12">
           
+          {/* RESOURCE 0 (FEATURED): GUIDE PROMPT FICHES PRODUITS NOËL */}
+          <section className="bg-white rounded-3xl p-6 sm:p-10 border-2 border-[#f2542d]/30 shadow-lg hover:shadow-xl transition-all relative overflow-hidden">
+            <div className="flex flex-wrap items-center gap-2 mb-6">
+              <span className="px-3.5 py-1 rounded-full bg-[#f2542d] text-white text-xs font-black uppercase tracking-wider shadow-2xs">
+                Spécial Ventes de Noël 🎁 • E-commerce & Artisans
+              </span>
+              <span className="text-xs font-extrabold text-[#18757d] bg-[#e6f4f3] px-3 py-1 rounded-full border border-[#18757d]/20">
+                Guide & Prompt IA Offert ✨
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+              
+              {/* Image & Mockup */}
+              <div className="lg:col-span-5 relative">
+                <div className="relative rounded-2xl overflow-hidden shadow-md border border-[#eee7da] bg-slate-50 group aspect-4/3">
+                  <Image
+                    src="/images/ressources/prompt-fiches-produits-noel.jpg"
+                    alt="Guide Prompt IA Fiches Produits Noël"
+                    fill
+                    className="object-cover group-hover:scale-102 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60"></div>
+                  <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-md border border-[#eee7da] flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#f2542d]" />
+                    <span className="text-xs font-black text-[#332420]">Méthode SEO & Neuromarketing</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Text & Form */}
+              <div className="lg:col-span-7 space-y-5">
+                <h2 className="text-2xl sm:text-3xl font-black text-[#332420] leading-tight">
+                  🎁 Le Prompt IA Ultime pour rédiger des Fiches Produits Irrésistibles avant Noël
+                </h2>
+
+                <p className="text-sm sm:text-base font-bold text-[#332420] leading-relaxed">
+                  Pendant les fêtes, les acheteurs cherchent un cadeau coup de cœur et ont besoin d’être rassurés en quelques secondes.
+                </p>
+
+                <div className="bg-[#faf8f5] border-l-4 border-[#f2542d] p-4 rounded-r-xl space-y-1">
+                  <p className="text-xs sm:text-sm font-black text-[#332420]">
+                    Le piège classique : des descriptions catalogue de 3 lignes sans âme ni référencement Google.
+                  </p>
+                  <p className="text-xs text-[#5e4d46]">
+                    Résultat : un panier abandonné au profit des géants du web.
+                  </p>
+                </div>
+
+                <p className="text-[#5e4d46] text-xs sm:text-sm leading-relaxed">
+                  Télécharge gratuitement notre prompt calibré (neuromarketing émotionnel + SEO 600+ mots) et le guide d’application pas à pas pour booster tes ventes de fin d’année sans y passer tes nuits.
+                </p>
+
+                {noelPromptState.status === 'success' ? (
+                  <div className="p-5 bg-emerald-50 border-2 border-emerald-300 rounded-2xl text-left space-y-3">
+                    <div className="flex items-center gap-2 text-emerald-900 font-black text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <span>C’est dans la boîte ! Ton guide PDF est prêt.</span>
+                    </div>
+                    <p className="text-xs text-emerald-950">
+                      Le téléchargement a démarré automatiquement. Si rien ne s’affiche, clique sur le bouton ci-dessous :
+                    </p>
+                    <a
+                      href={noelPromptState.downloadUrl}
+                      download="guide-prompt-fiches-produits-noel.pdf"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#18757d] hover:bg-[#12595f] text-white font-extrabold text-xs rounded-xl shadow-xs uppercase tracking-wider transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Télécharger le Guide PDF (Gratuit)
+                    </a>
+                  </div>
+                ) : (
+                  <form
+                    onSubmit={e => handleSubscribe(e, 'fiche-produit-noel', noelPromptState, setNoelPromptState, '/freebies/guide-prompt-fiches-produits-noel.pdf')}
+                    className="space-y-3 pt-1"
+                  >
+                    <p className="text-xs font-bold text-[#18757d]">
+                      👇 Entre ton email pour recevoir immédiatement le guide & le prompt :
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="email"
+                        required
+                        placeholder="Entre ton adresse email ici"
+                        value={noelPromptState.email}
+                        onChange={e => setNoelPromptState(prev => ({ ...prev, email: e.target.value }))}
+                        className="flex-grow px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#18757d] text-xs sm:text-sm bg-white shadow-2xs"
+                      />
+                      <button
+                        type="submit"
+                        disabled={noelPromptState.status === 'loading'}
+                        className="px-6 py-3.5 rounded-xl font-black text-xs uppercase tracking-wider bg-[#f2542d] hover:bg-[#d8431f] text-white shadow-md transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-50"
+                      >
+                        {noelPromptState.status === 'loading' ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Envoi...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Recevoir mon guide gratuit</span>
+                            <Send className="w-4 h-4 text-amber-300" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex items-start gap-2 pt-1 text-left">
+                      <input
+                        type="checkbox"
+                        id="gdprNoel"
+                        required
+                        checked={noelPromptState.agreed}
+                        onChange={e => setNoelPromptState(prev => ({ ...prev, agreed: e.target.checked }))}
+                        className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#18757d] focus:ring-[#18757d] shrink-0 cursor-pointer"
+                      />
+                      <label htmlFor="gdprNoel" className="text-[11px] text-slate-500 leading-snug cursor-pointer">
+                        En cliquant, j’atteste avoir compris que mes données ne seront pas partagées ni revendues, conformément à la politique de confidentialité RGPD.
+                      </label>
+                    </div>
+
+                    {noelPromptState.errorMessage && (
+                      <p className="text-xs text-rose-600 font-bold">{noelPromptState.errorMessage}</p>
+                    )}
+                  </form>
+                )}
+              </div>
+
+            </div>
+          </section>
+
           {/* RESOURCE 1: TUTO BOUTON RETRACTATION */}
           <section className="bg-white rounded-3xl p-6 sm:p-10 border-2 border-[#18757d]/20 shadow-lg hover:shadow-xl transition-all relative overflow-hidden">
             <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -440,60 +547,6 @@ export default function RessourcesGratuitesPage() {
                 </div>
               </div>
 
-            </div>
-          </section>
-
-          {/* OTHER FREE GUIDES & CHECKLISTS GRID */}
-          <section className="space-y-8 pt-6">
-            <div className="text-center space-y-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#18757d] block">
-                Boîte à Outils Complète
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#332420]">
-                Autres Checklists & Mini-Guides en Accès Libre
-              </h2>
-              <p className="text-xs sm:text-sm text-[#5e4d46] max-w-xl mx-auto">
-                Des fiches pratiques et résumés stratégiques prêts à l'emploi à télécharger en un clic.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {otherFreeResources.map(res => (
-                <div
-                  key={res.id}
-                  className="bg-white p-6 sm:p-7 rounded-3xl border border-[#eee7da] shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-5 text-left"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-[#e6f4f3] text-[#18757d] px-2.5 py-0.5 rounded-full border border-[#18757d]/20">
-                        {res.category}
-                      </span>
-                      <span className="text-[10px] font-extrabold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                        {res.badge}
-                      </span>
-                    </div>
-
-                    <h3 className="text-base sm:text-lg font-black text-[#332420] leading-snug">
-                      {res.title}
-                    </h3>
-
-                    <p className="text-xs text-[#5e4d46] leading-relaxed">
-                      {res.description}
-                    </p>
-                  </div>
-
-                  <a
-                    href={res.downloadUrl}
-                    download
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full py-3 bg-[#faf8f5] hover:bg-[#18757d] text-[#18757d] hover:text-white border border-[#eee7da] font-extrabold text-xs rounded-xl shadow-2xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Télécharger le PDF</span>
-                  </a>
-                </div>
-              ))}
             </div>
           </section>
 

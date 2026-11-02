@@ -94,3 +94,107 @@ export async function sendServerPurchaseEvent({
     return { success: false, error };
   }
 }
+
+export interface CapiLeadParams {
+  email: string;
+  eventId: string;
+  leadType?: string;
+  category?: string;
+  value?: number;
+  currency?: string;
+  clientIp?: string;
+  userAgent?: string;
+  fbp?: string;
+  fbc?: string;
+  eventSourceUrl?: string;
+}
+
+/**
+ * Envoie un évènement 'Lead' depuis le serveur vers Meta Conversions API (CAPI).
+ * S'exécute côté Node.js (ex: API Quiz / inscription) et inclut obligatoirement
+ * le paramètre 'event_id' dans la charge utile serveur pour la déduplication Meta.
+ */
+export async function sendServerLeadEvent({
+  email,
+  eventId,
+  leadType = 'Diagnostic Digital Quiz',
+  category,
+  value = 0,
+  currency = 'EUR',
+  clientIp,
+  userAgent,
+  fbp,
+  fbc,
+  eventSourceUrl,
+}: CapiLeadParams) {
+  const token = process.env.META_CAPI_ACCESS_TOKEN || FB_ACCESS_TOKEN;
+  if (!token) {
+    console.warn('⚠️ [Meta CAPI Lead] META_CAPI_ACCESS_TOKEN non configuré dans les variables d\'environnement');
+    return { success: false, reason: 'META_CAPI_ACCESS_TOKEN non configuré' };
+  }
+
+  const targetPixelIds = Array.from(new Set(
+    (FB_PIXEL_IDS.length > 0 ? FB_PIXEL_IDS : ['1531523095044984', '9330486780351572']).filter(Boolean)
+  ));
+
+  try {
+    const hashedEmail = hashSha256(email);
+    const eventTime = Math.floor(Date.now() / 1000);
+    const testEventCode = process.env.META_TEST_EVENT_CODE || undefined;
+
+    const userData: Record<string, any> = {
+      em: hashedEmail ? [hashedEmail] : undefined,
+      client_ip_address: clientIp || undefined,
+      client_user_agent: userAgent || undefined,
+    };
+
+    if (fbp) userData.fbp = fbp;
+    if (fbc) userData.fbc = fbc;
+
+    const payload: Record<string, any> = {
+      data: [
+        {
+          event_name: 'Lead',
+          event_time: eventTime,
+          event_id: eventId,
+          event_source_url: eventSourceUrl || 'https://www.guides-digitaux.com/quiz',
+          action_source: 'website',
+          user_data: userData,
+          custom_data: {
+            content_name: leadType,
+            content_category: category,
+            currency: currency.toUpperCase(),
+            value: Number(value) || 0,
+          },
+        },
+      ],
+      ...(testEventCode ? { test_event_code: testEventCode } : {}),
+    };
+
+    const requests = targetPixelIds.map(async (pixelId) => {
+      const response = await fetch(
+        `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${token}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        console.warn(`⚠️ Meta CAPI Lead Warning [Pixel ${pixelId}]:`, result);
+        return { pixelId, success: false, error: result };
+      }
+      console.log(`✅ Meta CAPI Lead envoyé avec succès [Pixel ${pixelId}]:`, result);
+      return { pixelId, success: true, result };
+    });
+
+    const results = await Promise.allSettled(requests);
+    return { success: true, results };
+  } catch (error) {
+    console.error('❌ Erreur envoi Meta CAPI Lead:', error);
+    return { success: false, error };
+  }
+}
+
+

@@ -3,8 +3,7 @@ export const FB_PIXEL_ID_2 = process.env.NEXT_PUBLIC_META_PIXEL_ID_2 || '9330486
 export const FB_PIXEL_ID_3 = '52580458670170';
 export const FB_PIXEL_ID_4 = '1807595270425119'; // pixel GD tunnel
 
-export const FB_PIXEL_ID = FB_PIXEL_ID_1;
-export const FB_PIXEL_IDS = [FB_PIXEL_ID_1, FB_PIXEL_ID_2, FB_PIXEL_ID_3, FB_PIXEL_ID_4].filter(Boolean);
+export const FB_PIXEL_IDS = Array.from(new Set([FB_PIXEL_ID_1, FB_PIXEL_ID_2, FB_PIXEL_ID_3, FB_PIXEL_ID_4].filter(Boolean)));
 
 declare global {
   interface Window {
@@ -23,11 +22,21 @@ export const pageview = () => {
 };
 
 /**
- * Envoie un évènement personnalisé ou standard au Meta Pixel
+ * Envoie un évènement personnalisé ou standard au Meta Pixel.
+ * Supporte le paramètre de déduplication eventID (4ème argument fbq requis par Meta pour dédupliquer avec CAPI).
  */
-export const event = (name: string, options: Record<string, any> = {}) => {
+export const event = (
+  name: string,
+  options: Record<string, any> = {},
+  extraParams?: { eventID?: string }
+) => {
   if (typeof window !== 'undefined' && window.fbq) {
-    window.fbq('track', name, options);
+    const eventId = extraParams?.eventID || options?.eventID || options?.event_id;
+    if (eventId) {
+      window.fbq('track', name, options, { eventID: String(eventId) });
+    } else {
+      window.fbq('track', name, options);
+    }
   }
 };
 
@@ -40,10 +49,16 @@ export const trackPurchase = (
   extra: Record<string, any> = {}
 ) => {
   if (typeof window !== 'undefined' && window.fbq) {
-    window.fbq('track', 'Purchase', {
-      value: Number(value) || 0,
-      currency: currency || 'EUR',
-      ...extra,
-    });
+    const eventId = extra.order_id || extra.event_id || extra.eventId || extra.eventID;
+    window.fbq(
+      'track',
+      'Purchase',
+      {
+        value: Number(value) || 0,
+        currency: currency || 'EUR',
+        ...extra,
+      },
+      eventId ? { eventID: String(eventId) } : undefined
+    );
   }
 };
