@@ -113,7 +113,8 @@ export async function GET() {
           };
           sessionMetadataMap.set(session.id, utmData);
 
-          if (session.payment_status === 'paid') {
+          // Uniquement synchroniser les sessions de paiement RÉELLES en production (ignorer les tests)
+          if (session.payment_status === 'paid' && session.livemode && !session.id.startsWith('cs_test_')) {
             const customerEmail = (session.customer_details?.email || session.customer_email || '').toLowerCase().trim();
             const productId = session.metadata?.productId || session.metadata?.courseId || 'formation-fiche-google';
             const amountEur = (session.amount_total ?? 0) / 100;
