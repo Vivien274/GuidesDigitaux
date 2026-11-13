@@ -692,7 +692,7 @@ function ProductEditorContent() {
                   type="text"
                   value={bookingUrl}
                   onChange={(e) => setBookingUrl(e.target.value)}
-                  placeholder="https://calendar.app.google/A4SMq4zBbZYnnCr18"
+                  placeholder="https://calendar.app.google/RPcakXLpWzCXB4TMA"
                   className="w-full p-3 bg-[#faf8f5] border border-[#eee7da] rounded-xl text-xs font-mono text-[#332420] focus:outline-none focus:border-[#18757d]"
                 />
               </div>

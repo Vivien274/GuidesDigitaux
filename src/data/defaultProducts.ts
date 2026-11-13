@@ -350,7 +350,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
     "rating": 5,
     "reviewsCount": 0,
     "badge": "2 SESSIONS VISIO (2 x 45 MIN)",
-    "bookingUrl": "https://calendar.app.google/A4SMq4zBbZYnnCr18",
+    "bookingUrl": "https://calendar.app.google/RPcakXLpWzCXB4TMA",
     "image": "/images/products/coaching-site.webp",
     "imageAlt": "Stéphanie en visio de coaching individuel création de site WordPress - Guides digitaux",
     "gallery": [

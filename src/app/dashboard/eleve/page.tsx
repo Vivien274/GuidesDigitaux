@@ -117,7 +117,7 @@ function EleveDashboardContent() {
             price: Number(item.price) || (isPreorder ? 29 : (isCoachingItem ? 149 : (matchedDb?.price || 19))),
             purchaseDate: item.purchaseDate || (item.created_at ? new Date(item.created_at).toLocaleDateString('fr-FR') : 'Accès Débloqué'),
             downloadPdf: isPdfItem ? (item.downloadPdf || '/downloads/support-formation-woocommerce.pdf') : undefined,
-            bookingUrl: item.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18'
+            bookingUrl: item.bookingUrl || 'https://calendar.app.google/RPcakXLpWzCXB4TMA'
           };
         });
 
@@ -418,7 +418,7 @@ function EleveDashboardContent() {
                           </div>
                         ) : (
                           <a
-                            href={item.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18'}
+                            href={item.bookingUrl || 'https://calendar.app.google/RPcakXLpWzCXB4TMA'}
                             target="_blank"
                             rel="noreferrer"
                             className="w-full py-3.5 text-xs font-black text-[#332420] bg-amber-400 hover:bg-amber-300 rounded-xl shadow-sm transition-transform hover:scale-[1.01] flex items-center justify-center gap-2 uppercase tracking-wider text-center"

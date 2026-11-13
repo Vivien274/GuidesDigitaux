@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
           price: price !== undefined ? price : (matchedProd?.price ?? 0),
           purchaseDate: purchaseDate || new Date().toLocaleDateString('fr-FR'),
           downloadPdf: matchedProd?.downloadPdf,
-          bookingUrl: matchedProd?.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18',
+          bookingUrl: matchedProd?.bookingUrl || 'https://calendar.app.google/RPcakXLpWzCXB4TMA',
           bundleProductIds: matchedProd?.bundleProductIds,
           productType: matchedProd?.productType,
           isPreorder: isPreorderProduct && !isGoogle

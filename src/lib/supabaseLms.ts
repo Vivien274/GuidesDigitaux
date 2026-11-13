@@ -808,7 +808,7 @@ export async function fetchProductsFromDb(): Promise<any[]> {
           longDescription: effectiveLongDescription,
           htmlContent: row.html_content,
           downloadPdf: row.download_pdf || row.pdf_file_url || localMatch?.downloadPdf,
-          bookingUrl: isCoaching ? (row.booking_url || localMatch?.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18') : undefined,
+          bookingUrl: isCoaching ? (row.booking_url || localMatch?.bookingUrl || 'https://calendar.app.google/RPcakXLpWzCXB4TMA') : undefined,
           features: (isCoaching || !Array.isArray(row.features) || row.features.length === 0) ? (localMatch?.features || []) : row.features,
           gallery: resolvedGallery
         };

@@ -448,7 +448,7 @@ export default function ProductDetailPage() {
                 </p>
               </div>
               <a
-                href={product.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18'}
+                href={product.bookingUrl || 'https://calendar.app.google/RPcakXLpWzCXB4TMA'}
                 target="_blank"
                 rel="noreferrer"
                 className="px-8 py-4 bg-[#18757d] hover:bg-[#12595f] text-white text-xs font-black rounded-2xl shadow-xl uppercase tracking-wider transition-transform hover:scale-105 shrink-0 flex items-center gap-2"

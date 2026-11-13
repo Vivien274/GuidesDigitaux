@@ -210,7 +210,7 @@ export default function Footer() {
             <ul className="space-y-2.5 text-sm font-medium">
               <li>
                 <a
-                  href="https://calendar.app.google/A4SMq4zBbZYnnCr18"
+                  href="https://calendar.app.google/RPcakXLpWzCXB4TMA"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-emerald-200 hover:text-white transition-colors flex items-center gap-1.5 group font-bold"

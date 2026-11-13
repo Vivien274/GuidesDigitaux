@@ -81,7 +81,7 @@ export default function LiensClient() {
       id: 'rdv-offert',
       title: '📅 Réserver un échange découverte offert (30 min)',
       description: 'Faisons le point en visio en tête-à-tête sur ton activité d’artisan et levons tes blocages digitaux.',
-      url: 'https://calendar.app.google/A4SMq4zBbZYnnCr18',
+      url: 'https://calendar.app.google/RPcakXLpWzCXB4TMA',
       category: 'highlight',
       badge: 'CRÉNEAUX OFFERTS',
       badgeColor: 'emerald',
@@ -282,7 +282,7 @@ export default function LiensClient() {
 
             {/* Google Calendar (Prendre RDV) */}
             <a
-              href="https://calendar.app.google/A4SMq4zBbZYnnCr18"
+              href="https://calendar.app.google/RPcakXLpWzCXB4TMA"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Prendre un rendez-vous visio"

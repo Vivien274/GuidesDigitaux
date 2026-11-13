@@ -586,7 +586,7 @@ export default function RessourcesGratuitesPage() {
               </p>
             </div>
             <a
-              href="https://calendar.app.google/A4SMq4zBbZYnnCr18"
+              href="https://calendar.app.google/RPcakXLpWzCXB4TMA"
               target="_blank"
               rel="noopener noreferrer"
               className="px-6 py-3.5 rounded-xl font-black text-xs uppercase tracking-wider bg-[#f2542d] hover:bg-[#d8431f] text-white transition-all shrink-0 inline-flex items-center gap-2 shadow-md"

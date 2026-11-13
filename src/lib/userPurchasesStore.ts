@@ -60,7 +60,7 @@ export function getAllCatalogProductsAsPurchases(): EnrolledCourseItem[] {
       price: prod.price,
       purchaseDate: 'Accès Super-Admin',
       downloadPdf: prod.downloadPdf,
-      bookingUrl: prod.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18',
+      bookingUrl: prod.bookingUrl || 'https://calendar.app.google/RPcakXLpWzCXB4TMA',
       bundleProductIds: prod.bundleProductIds,
       productType: prod.productType
     };

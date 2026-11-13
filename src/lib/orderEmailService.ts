@@ -278,7 +278,7 @@ export async function processOrderEmails(payload: SendOrderEmailPayload) {
     payload.cartItems,
     orderId,
   );
-  const bookingUrl = payload.bookingUrl || 'https://calendar.app.google/A4SMq4zBbZYnnCr18';
+  const bookingUrl = payload.bookingUrl || 'https://calendar.app.google/RPcakXLpWzCXB4TMA';
   const courseUrl = `https://www.guides-digitaux.com/dashboard/eleve`;
   const accountUrl = `https://www.guides-digitaux.com/mon-compte`;
   const calculatorUrl = `https://www.guides-digitaux.com/outils/calculateur-fiche-google`;

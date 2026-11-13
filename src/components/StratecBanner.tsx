@@ -49,7 +49,7 @@ export default function StratecBanner() {
 
           <div>
             <a
-              href="https://calendar.app.google/A4SMq4zBbZYnnCr18"
+              href="https://calendar.app.google/RPcakXLpWzCXB4TMA"
               target="_blank"
               rel="noopener noreferrer"
               className="no-underline inline-flex items-center gap-3 px-8 py-4 bg-white hover:bg-slate-100 font-extrabold text-sm uppercase tracking-wider rounded-2xl shadow-lg transition-transform hover:scale-105"
