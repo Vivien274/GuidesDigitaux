@@ -33,7 +33,7 @@ export async function POST(request: Request) {
         <li><strong>Mesurer vos résultats :</strong> Ajustez votre stratégie au fur et a mesure.</li>
       </ul>
 
-      <h2>💡 3. Les conseils pratiques de Stéphanie (Stratec Digital)</h2>
+      <h2>💡 3. Les conseils pratiques de Stéphanie (Guides Digitaux)</h2>
       <p>Ne cherchez pas la perfection immédiate. L'important est de faire le premier pas, d'appliquer une méthode claire étape par étape et de garder un rythme régulier.</p>
 
       <h2>🚀 En conclusion</h2>
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
           body: JSON.stringify({
             contents: [{
               parts: [{
-                text: `Tu es Stéphanie Rocq, experte en digitalisation pour artisans, créateurs et indépendants chez Guides Digitaux (Stratec Digital).
+                text: `Tu es Stéphanie Rocq, experte en digitalisation pour artisans, créateurs et indépendants chez Guides Digitaux.
 Rédige un article de blog complet et pédagogique en français sur le sujet : "${topic}" (catégorie : "${category || 'Digitalisation'}").
 Le ton doit être chaleureux, bienveillant, clair, sans jargon technique inutile.
 

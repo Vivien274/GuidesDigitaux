@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 export default function StratecBanner() {
@@ -12,16 +13,14 @@ export default function StratecBanner() {
         Pour aller plus loin ...
       </h2>
       <p className="text-base sm:text-lg text-[#332420] font-medium m-0 leading-relaxed max-w-3xl">
-        Et si tu veux un diagnostic personnalisé, réserve ton <strong>rendez-vous gratuit</strong> avec{' '}
-        <a
-          href="https://stratec-digital.com"
-          target="_blank"
-          rel="noopener noreferrer"
+        Et si tu as besoin de plus d’informations ou d’un accompagnement, tu peux contacter directement{' '}
+        <Link
+          href="/contact"
           className="text-[#18757d] font-bold underline hover:text-[#12595f] transition-colors"
         >
-          Stratec Digital
-        </a>{' '}
-        pour faire le point sur ta situation et repartir avec un plan d’action clair.
+          Stéphanie de Guides Digitaux
+        </Link>{' '}
+        et réserver ton <strong>rendez-vous découverte gratuit</strong> pour voir ensemble ce qu’on peut faire.
       </p>
 
       <div
@@ -34,17 +33,15 @@ export default function StratecBanner() {
       >
         <div className="space-y-6 max-w-lg z-10">
           <h3 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight drop-shadow-md m-0">
-            <a
-              href="https://stratec-digital.com"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/contact"
               className="text-white hover:underline no-underline"
             >
-              Stratec Digital
-            </a><br />
-            Comme Solution<br />
-            De Digitalisation<br />
-            Sur-Mesure
+              Guides Digitaux
+            </Link><br />
+            Un Accompagnement<br />
+            Humain &amp; Sur-Mesure<br />
+            Avec Stéphanie
           </h3>
 
           <div>
@@ -55,7 +52,7 @@ export default function StratecBanner() {
               className="no-underline inline-flex items-center gap-3 px-8 py-4 bg-white hover:bg-slate-100 font-extrabold text-sm uppercase tracking-wider rounded-2xl shadow-lg transition-transform hover:scale-105"
               style={{ backgroundColor: '#ffffff', color: '#18757d', textDecoration: 'none' }}
             >
-              <span style={{ color: '#18757d', fontWeight: 800 }}>PREND TON RDV</span>
+              <span style={{ color: '#18757d', fontWeight: 800 }}>PRENDRE RDV AVEC STÉPHANIE</span>
               <ArrowRight className="w-5 h-5 text-[#18757d]" />
             </a>
           </div>
