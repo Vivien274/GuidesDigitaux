@@ -104,6 +104,31 @@ const nextConfig: NextConfig = {
         destination: '/blog',
         permanent: true,
       },
+      {
+        source: '/vendre-sans-boutique-physique',
+        destination: '/blog/vendre-sans-boutique-physique',
+        permanent: true,
+      },
+      {
+        source: '/categorie-produit/:path*',
+        destination: '/boutique',
+        permanent: true,
+      },
+      {
+        source: '/conditions-generales-dutilisation',
+        destination: '/cgu',
+        permanent: true,
+      },
+      {
+        source: '/Formation/:slug',
+        destination: '/formation/:slug',
+        permanent: true,
+      },
+      {
+        source: '/formation/formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+        destination: '/produit/formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
+        permanent: true,
+      },
     ];
   },
 };

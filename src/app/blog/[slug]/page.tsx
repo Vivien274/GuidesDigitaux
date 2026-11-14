@@ -150,6 +150,21 @@ export default async function BlogArticleDetailPage({
           },
         ],
       },
+      ...(article.faq && article.faq.length > 0
+        ? [
+            {
+              '@type': 'FAQPage',
+              mainEntity: article.faq.map((item) => ({
+                '@type': 'Question',
+                name: item.question,
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: item.answer,
+                },
+              })),
+            },
+          ]
+        : []),
     ],
   };
 
@@ -255,6 +270,30 @@ export default async function BlogArticleDetailPage({
             {/* Stratec Banner for relevant articles */}
             {(article.slug.includes('reseau') || article.slug.includes('digital') || article.id === '2380' || article.id === '3002') && (
               <StratecBanner />
+            )}
+
+            {/* Structured FAQ section (matches FAQPage JSON-LD for SEO & GEO) */}
+            {article.faq && article.faq.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-[#e8ded0] space-y-6">
+                <h2 className="text-2xl sm:text-3xl font-black text-[#332420] tracking-tight">
+                  Questions fréquentes
+                </h2>
+                <div className="space-y-4">
+                  {article.faq.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-6 bg-[#faf8f5] rounded-2xl border border-[#ebdcc8] space-y-2"
+                    >
+                      <h3 className="text-base sm:text-lg font-extrabold text-[#18757d]">
+                        {item.question}
+                      </h3>
+                      <p className="text-sm sm:text-base text-[#5e4d46] leading-relaxed">
+                        {item.answer}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
