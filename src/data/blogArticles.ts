@@ -8,6 +8,16 @@ export interface BlogGeoSummary {
   text: string;
 }
 
+export interface BlogCta {
+  badge: string;
+  title: string;
+  description: string;
+  buttonLabel: string;
+  href: string;
+  secondaryLabel?: string;
+  secondaryHref?: string;
+}
+
 export interface BlogArticle {
   id: string;
   slug: string;
@@ -24,6 +34,7 @@ export interface BlogArticle {
   scheduledAt?: string;
   geoSummary?: BlogGeoSummary;
   faq?: BlogFaqItem[];
+  cta?: BlogCta;
 }
 
 const FRENCH_MONTHS: Record<string, number> = {
@@ -267,6 +278,15 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "image": "/images/blog/marketplace-ou-site-ecommerce.jpg",
     "imageAlt": "Marketplace ou site e-commerce: comment choisir pour son activité artisanale",
     "excerpt": "Marketplace ou site e-commerce : quelle solution choisir quand on est artisan ou créateur ? Tu fabriques des bijoux à la main, tu crées des céramiques uniques, tu couds des vêtements sur mesure… et tu te demandes comment vendre tout ça sur internet ? C'est une excellente question, et tu n'es pas seul·e à te ...",
+    "cta": {
+      "badge": "🚀 Passe à l'action sans commission",
+      "title": "Prêt·e à lancer ton propre site sans dépendre d'Etsy ?",
+      "description": "Découvre comment créer ton site WordPress ou ta boutique en ligne pas à pas, ou télécharge nos checklists gratuites pour démarrer sereinement.",
+      "buttonLabel": "Découvrir la formation WordPress →",
+      "href": "/tunnel/formation-wordpress",
+      "secondaryLabel": "Accéder aux ressources gratuites",
+      "secondaryHref": "/ressources-gratuites"
+    },
     "geoSummary": {
       "title": "En bref — Marketplace ou site e-commerce pour un artisan ?",
       "text": "Une marketplace (Etsy, Faire, Amazon Handmade) permet de tester vos produits rapidement avec un trafic existant, mais vous expose à de fortes commissions, à une concurrence frontale sur les prix et à une dépendance aux règles de la plateforme. Votre propre site e-commerce (WordPress + WooCommerce) vous laisse 100 % propriétaire de votre marque, de vos marges et de votre fichier clients."
@@ -298,6 +318,15 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "image": "/images/blog/vendre-sans-boutique-physique.jpg",
     "imageAlt": "Vendre ses produits en ligne sans boutique physique quand on est artisan",
     "excerpt": "Vendre sans boutique physique : par où commencer quand on part de zéro ? Vous avez un savoir-faire, des produits à vendre ou des services à proposer. Mais vous n'avez pas de boutique physique — ou vous n'en voulez pas. Bonne nouvelle : aujourd'hui, vendre en ligne sans boutique physique est non seulement possible, mais ...",
+    "cta": {
+      "badge": "🧭 Feuille de route gratuite",
+      "title": "Tu veux savoir par quelle étape commencer selon ton métier ?",
+      "description": "Fais le diagnostic express en 2 minutes pour obtenir ton plan d'action personnalisé, ou récupère nos guides et checklists gratuits.",
+      "buttonLabel": "Faire le quiz gratuit →",
+      "href": "/quiz",
+      "secondaryLabel": "Voir les ressources gratuites",
+      "secondaryHref": "/ressources-gratuites"
+    },
     "geoSummary": {
       "title": "En bref — Par où commencer pour vendre en ligne sans boutique physique ?",
       "text": "Pour vendre sans local commercial, inutile d'investir dans un site complexe dès le premier jour : définissez une offre claire avec 3 à 5 produits ou prestations phares, créez une vitrine en ligne simple (page de vente ou mini-boutique) avec paiement sécurisé, et activez un canal d'acquisition régulier (fiche Google en zone de desserte, réseaux sociaux ou SEO local)."
@@ -329,6 +358,15 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "image": "/images/blog/reseaux-sociaux-lequel-choisir.jpg",
     "imageAlt": "Écran de smartphone avec toutes les applications de réseaux sociaux - Guides Digitaux",
     "excerpt": "Réseaux sociaux : lequel choisir quand on est une petite entreprise et qu'on n'a pas de temps ? Vous avez créé votre entreprise avec passion, vous maîtrisez votre métier sur le bout des doigts… mais dès qu'on parle de réseaux sociaux, c'est le flou total. Facebook, Instagram, TikTok, LinkedIn, Pinterest, YouTube… il y en a ...",
+    "cta": {
+      "badge": "📱 Gagne du temps chaque semaine",
+      "title": "Structure ton profil et attire des clients sans y passer tes soirées",
+      "description": "Télécharge nos ressources gratuites pour poser les bases de ta communication, ou récupère la checklist complète pour optimiser tes profils.",
+      "buttonLabel": "Accéder aux ressources gratuites →",
+      "href": "/ressources-gratuites",
+      "secondaryLabel": "Voir la checklist Réseaux Sociaux",
+      "secondaryHref": "/produit/checklist-profil-reseaux-sociaux"
+    },
     "geoSummary": {
       "title": "En bref — Quel réseau social choisir quand on manque de temps ?",
       "text": "Quand on est artisan ou petite entreprise avec peu de temps, il ne faut pas être partout : choisissez 1 seul réseau principal là où se trouvent vos clients (Instagram ou Facebook pour les particuliers et le local/visuel, LinkedIn pour le B2B, Pinterest pour la déco/mariage/artisanat) et tenez un rythme tenable de 1 à 2 publications par semaine."
@@ -360,6 +398,15 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "image": "/images/blog/entreprise-prete-digitalisation.jpg",
     "imageAlt": "Bureau avec équipement numérique - Guides Digitaux",
     "excerpt": "Comment savoir si ton entreprise est prête à se digitaliser ? 🌐 Introduction : digitalisation, mode ou nécessité ? On en parle partout : digitalisation, numérisation, transition digitale... Mais soyons honnêtes : pour beaucoup d’artisans, de créateurs et de petites entreprises, ces mots sonnent surtout comme une nouvelle contrainte.Un truc “à faire parce qu’il faut ...",
+    "cta": {
+      "badge": "🎁 Boîte à outils gratuite",
+      "title": "Commence ta digitalisation avec nos ressources gratuites",
+      "description": "Checklists pratiques, mini-guides et outils gratuits pour avancer étape par étape sans jargon technique.",
+      "buttonLabel": "Télécharger les ressources gratuites →",
+      "href": "/ressources-gratuites",
+      "secondaryLabel": "Tester ma fiche Google gratuitement",
+      "secondaryHref": "/outils/calculateur-fiche-google"
+    },
     "geoSummary": {
       "title": "En bref — Comment savoir si son entreprise est prête à se digitaliser ?",
       "text": "Votre entreprise est prête à se digitaliser dès que votre offre est claire et que vous perdez du temps sur des tâches répétitives (réponses aux mêmes questions, prise de rendez-vous par SMS, gestion manuelle). Se digitaliser ne veut pas dire tout automatiser d'un coup, mais choisir 1 ou 2 briques simples qui vous font gagner du temps immédiatement."

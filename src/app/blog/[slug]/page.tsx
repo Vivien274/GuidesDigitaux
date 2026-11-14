@@ -283,6 +283,54 @@ export default async function BlogArticleDetailPage({
               <StratecBanner />
             )}
 
+            {/* Contextual Conversion CTA (Organic -> Leads / Tunnels) */}
+            {article.cta ? (
+              <div className="mt-10 p-8 sm:p-10 bg-gradient-to-br from-[#18757d] to-[#12595f] text-white rounded-3xl shadow-xl space-y-5 text-center">
+                <span className="inline-block px-3.5 py-1 bg-amber-400 text-[#332420] text-xs font-black rounded-full uppercase tracking-wider">
+                  {article.cta.badge}
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black text-white m-0">
+                  {article.cta.title}
+                </h2>
+                <p className="text-sm sm:text-base text-teal-100 max-w-2xl mx-auto leading-relaxed m-0">
+                  {article.cta.description}
+                </p>
+                <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                  <Link
+                    href={article.cta.href}
+                    className="inline-flex items-center gap-2 px-7 py-3.5 bg-amber-400 hover:bg-amber-300 text-[#332420] font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-md transition-transform hover:scale-105"
+                  >
+                    {article.cta.buttonLabel}
+                  </Link>
+                  {article.cta.secondaryHref && article.cta.secondaryLabel && (
+                    <Link
+                      href={article.cta.secondaryHref}
+                      className="inline-flex items-center gap-2 px-6 py-3.5 bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm rounded-2xl border border-white/30 transition-colors"
+                    >
+                      {article.cta.secondaryLabel}
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-10 p-6 sm:p-8 bg-[#f4ede0] rounded-3xl border border-[#e8ded0] flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="space-y-1 text-center sm:text-left">
+                  <p className="text-xs font-black text-[#18757d] uppercase tracking-wider m-0">
+                    🎁 Ressources gratuites
+                  </p>
+                  <p className="text-sm sm:text-base font-bold text-[#332420] m-0">
+                    Télécharge nos checklists et mini-guides gratuits pour passer à l’action sans jargon.
+                  </p>
+                </div>
+                <Link
+                  href="/ressources-gratuites"
+                  className="shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-[#18757d] hover:bg-[#12595f] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xs transition-colors"
+                >
+                  Accéder aux ressources →
+                </Link>
+              </div>
+            )}
+
             {/* Structured FAQ section (matches FAQPage JSON-LD for SEO & GEO) */}
             {article.faq && article.faq.length > 0 && (
               <div className="mt-12 pt-8 border-t border-[#e8ded0] space-y-6">
