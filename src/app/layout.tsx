@@ -66,13 +66,19 @@ export default function RootLayout({
         "name": "Guides Digitaux",
         "url": siteUrl,
         "logo": `${siteUrl}/icon.png`,
+        "sameAs": [
+          "https://www.instagram.com/stratec_digital",
+          "https://www.facebook.com/stratec-digital",
+          "https://stratec-digital.com"
+        ],
         "founder": {
           "@type": "Person",
           "name": "Stéphanie Rocq"
         },
         "parentOrganization": {
           "@type": "Organization",
-          "name": "Stratec Digital"
+          "name": "Stratec Digital",
+          "url": "https://stratec-digital.com"
         }
       },
       {
