@@ -255,7 +255,7 @@ export default function LiensClient() {
           <nav aria-label="Réseaux sociaux officiels" className="flex items-center justify-center gap-2.5 pt-1">
             {/* Instagram */}
             <a
-              href="https://www.instagram.com/stratec_digital"
+              href="https://www.instagram.com/guidesdigitaux"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Rejoindre sur Instagram"
@@ -268,7 +268,7 @@ export default function LiensClient() {
 
             {/* Facebook */}
             <a
-              href="https://www.facebook.com/stratec-digital"
+              href="https://www.facebook.com/guidesdigitaux"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Rejoindre sur Facebook"

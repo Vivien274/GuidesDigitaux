@@ -67,8 +67,8 @@ export default function RootLayout({
         "url": siteUrl,
         "logo": `${siteUrl}/icon.png`,
         "sameAs": [
-          "https://www.instagram.com/stratec_digital",
-          "https://www.facebook.com/stratec-digital",
+          "https://www.instagram.com/guidesdigitaux",
+          "https://www.facebook.com/guidesdigitaux",
           "https://stratec-digital.com"
         ],
         "founder": {

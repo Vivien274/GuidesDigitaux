@@ -275,7 +275,7 @@ export default function ContactPage() {
             
             <div className="flex flex-wrap items-center justify-center gap-4">
               <a
-                href="https://www.facebook.com/stratec-digital"
+                href="https://www.facebook.com/guidesdigitaux"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 px-6 py-3.5 bg-[#1877f2] text-white font-extrabold text-xs rounded-2xl shadow-sm hover:opacity-90 transition-opacity"
@@ -295,7 +295,7 @@ export default function ContactPage() {
               </a>
 
               <a
-                href="https://www.instagram.com/stratec_digital"
+                href="https://www.instagram.com/guidesdigitaux"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 px-6 py-3.5 bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white font-extrabold text-xs rounded-2xl shadow-sm hover:opacity-90 transition-opacity"
