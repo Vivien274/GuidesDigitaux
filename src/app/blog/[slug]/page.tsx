@@ -230,6 +230,17 @@ export default async function BlogArticleDetailPage({
 
           {/* Article Text Content */}
           <div className="bg-white p-8 sm:p-12 rounded-3xl border border-[#e8ded0] shadow-sm">
+            {article.geoSummary && (
+              <div className="mb-8 p-6 bg-[#e6f4f3] border-l-4 border-[#18757d] rounded-2xl space-y-2">
+                <p className="text-xs sm:text-sm font-black text-[#18757d] uppercase tracking-wider m-0">
+                  📌 {article.geoSummary.title}
+                </p>
+                <p className="text-sm sm:text-base text-[#332420] font-medium leading-relaxed m-0">
+                  {article.geoSummary.text}
+                </p>
+              </div>
+            )}
+
             {hasQuizAnchor ? (
               <>
                 <div
