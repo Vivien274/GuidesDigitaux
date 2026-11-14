@@ -72,6 +72,88 @@ export function getArticleTimestamp(article: { date: string; scheduledAt?: strin
 
 export const BLOG_ARTICLES: BlogArticle[] = [
   {
+    "id": "4008",
+    "slug": "comment-vendre-en-ligne-sans-technique",
+    "title": "Comment vendre en ligne sans technique quand on est artisan ou créateur",
+    "category": "Vendre en ligne",
+    "date": "14 Novembre 2026",
+    "status": "published",
+    "readTime": "8 min de lecture",
+    "author": "Stéphanie Rocq",
+    "image": "/images/blog/artisan-gestion-commandes-mobile.jpg",
+    "imageAlt": "Artisane préparant ses commandes en ligne depuis son atelier sans compétences techniques",
+    "excerpt": "Tu veux vendre tes créations ou prestations sur internet sans savoir coder ni perdre tes soirées dans des réglages compliqués ? Découvre la méthode simple en 4 étapes pour vendre en ligne sans technique dès cette semaine.",
+    "geoSummary": {
+      "title": "En bref — Comment vendre en ligne sans technique ?",
+      "text": "Pour vendre en ligne sans compétences techniques, commence par une offre simple (3 à 5 produits ou prestations phares), utilise un outil guidé (page de vente, formulaire de commande ou boutique WooCommerce clé en main), connecte un paiement sécurisé (Stripe ou PayPal) et attire tes premiers acheteurs grâce à ta fiche Google et tes réseaux sociaux."
+    },
+    "faq": [
+      {
+        "question": "Faut-il savoir coder pour créer une boutique en ligne aujourd'hui ?",
+        "answer": "Non. Les outils modernes comme WordPress avec WooCommerce ou des pages de paiement simplifiées permettent de mettre en ligne tes fiches produits, gérer tes stocks et encaisser par carte bancaire sans écrire une seule ligne de code."
+      },
+      {
+        "question": "Quel est le moyen le plus simple pour encaisser ses premières ventes sur internet ?",
+        "answer": "Connecter Stripe ou PayPal : ces deux solutions s'activent en quelques minutes, ne demandent aucun abonnement mensuel fixe et ne prélèvent qu'une petite commission uniquement quand tu réalises une vente."
+      },
+      {
+        "question": "Combien de produits faut-il mettre en ligne pour démarrer sans se décourager ?",
+        "answer": "Inutile de photographier tout ton catalogue : commence avec tes 3 à 5 meilleures créations ou prestations phares. Une offre claire et ciblée convertit beaucoup mieux qu'un catalogue de 80 articles inachevés."
+      }
+    ],
+    "cta": {
+      "badge": "🛒 Passe à l'action sans coder",
+      "title": "Ajoute une vraie boutique en ligne sur ton site sans galérer",
+      "description": "Suis notre formation vidéo pas à pas pour installer WooCommerce, configurer tes paiements et gérer tes commandes en toute autonomie.",
+      "buttonLabel": "Découvrir la formation Boutique en ligne →",
+      "href": "/formation/extension-woocommerce-creer-sa-boutique-en-ligne",
+      "secondaryLabel": "Faire le quiz gratuit d'orientation",
+      "secondaryHref": "/quiz"
+    },
+    "contentHtml": "<div class=\"elementor-post-content space-y-8 text-[#332420] text-base sm:text-lg leading-relaxed font-normal\">\n\n  <p class=\"text-lg sm:text-xl font-medium text-[#4a3b32] leading-relaxed\">\n    Beaucoup d'artisans et de créateurs repoussent le moment de vendre sur internet pour une seule raison : <strong>la peur de la technique</strong>. Entre les noms de domaine, les moyens de paiement, les frais de port et la TVA, on a vite l'impression qu'il faut un diplôme d'informaticien.\n  </p>\n\n  <p>\n    La bonne nouvelle ? <strong>Tu n'as absolument pas besoin de savoir coder pour vendre tes créations en ligne.</strong> En suivant une méthode simple étape par étape, tu peux encaisser tes premières commandes sereinement tout en gardant ton temps pour ton vrai métier.\n  </p>\n\n  <div class=\"pt-6\">\n    <h2 class=\"text-2xl sm:text-3xl font-black text-[#332420] tracking-tight border-b border-[#ebdcc8] pb-3\">\n      1. Simplifie ton offre avant de choisir un outil\n    </h2>\n  </div>\n\n  <p>\n    L'erreur la plus fréquente est de vouloir mettre 50 produits en ligne dès le premier jour. Résultat : on abandonne avant même de publier. Pour vendre sans technique, commence par sélectionner <strong>3 à 5 produits phares</strong> (ou tes 2 prestations les plus demandées) avec des photos lumineuses, un prix clair et un délai de fabrication précis.\n  </p>\n\n  <div class=\"pt-6\">\n    <h2 class=\"text-2xl sm:text-3xl font-black text-[#332420] tracking-tight border-b border-[#ebdcc8] pb-3\">\n      2. Choisis la solution adaptée à ton niveau\n    </h2>\n  </div>\n\n  <ul class=\"space-y-3 list-disc pl-6 text-sm sm:text-base text-[#5e4d46]\">\n    <li><strong>Tu débutes avec 1 à 3 créations ou prestations :</strong> un simple formulaire de commande guidé ou un lien de paiement Stripe suffit pour tester ton marché en 30 minutes.</li>\n    <li><strong>Tu veux une vraie boutique durable sans commission :</strong> ajoute l'extension gratuite <strong>WooCommerce</strong> à un site WordPress. Tu restes 100 % propriétaire de tes ventes et de ton fichier clients, contrairement aux marketplaces. (Pour comparer les deux options, lis notre comparatif <a href=\"/blog/marketplace-ou-site-e-commerce\" class=\"text-[#18757d] font-bold underline\">Marketplace ou site e-commerce</a>.)</li>\n  </ul>\n\n  <div class=\"pt-6\">\n    <h2 class=\"text-2xl sm:text-3xl font-black text-[#332420] tracking-tight border-b border-[#ebdcc8] pb-3\">\n      3. Automatise l'encaissement et la livraison dès le départ\n    </h2>\n  </div>\n\n  <p>\n    N'accepte plus les commandes compliquées par messages privés où il faut relancer trois fois pour avoir l'adresse postale. En configurant un paiement par carte bancaire (Stripe) et 2 tarifs de livraison simples (Point Relais et Colissimo), chaque commande arrive complète, payée et prête à être expédiée.\n  </p>\n\n  <p>\n    Si tu pars totalement de zéro sans local commercial, consulte aussi notre guide <a href=\"/blog/vendre-sans-boutique-physique\" class=\"text-[#18757d] font-bold underline\">Vendre sans boutique physique : par où commencer</a>.\n  </p>\n\n</div>"
+  },
+  {
+    "id": "4007",
+    "slug": "wordpress-pour-artisan-site-pro-sans-coder",
+    "title": "WordPress pour artisan : comment créer un site pro simple sans coder",
+    "category": "Création de Site Web",
+    "date": "14 Novembre 2026",
+    "status": "published",
+    "readTime": "9 min de lecture",
+    "author": "Stéphanie Rocq",
+    "image": "/images/blog/artisan-site-vitrine-atelier-detail.jpg",
+    "imageAlt": "Artisan travaillant sur son site vitrine WordPress depuis son atelier",
+    "excerpt": "WordPress fait-il vraiment peur aux artisans ? Découvre pourquoi c'est l'outil le plus rentable pour rester 100 % propriétaire de ton site vitrine, combien ça coûte réellement et les 5 étapes pour le lancer sans coder.",
+    "geoSummary": {
+      "title": "En bref — Pourquoi choisir WordPress quand on est artisan ?",
+      "text": "WordPress est la solution la plus économique et durable pour un artisan : pour environ 60 €/an d'hébergement (nom de domaine et e-mails inclus), tu restes 100 % propriétaire de ton site, tu peux le modifier seul sans coder grâce aux éditeurs visuels et tu profites d'une base idéale pour ton référencement local sur Google."
+    },
+    "faq": [
+      {
+        "question": "WordPress est-il gratuit pour un artisan ?",
+        "answer": "Le logiciel WordPress est 100 % gratuit et open-source. Tu ne paies que ton nom de domaine et ton hébergement web (environ 60 € à 80 € par an chez un hébergeur français fiable comme o2switch), sans aucun abonnement mensuel caché."
+      },
+      {
+        "question": "Combien de temps faut-il pour créer son site vitrine WordPress sans coder ?",
+        "answer": "En suivant une méthode guidée pas à pas, un artisan débutant peut installer WordPress, configurer son design et publier ses 4 pages essentielles en un week-end (environ 6 à 8 heures)."
+      },
+      {
+        "question": "WordPress est-il meilleur que Wix pour le SEO local d'un artisan ?",
+        "answer": "Oui. WordPress offre un contrôle complet sur la vitesse mobile, les balises titres, les URLs propres et les données structurées, ce qui facilite le positionnement local sur Google et l'association avec ta fiche Google Business Profile."
+      }
+    ],
+    "cta": {
+      "badge": "🛠️ Formation Pas-à-Pas WordPress",
+      "title": "Crée ton site vitrine WordPress pro en un week-end sans coder",
+      "description": "Apprends à installer, structurer et sécuriser ton site vitrine d'artisan à ton rythme grâce à nos vidéos courtes et concrètes.",
+      "buttonLabel": "Découvrir la formation WordPress →",
+      "href": "/tunnel/formation-wordpress",
+      "secondaryLabel": "Télécharger les ressources gratuites",
+      "secondaryHref": "/ressources-gratuites"
+    },
+    "contentHtml": "<div class=\"elementor-post-content space-y-8 text-[#332420] text-base sm:text-lg leading-relaxed font-normal\">\n\n  <p class=\"text-lg sm:text-xl font-medium text-[#4a3b32] leading-relaxed\">\n    Quand on cherche à créer son site internet d'artisan, on entend tout et son contraire : certains disent que <strong>WordPress</strong> est réservé aux développeurs, d'autres poussent vers des abonnements mensuels hors de prix qui vous ligotent pendant 4 ans.\n  </p>\n\n  <p>\n    La vérité, c'est que <strong>WordPress équipe plus de 40 % du web mondial</strong> précisément parce qu'il permet de créer un site vitrine solide, rapide et évolutif sans toucher à une seule ligne de code — à condition de suivre le bon ordre.\n  </p>\n\n  <div class=\"pt-6\">\n    <h2 class=\"text-2xl sm:text-3xl font-black text-[#332420] tracking-tight border-b border-[#ebdcc8] pb-3\">\n      1. Les 3 raisons pour lesquelles WordPress bat les locations de site\n    </h2>\n  </div>\n\n  <ul class=\"space-y-3 list-disc pl-6 text-sm sm:text-base text-[#5e4d46]\">\n    <li><strong>Tu es 100 % propriétaire :</strong> contrairement aux contrats à 150 €/mois sur 48 mois, ton site et ton nom de domaine t'appartiennent vraiment. (Voir notre <a href=\"/blog/prix-site-internet-artisan-comparatif\" class=\"text-[#18757d] font-bold underline\">comparatif réel des prix d'un site d'artisan</a>.)</li>\n    <li><strong>Un coût annuel imbattable :</strong> environ 60 € à 80 € par an pour ton hébergement et tes adresses e-mails professionnelles.</li>\n    <li><strong>Un SEO local taillé pour Google :</strong> couplé à ta <a href=\"/blog/google-my-business-artisan\" class=\"text-[#18757d] font-bold underline\">fiche Google Business Profile</a>, un site WordPress bien structuré te fait remonter durablement dans ta ville et ton département.</li>\n  </ul>\n\n  <div class=\"pt-6\">\n    <h2 class=\"text-2xl sm:text-3xl font-black text-[#332420] tracking-tight border-b border-[#ebdcc8] pb-3\">\n      2. Les 5 étapes simples pour lancer ton WordPress d'artisan\n    </h2>\n  </div>\n\n  <ol class=\"space-y-3 list-decimal pl-6 text-sm sm:text-base text-[#5e4d46]\">\n    <li><strong>Réserve ton nom de domaine et ton hébergement</strong> (en gardant toujours les accès à ton nom).</li>\n    <li><strong>Installe WordPress en 1 clic</strong> depuis ton espace hébergeur et active le cadenas de sécurité HTTPS.</li>\n    <li><strong>Choisis un thème léger et lisible sur mobile</strong> (70 % de tes clients te consultent depuis leur téléphone).</li>\n    <li><strong>Crée tes 4 pages essentielles :</strong> Accueil, Prestations / Créations, À propos (ton histoire d'atelier) et Contact. Inspire-toi de ces <a href=\"/blog/exemples-sites-vitrines-artisans-inspirations\" class=\"text-[#18757d] font-bold underline\">7 vrais sites d'artisans qui cartonnent</a>.</li>\n    <li><strong>Protège tes formulaires contre les spams</strong> et relie ton site à ta fiche Google.</li>\n  </ol>\n\n</div>"
+  },
+  {
     "id": "4006",
     "slug": "exemples-sites-vitrines-artisans-inspirations",
     "title": "7 exemples de sites vitrines d’artisans qui cartonnent (et pourquoi ils fonctionnent)",
