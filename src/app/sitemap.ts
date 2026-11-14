@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 import { DEFAULT_PRODUCTS } from '@/data/defaultProducts';
-import { BLOG_ARTICLES } from '@/data/blogArticles';
+import { BLOG_ARTICLES, getArticleTimestamp } from '@/data/blogArticles';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.guides-digitaux.com';
@@ -38,6 +38,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/portfolio`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/blog`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
@@ -54,6 +60,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/ressources-gratuites`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/outils/calculateur-fiche-google`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.85,
     },
     {
       url: `${baseUrl}/cgv`,
@@ -94,13 +112,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // 4. Articles de Blog SEO
-  const blogPages: MetadataRoute.Sitemap = BLOG_ARTICLES.map((article) => ({
-    url: `${baseUrl}/blog/${article.slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'monthly',
-    priority: 0.7,
-  }));
+  // 4. Articles de Blog SEO (exclut les brouillons et utilise la vraie date de publication)
+  const blogPages: MetadataRoute.Sitemap = BLOG_ARTICLES
+    .filter((article) => article.status !== 'draft')
+    .map((article) => {
+      const ts = getArticleTimestamp(article);
+      return {
+        url: `${baseUrl}/blog/${article.slug}`,
+        lastModified: ts > 0 ? new Date(ts) : new Date(),
+        changeFrequency: 'monthly',
+        priority: 0.8,
+      };
+    });
 
   return [...staticPages, ...productPages, ...formationPages, ...blogPages];
 }

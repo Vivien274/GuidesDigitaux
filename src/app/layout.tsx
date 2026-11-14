@@ -20,9 +20,15 @@ const jakartaSans = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.guides-digitaux.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Guides Digitaux | Formations & Guides pour Artisans et Créateurs",
   description: "Formations, ebooks et checklists pour t'aider à booster ta visibilité, gérer ton business en ligne et enfin comprendre le digital à ton rythme.",
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [
       { url: "/icon.png" },
@@ -37,6 +43,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fr_FR",
     siteName: "Guides Digitaux",
+    url: siteUrl,
   },
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ? {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
@@ -50,10 +57,44 @@ export default function RootLayout({
 }>) {
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-358P17K5M7';
   const gtmId = process.env.NEXT_PUBLIC_GTM_ID || 'GTM-K3GHDVFH';
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${siteUrl}/#organization`,
+        "name": "Guides Digitaux",
+        "url": siteUrl,
+        "logo": `${siteUrl}/icon.png`,
+        "founder": {
+          "@type": "Person",
+          "name": "Stéphanie Rocq"
+        },
+        "parentOrganization": {
+          "@type": "Organization",
+          "name": "Stratec Digital"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${siteUrl}/#website`,
+        "url": siteUrl,
+        "name": "Guides Digitaux",
+        "inLanguage": "fr-FR",
+        "publisher": {
+          "@id": `${siteUrl}/#organization`
+        }
+      }
+    ]
+  };
 
   return (
     <html lang="fr" suppressHydrationWarning className={`${jakartaSans.variable} h-full antialiased scroll-smooth`}>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#faf8f5] text-[#332420] font-sans selection:bg-[#18757d] selection:text-white">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         {/* CHARGEMENT DIFFÉRÉ ET INTELLIGENT DES SCRIPTS TIERS (GTM, GA4, META PIXEL) */}
         <ThirdPartyScripts gaId={gaId} gtmId={gtmId} />
         <noscript>

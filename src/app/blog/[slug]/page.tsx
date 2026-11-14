@@ -1,21 +1,83 @@
-'use client';
-
 import React from 'react';
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams, notFound } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Calendar, Clock, ArrowLeft, Share2, Sparkles } from 'lucide-react';
-import { BLOG_ARTICLES } from '@/data/blogArticles';
+import { Calendar, Clock, ArrowLeft } from 'lucide-react';
+import { BLOG_ARTICLES, getArticleTimestamp } from '@/data/blogArticles';
 import DigitalizationQuiz from '@/components/DigitalizationQuiz';
 import StratecBanner from '@/components/StratecBanner';
 
-export default function BlogArticleDetailPage() {
-  const params = useParams();
-  const slug = params?.slug as string;
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.guides-digitaux.com';
 
-  const article = BLOG_ARTICLES.find(a => a.slug === slug || a.id === slug);
+function findArticle(slug: string) {
+  return BLOG_ARTICLES.find((a) => a.slug === slug || a.id === slug);
+}
+
+export async function generateStaticParams() {
+  return BLOG_ARTICLES.filter((a) => a.status !== 'draft').map((article) => ({
+    slug: article.slug,
+  }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const article = findArticle(slug);
+
+  if (!article) {
+    return {
+      title: 'Article non trouvé | Guides Digitaux',
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const timestamp = getArticleTimestamp(article);
+  const publishedIso = timestamp > 0 ? new Date(timestamp).toISOString() : undefined;
+  const canonicalPath = `/blog/${article.slug}`;
+
+  return {
+    title: `${article.title} | Guides Digitaux`,
+    description: article.excerpt,
+    alternates: {
+      canonical: canonicalPath,
+    },
+    openGraph: {
+      type: 'article',
+      url: `${SITE_URL}${canonicalPath}`,
+      title: article.title,
+      description: article.excerpt,
+      siteName: 'Guides Digitaux',
+      locale: 'fr_FR',
+      publishedTime: publishedIso,
+      authors: [article.author],
+      images: [
+        {
+          url: article.image,
+          alt: article.imageAlt || article.title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description: article.excerpt,
+      images: [article.image],
+    },
+  };
+}
+
+export default async function BlogArticleDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const article = findArticle(slug);
 
   if (!article) {
     return (
@@ -34,11 +96,69 @@ export default function BlogArticleDetailPage() {
   }
 
   const rawHtml = article.contentHtml;
-
   const hasQuizAnchor = rawHtml.includes('<div id="digitalisation-quiz-anchor"></div>');
+  const timestamp = getArticleTimestamp(article);
+  const publishedIso = timestamp > 0 ? new Date(timestamp).toISOString() : undefined;
+  const articleUrl = `${SITE_URL}/blog/${article.slug}`;
+  const imageUrl = article.image.startsWith('http') ? article.image : `${SITE_URL}${article.image}`;
+
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BlogPosting',
+        '@id': `${articleUrl}#article`,
+        headline: article.title,
+        description: article.excerpt,
+        image: imageUrl,
+        datePublished: publishedIso,
+        dateModified: publishedIso,
+        inLanguage: 'fr-FR',
+        articleSection: article.category,
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': articleUrl,
+        },
+        author: {
+          '@type': 'Person',
+          name: article.author,
+        },
+        publisher: {
+          '@id': `${SITE_URL}/#organization`,
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Accueil',
+            item: SITE_URL,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Blog',
+            item: `${SITE_URL}/blog`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: article.title,
+            item: articleUrl,
+          },
+        ],
+      },
+    ],
+  };
 
   return (
     <div className="min-h-screen bg-[#faf8f5]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <Header />
 
       {/* Article Hero */}
