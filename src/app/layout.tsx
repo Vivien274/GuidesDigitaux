@@ -26,9 +26,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Guides Digitaux | Formations & Guides pour Artisans et Créateurs",
   description: "Formations, ebooks et checklists pour t'aider à booster ta visibilité, gérer ton business en ligne et enfin comprendre le digital à ton rythme.",
-  alternates: {
-    canonical: "/",
-  },
   icons: {
     icon: [
       { url: "/icon.png" },

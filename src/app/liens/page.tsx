@@ -4,6 +4,9 @@ import LiensClient from './LiensClient';
 export const metadata: Metadata = {
   title: 'Guides Digitaux | Tous nos liens utiles, formations & réseaux',
   description: 'Retrouve en un clic toutes les ressources, formations, quiz gratuit, coaching et réseaux sociaux de Guides Digitaux par Stéphanie Rocq.',
+  alternates: {
+    canonical: '/liens',
+  },
   openGraph: {
     title: 'Guides Digitaux | Tous nos liens utiles & réseaux (Link-in-bio)',
     description: 'Guides, formations, coaching et ressources digitales pour artisans, créateurs et indépendants.',

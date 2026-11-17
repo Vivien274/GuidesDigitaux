@@ -6,6 +6,9 @@ import DigitalizationQuiz from '@/components/DigitalizationQuiz';
 export const metadata: Metadata = {
   title: "Quiz Gratuit : Mon site web, c'est pour moi ? | Guides Digitaux",
   description: "Réponds à 6 questions simples pour évaluer tes besoins, lever tes appréhensions et recevoir ton plan d'action personnalisé en 2 minutes chrono.",
+  alternates: {
+    canonical: "/quiz",
+  },
 };
 
 export default function QuizPage() {
