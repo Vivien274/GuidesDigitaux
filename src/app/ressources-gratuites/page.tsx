@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { event as trackPixelEvent } from '@/lib/metaPixel';
 import {
   Sparkles,
   Download,
@@ -75,19 +76,23 @@ export default function RessourcesGratuitesPage() {
     setState(prev => ({ ...prev, status: 'loading', errorMessage: undefined }));
 
     try {
+      const eventId = `freebie_${tag}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const res = await fetch('/api/mailchimp/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: state.email,
           tag,
-          tags: [tag, 'freebie-premiers-pas', 'newsletter']
+          tags: [tag, 'freebie-premiers-pas', 'newsletter'],
+          eventId,
+          sourceUrl: typeof window !== 'undefined' ? window.location.href : 'https://www.guides-digitaux.com/ressources-gratuites'
         })
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (res.ok && data.success !== false) {
+        trackPixelEvent('Lead', { content_name: tag, content_category: 'Ressource Gratuite' }, { eventID: eventId });
         setState(prev => ({
           ...prev,
           status: 'success',
