@@ -120,11 +120,6 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
-        source: '/Formation/:slug',
-        destination: '/formation/:slug',
-        permanent: true,
-      },
-      {
         source: '/formation/formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
         destination: '/produit/formation-ajouter-une-boutique-en-ligne-avec-woocommerce',
         permanent: true,

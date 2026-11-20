@@ -4,6 +4,14 @@ import { verifySession } from '@/lib/auth';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // 0. Case-sensitive redirect from legacy /Formation/* to /formation/*
+  if (pathname.startsWith('/Formation/')) {
+    const targetUrl = new URL(`/formation/${pathname.slice('/Formation/'.length)}`, request.url);
+    targetUrl.search = request.nextUrl.search;
+    return NextResponse.redirect(targetUrl, 308);
+  }
+
   const token = request.cookies.get('gd_session')?.value;
 
   // 1. Protect Student Dashboard & Formations
@@ -90,6 +98,7 @@ export const config = {
     '/dashboard/eleve/:path*',
     '/dashboard/eleve',
     '/formation/:path*',
+    '/Formation/:path*',
     '/dashboard/admin/:path*',
     '/dashboard/admin',
     '/dashboard/formateur/:path*',
