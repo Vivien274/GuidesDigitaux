@@ -83,7 +83,7 @@ export default function RessourcesGratuitesPage() {
         body: JSON.stringify({
           email: state.email,
           tag,
-          tags: [tag, 'freebie-premiers-pas', 'newsletter'],
+          tags: [tag, 'newsletter'],
           eventId,
           sourceUrl: typeof window !== 'undefined' ? window.location.href : 'https://www.guides-digitaux.com/ressources-gratuites'
         })
