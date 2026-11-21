@@ -361,7 +361,7 @@ export default function RessourcesGratuitesPage() {
                   </div>
                 ) : (
                   <form
-                    onSubmit={e => handleSubscribe(e, 'tuto-retractation', retractationState, setRetractationState, '/downloads/tuto-bouton-retractation.pdf')}
+                    onSubmit={e => handleSubscribe(e, 'tuto-retractation', retractationState, setRetractationState, '/freebies/tuto-bouton-retractation.pdf')}
                     className="space-y-3 pt-1"
                   >
                     <p className="text-xs font-bold text-[#18757d]">
@@ -479,7 +479,7 @@ export default function RessourcesGratuitesPage() {
                   </div>
                 ) : (
                   <form
-                    onSubmit={e => handleSubscribe(e, 'plan-rentree', rentreeState, setRentreeState, '/downloads/plan-action-rentree.pdf')}
+                    onSubmit={e => handleSubscribe(e, 'plan-rentree', rentreeState, setRentreeState, '/freebies/plan-action-rentree.pdf')}
                     className="space-y-3 pt-1"
                   >
                     <p className="text-xs font-bold text-[#18757d]">
